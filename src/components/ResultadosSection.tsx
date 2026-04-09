@@ -427,6 +427,14 @@ const ResultadosSection = () => {
     if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
   }, []);
 
+  const handleCursoChartDoubleClick = useCallback(() => {
+    setFilterCurso('all'); setPage(0);
+  }, []);
+
+  const handleDimensaoChartDoubleClick = useCallback(() => {
+    setFilterDimensao('all'); setPage(0);
+  }, []);
+
   // === Colaboradores-specific charts ===
   const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
 
