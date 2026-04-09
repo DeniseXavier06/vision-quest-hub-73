@@ -825,15 +825,15 @@ const ResultadosSection = () => {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas<ChartFontControl chartId="respostas" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabRespostas.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={colabRespostas} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        <XAxis dataKey="name" tick={{ fontSize: fs('respostas') }} />
+                        <YAxis tick={{ fontSize: fs('respostas') }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('respostas')}px` }} />
                         <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]} label={renderBarLabel}>
                           {colabRespostas.map((entry, idx) => (
                             <Cell key={idx} fill={RESPOSTA_COLORS[entry.name] || chartColors[idx % chartColors.length]} />
@@ -848,15 +848,15 @@ const ResultadosSection = () => {
           </div>
 
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)</CardTitle></CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)<ChartFontControl chartId="colabMediaDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
             <CardContent>
               <div className="h-[300px]">
                 {colabMediaDimensao.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={colabMediaDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
-                      <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
-                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                      <XAxis dataKey="name" tick={{ fontSize: fs('colabMediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
+                      <YAxis tick={{ fontSize: fs('colabMediaDim') }} domain={[0, 5]} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('colabMediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
                       <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
