@@ -17,7 +17,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
-import { UserCog, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
+import { UserCog, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
 const emptyUsuario: Omit<Usuario, 'id'> = {

@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
+import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
 const emptySetor: Omit<Setor, 'id'> = {
