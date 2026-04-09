@@ -762,15 +762,15 @@ const ResultadosSection = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão<ChartFontControl chartId="radarDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabRadarDimensao.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={colabRadarDimensao} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid />
-                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: 9 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10 }} />
+                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: fs('radarDim') - 2 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: fs('radarDim') - 1 }} />
                         <Radar name="Média" dataKey="media" stroke="hsl(214, 60%, 35%)" fill="hsl(214, 60%, 35%)" fillOpacity={0.3} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
                       </RadarChart>
