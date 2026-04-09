@@ -89,6 +89,113 @@ export type Database = {
         }
         Relationships: []
       }
+      importacoes: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          observacoes: string | null
+          perfil: string
+          periodo: string
+          total_registros: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          observacoes?: string | null
+          perfil: string
+          periodo: string
+          total_registros?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          observacoes?: string | null
+          perfil?: string
+          periodo?: string
+          total_registros?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      resultados: {
+        Row: {
+          area: string
+          atende_parcialmente: number
+          bom: number
+          conceito: string
+          created_at: string
+          curso: string
+          dimensao: string
+          excelente: number
+          id: string
+          importacao_id: string | null
+          media: number
+          muito_ruim: number
+          nao_se_aplica: number
+          nivel: string
+          regular: number
+          semestre: string
+          texto_questao: string
+          tipo_avaliacao: string
+          total: number
+        }
+        Insert: {
+          area?: string
+          atende_parcialmente?: number
+          bom?: number
+          conceito?: string
+          created_at?: string
+          curso?: string
+          dimensao?: string
+          excelente?: number
+          id?: string
+          importacao_id?: string | null
+          media?: number
+          muito_ruim?: number
+          nao_se_aplica?: number
+          nivel?: string
+          regular?: number
+          semestre?: string
+          texto_questao?: string
+          tipo_avaliacao?: string
+          total?: number
+        }
+        Update: {
+          area?: string
+          atende_parcialmente?: number
+          bom?: number
+          conceito?: string
+          created_at?: string
+          curso?: string
+          dimensao?: string
+          excelente?: number
+          id?: string
+          importacao_id?: string | null
+          media?: number
+          muito_ruim?: number
+          nao_se_aplica?: number
+          nivel?: string
+          regular?: number
+          semestre?: string
+          texto_questao?: string
+          tipo_avaliacao?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resultados_importacao_id_fkey"
+            columns: ["importacao_id"]
+            isOneToOne: false
+            referencedRelation: "importacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reunioes: {
         Row: {
           created_at: string
