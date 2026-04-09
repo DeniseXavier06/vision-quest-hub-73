@@ -57,7 +57,7 @@ const AcoesSection = () => {
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [filterEixo, setFilterEixo] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-
+  const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<Omit<Acao, 'id' | 'diasRestantes'>>(emptyAcao);
@@ -71,6 +71,10 @@ const AcoesSection = () => {
   const filtered = acoes.filter((a) => {
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (!a.nome.toLowerCase().includes(term) && !a.responsavel.toLowerCase().includes(term) && !a.eixo.toLowerCase().includes(term) && !a.meta.toLowerCase().includes(term)) return false;
+    }
     return true;
   });
 
