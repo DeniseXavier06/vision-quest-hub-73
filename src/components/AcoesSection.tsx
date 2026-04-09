@@ -88,6 +88,7 @@ const AcoesSection = () => {
   const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
   const [filterEixo, setFilterEixo] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterResponsavel, setFilterResponsavel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAcao, setFilterAcao] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
