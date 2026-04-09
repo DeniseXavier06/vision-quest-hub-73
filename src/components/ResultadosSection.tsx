@@ -234,8 +234,11 @@ const ResultadosSection = () => {
 
   const handleDeleteImport = async (imp: Importacao) => {
     if (!confirm(`Excluir importação "${imp.nome_arquivo}" e todos os ${imp.total_registros} registros?`)) return;
+    // Delete resultados first, then importacao
+    const { error: resErr } = await supabase.from('resultados').delete().eq('importacao_id', imp.id);
+    if (resErr) { console.error('Erro ao excluir resultados:', resErr); toast.error('Erro ao excluir resultados'); return; }
     const { error } = await supabase.from('importacoes').delete().eq('id', imp.id);
-    if (error) { toast.error('Erro ao excluir'); return; }
+    if (error) { toast.error('Erro ao excluir importação'); return; }
     toast.success('Importação excluída');
     fetchData();
     fetchImportacoes();
