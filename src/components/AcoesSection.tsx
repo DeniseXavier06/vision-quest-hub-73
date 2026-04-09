@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { acoesData as initialAcoes, statusLabels, type Acao } from '@/lib/mockData';
+import { useState, useCallback, useEffect } from 'react';
+import { statusLabels } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -21,15 +22,26 @@ import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-re
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
+interface AcaoLocal {
+  id: string;
+  nome: string;
+  eixo: string;
+  meta: string;
+  responsavel: string;
+  status: 'nao_iniciada' | 'em_andamento' | 'concluida';
+  percentualProgresso: number;
+  prazo: string;
+  diasRestantes: number;
+}
+
 const statusColors: Record<string, string> = {
   nao_iniciada: 'bg-muted text-muted-foreground',
   em_andamento: 'bg-info/10 text-info',
   concluida: 'bg-success/10 text-success',
 };
 
-const emptyAcao: Omit<Acao, 'id' | 'diasRestantes'> = {
-  nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '',
-};
+type StatusAcao = 'nao_iniciada' | 'em_andamento' | 'concluida';
+const emptyForm: { nome: string; eixo: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
@@ -37,7 +49,6 @@ const eixosOptions = [
   'Ambiente Virtual Aprendizagem', 'Avaliando a Infraestrutura', 'Avaliando a Valorização Profissional',
   'Avaliando a Comunicação', 'Avaliando os Serviços', 'Avaliando a Gestão',
 ];
-
 const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
 const statusSelectOptions = [
   { value: 'nao_iniciada', label: 'Não iniciada' },
@@ -54,10 +65,8 @@ function parseStatus(val: string): 'nao_iniciada' | 'em_andamento' | 'concluida'
 
 function parsePrazo(val: string): string {
   if (!val) return '';
-  // Try DD/MM/YYYY format
   const parts = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
   if (parts) return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
-  // Try ISO format
   if (/^\d{4}-\d{2}-\d{2}/.test(val)) return val.substring(0, 10);
   return '';
 }
@@ -68,17 +77,33 @@ function parseProgress(val: unknown): number {
   return isNaN(n) ? 0 : Math.min(100, Math.max(0, Math.round(n)));
 }
 
+function calcDias(prazo: string) {
+  return Math.ceil((new Date(prazo).getTime() - Date.now()) / 86400000);
+}
+
 const AcoesSection = () => {
-  const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
-  const [filterEixo, setFilterEixo] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
+  const [filterEixo, setFilterEixo] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [formData, setFormData] = useState<Omit<Acao, 'id' | 'diasRestantes'>>(emptyAcao);
+  const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+
+  const fetchAcoes = useCallback(async () => {
+    const { data, error } = await supabase.from('acoes').select('*').order('prazo', { ascending: true });
+    if (error) { toast.error('Erro ao carregar ações'); return; }
+    setAcoes((data || []).map((a) => ({
+      id: a.id, nome: a.nome, eixo: a.eixo, meta: a.meta || '', responsavel: a.responsavel,
+      status: a.status, percentualProgresso: a.percentual_progresso, prazo: a.prazo,
+      diasRestantes: calcDias(a.prazo),
+    })));
+  }, []);
+
+  useEffect(() => { fetchAcoes(); }, [fetchAcoes]);
 
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
   const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
@@ -94,35 +119,43 @@ const AcoesSection = () => {
     return true;
   });
 
-  const calcDiasRestantes = (prazo: string) => {
-    const diff = new Date(prazo).getTime() - new Date().getTime();
-    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
+  const openEdit = (a: AcaoLocal) => {
+    setFormData({ nome: a.nome, eixo: a.eixo, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setEditingId(a.id); setDialogMode('edit'); setDialogOpen(true);
+  };
+  const openView = (a: AcaoLocal) => {
+    setFormData({ nome: a.nome, eixo: a.eixo, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setEditingId(a.id); setDialogMode('view'); setDialogOpen(true);
   };
 
-  const openCreate = () => { setFormData(emptyAcao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
-  const openEdit = (acao: Acao) => {
-    setFormData({ nome: acao.nome, eixo: acao.eixo, meta: acao.meta, responsavel: acao.responsavel, status: acao.status, percentualProgresso: acao.percentualProgresso, prazo: acao.prazo });
-    setEditingId(acao.id); setDialogMode('edit'); setDialogOpen(true);
-  };
-  const openView = (acao: Acao) => {
-    setFormData({ nome: acao.nome, eixo: acao.eixo, meta: acao.meta, responsavel: acao.responsavel, status: acao.status, percentualProgresso: acao.percentualProgresso, prazo: acao.prazo });
-    setEditingId(acao.id); setDialogMode('view'); setDialogOpen(true);
-  };
-
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+    const payload = {
+      nome: formData.nome, eixo: formData.eixo, meta: formData.meta, responsavel: formData.responsavel,
+      status: formData.status as 'nao_iniciada' | 'em_andamento' | 'concluida',
+      percentual_progresso: formData.percentualProgresso, prazo: formData.prazo,
+    };
     if (dialogMode === 'create') {
-      setAcoes((prev) => [...prev, { ...formData, id: crypto.randomUUID(), diasRestantes: calcDiasRestantes(formData.prazo) }]);
+      const { error } = await supabase.from('acoes').insert(payload);
+      if (error) { toast.error('Erro ao criar ação'); return; }
       toast.success('Ação criada com sucesso!');
     } else if (dialogMode === 'edit' && editingId) {
-      setAcoes((prev) => prev.map((a) => a.id === editingId ? { ...a, ...formData, diasRestantes: calcDiasRestantes(formData.prazo) } : a));
+      const { error } = await supabase.from('acoes').update(payload).eq('id', editingId);
+      if (error) { toast.error('Erro ao atualizar ação'); return; }
       toast.success('Ação atualizada com sucesso!');
     }
     setDialogOpen(false);
+    fetchAcoes();
   };
 
-  const handleDelete = () => {
-    if (deleteId) { setAcoes((prev) => prev.filter((a) => a.id !== deleteId)); toast.success('Ação excluída com sucesso!'); setDeleteId(null); }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('acoes').delete().eq('id', deleteId);
+    if (error) { toast.error('Erro ao excluir'); return; }
+    toast.success('Ação excluída com sucesso!');
+    setDeleteId(null);
+    fetchAcoes();
   };
 
   const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,23 +163,20 @@ const AcoesSection = () => {
     if (!files || files.length === 0) return;
     setImporting(true);
     try {
-      const newAcoes: Acao[] = [];
+      let totalImported = 0;
       for (const file of Array.from(files)) {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
+        const rows: any[] = [];
         for (const row of json) {
-          // Get the action text from various possible column names
           const acao = String(
             row['Ação'] ?? row['ACAO'] ?? row['ação'] ??
-            // Handle the long column header from Presenciais CSV
-            Object.entries(row).find(([key]) => key.startsWith('•') || key.includes('Realizar verificação'))?.[1] ??
-            ''
+            Object.entries(row).find(([key]) => key.startsWith('•') || key.includes('Realizar verificação'))?.[1] ?? ''
           ).trim();
-
-          if (!acao) continue; // Skip rows without an action
+          if (!acao) continue;
 
           const responsavel = String(row['Responsável'] ?? row['RESPONSAVEL'] ?? row['responsavel'] ?? '').trim();
           const area = String(row['Área'] ?? row['AREA'] ?? row['Area'] ?? row['área'] ?? '').trim();
@@ -156,30 +186,28 @@ const AcoesSection = () => {
           const prazoRaw = String(row['Prazo'] ?? row['PRAZO'] ?? row['prazo'] ?? '');
           const statusRaw = String(row['Status'] ?? row['STATUS'] ?? row['status'] ?? '');
           const progressRaw = row['% Progresso'] ?? row['%_PROGRESSO'] ?? row['progresso'] ?? 0;
-          const prioridadeRaw = String(row['Prioridade'] ?? row['PRIORIDADE'] ?? '');
 
-          const eixo = area || dimensao || 'Sem Eixo';
-          const meta = curso ? `${curso}${questao ? ' - ' + questao : ''}` : questao || '';
-
-          newAcoes.push({
-            id: crypto.randomUUID(),
+          rows.push({
             nome: acao,
-            eixo,
-            meta,
+            eixo: area || dimensao || 'Sem Eixo',
+            meta: curso ? `${curso}${questao ? ' - ' + questao : ''}` : questao || '',
             responsavel: responsavel || 'Não informado',
             status: parseStatus(statusRaw),
-            percentualProgresso: parseProgress(progressRaw),
+            percentual_progresso: parseProgress(progressRaw),
             prazo: parsePrazo(prazoRaw) || new Date().toISOString().slice(0, 10),
-            diasRestantes: 0,
           });
         }
+
+        // Insert in batches of 500
+        for (let i = 0; i < rows.length; i += 500) {
+          const batch = rows.slice(i, i + 500);
+          const { error } = await supabase.from('acoes').insert(batch);
+          if (error) { console.error(error); toast.error(`Erro ao inserir lote`); }
+        }
+        totalImported += rows.length;
       }
-
-      // Calculate dias restantes
-      newAcoes.forEach((a) => { a.diasRestantes = calcDiasRestantes(a.prazo); });
-
-      setAcoes((prev) => [...prev, ...newAcoes]);
-      toast.success(`${newAcoes.length} ações importadas de ${files.length} arquivo(s)!`);
+      toast.success(`${totalImported} ações importadas!`);
+      fetchAcoes();
     } catch (err) {
       toast.error('Erro ao importar. Verifique o formato do arquivo.');
       console.error(err);
@@ -187,7 +215,7 @@ const AcoesSection = () => {
       setImporting(false);
       e.target.value = '';
     }
-  }, []);
+  }, [fetchAcoes]);
 
   const isReadOnly = dialogMode === 'view';
   const dialogTitle = dialogMode === 'create' ? 'Nova Ação' : dialogMode === 'edit' ? 'Editar Ação' : 'Detalhes da Ação';
@@ -310,7 +338,7 @@ const AcoesSection = () => {
               <div className="space-y-2">
                 <Label>Status</Label>
                 {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
-                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Acao['status'] })} options={statusSelectOptions} />
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as StatusAcao })} options={statusSelectOptions} />
                 )}
               </div>
               <div className="space-y-2">
