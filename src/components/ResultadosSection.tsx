@@ -99,12 +99,11 @@ const ResultadosSection = () => {
   const [importPeriodo, setImportPeriodo] = useState('');
   const [importPerfil, setImportPerfil] = useState('');
   const [importObservacoes, setImportObservacoes] = useState('');
-  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    // Fetch all rows using pagination (Supabase default limit is 1000)
     let allRows: any[] = [];
     let from = 0;
     const PAGE = 1000;
@@ -148,11 +147,18 @@ const ResultadosSection = () => {
 
   useEffect(() => { fetchData(); fetchImportacoes(); }, [fetchData, fetchImportacoes]);
 
+  const resetImportState = () => {
+    setShowImportDialog(false);
+    setPendingFiles([]);
+    setImportPeriodo('');
+    setImportPerfil('');
+    setImportObservacoes('');
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setPendingFiles(files);
-    // Auto-detect perfil from filename
     const name = files[0].name.toUpperCase();
     if (name.includes('ALUNO')) setImportPerfil('Alunos');
     else if (name.includes('PROFESSOR')) setImportPerfil('Professores');
@@ -164,22 +170,24 @@ const ResultadosSection = () => {
   };
 
   const handleImportConfirm = async () => {
-    if (!pendingFiles || !importPeriodo || !importPerfil) {
+    if (pendingFiles.length === 0 || !importPeriodo || !importPerfil) {
       toast.error('Preencha o período e o perfil');
       return;
     }
     setImporting(true);
     try {
-      for (const file of Array.from(pendingFiles)) {
+      for (const file of pendingFiles) {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
+        const allRows = json.map((row) => parseRow(row, importPerfil));
 
-        let tipo = importPerfil;
-        const allRows = json.map((row) => parseRow(row, tipo));
+        if (allRows.length === 0) {
+          toast.error(`O arquivo "${file.name}" não possui linhas válidas para importar`);
+          continue;
+        }
 
-        // Create import record
         const { data: imp, error: impErr } = await supabase.from('importacoes').insert({
           periodo: importPeriodo,
           perfil: importPerfil,
@@ -188,9 +196,10 @@ const ResultadosSection = () => {
           observacoes: importObservacoes || '',
         }).select().single();
 
-        if (impErr) { toast.error('Erro ao registrar importação'); continue; }
+        if (impErr || !imp) {
+          throw impErr ?? new Error('Erro ao registrar importação');
+        }
 
-        // Insert results in batches of 500
         const BATCH = 500;
         for (let i = 0; i < allRows.length; i += BATCH) {
           const batch = allRows.slice(i, i + BATCH).map((r) => ({
@@ -213,20 +222,17 @@ const ResultadosSection = () => {
             tipo_avaliacao: r.tipoAvaliacao,
           }));
           const { error } = await supabase.from('resultados').insert(batch);
-          if (error) { console.error(error); toast.error(`Erro ao inserir lote ${i}`); }
+          if (error) throw error;
         }
+
         toast.success(`${allRows.length} registros de "${file.name}" importados!`);
       }
-      setShowImportDialog(false);
-      setPendingFiles(null);
-      setImportPeriodo('');
-      setImportPerfil('');
-      setImportObservacoes('');
-      fetchData();
-      fetchImportacoes();
+
+      resetImportState();
+      await Promise.all([fetchData(), fetchImportacoes()]);
     } catch (err) {
-      toast.error('Erro ao importar');
-      console.error(err);
+      console.error('Erro ao importar resultados:', err);
+      toast.error(err instanceof Error ? err.message : 'Erro ao importar');
     } finally {
       setImporting(false);
     }
@@ -352,7 +358,7 @@ const ResultadosSection = () => {
         </Card>
 
         {/* Import Dialog */}
-        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
           <DialogContent>
             <DialogHeader><DialogTitle>Configurar Importação</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -365,7 +371,7 @@ const ResultadosSection = () => {
               </div>
               <div><Label>Observações</Label><Input value={importObservacoes} onChange={(e) => setImportObservacoes(e.target.value)} placeholder="Opcional" /></div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => { setShowImportDialog(false); setPendingFiles(null); }}>Cancelar</Button>
+                <Button variant="outline" onClick={resetImportState}>Cancelar</Button>
                 <Button onClick={handleImportConfirm} disabled={importing}>{importing ? 'Importando...' : 'Confirmar Importação'}</Button>
               </div>
             </div>
@@ -599,7 +605,7 @@ const ResultadosSection = () => {
       </Card>
 
       {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+      <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Configurar Importação</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -612,7 +618,7 @@ const ResultadosSection = () => {
             </div>
             <div><Label>Observações</Label><Input value={importObservacoes} onChange={(e) => setImportObservacoes(e.target.value)} placeholder="Opcional" /></div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setShowImportDialog(false); setPendingFiles(null); }}>Cancelar</Button>
+              <Button variant="outline" onClick={resetImportState}>Cancelar</Button>
               <Button onClick={handleImportConfirm} disabled={importing}>{importing ? 'Importando...' : 'Confirmar Importação'}</Button>
             </div>
           </div>
