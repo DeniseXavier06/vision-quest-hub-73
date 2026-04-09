@@ -86,6 +86,7 @@ const AcoesSection = () => {
   const [filterEixo, setFilterEixo] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterAcao, setFilterAcao] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
