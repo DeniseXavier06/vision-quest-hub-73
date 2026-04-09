@@ -317,6 +317,73 @@ const ResultadosSection = () => {
     return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count }));
   }, [filtered]);
 
+  // === Colaboradores-specific charts ===
+  const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
+
+  const colabMediaDimensao = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.dimensao && r.media > 0) {
+        const e = map.get(r.dimensao) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      name: name.length > 25 ? name.substring(0, 25) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+    })).sort((a, b) => b.media - a.media);
+  }, [colabData]);
+
+  const colabConceitos = useMemo(() => {
+    const map = new Map<string, number>();
+    colabData.forEach(r => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
+    return [...map.entries()].map(([name, value]) => ({ name, value }));
+  }, [colabData]);
+
+  const colabMediaArea = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.area && r.media > 0) {
+        const e = map.get(r.area) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.area, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      name: name.length > 25 ? name.substring(0, 25) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+    })).sort((a, b) => b.media - a.media).slice(0, 15);
+  }, [colabData]);
+
+  const colabRespostas = useMemo(() => {
+    let excelente = 0, bom = 0, regular = 0, atendeParcialmente = 0, muitoRuim = 0;
+    colabData.forEach(r => {
+      excelente += r.excelente; bom += r.bom; regular += r.regular;
+      atendeParcialmente += r.atendeParcialmente; muitoRuim += r.muitoRuim;
+    });
+    return [
+      { name: 'Excelente', value: excelente },
+      { name: 'Bom', value: bom },
+      { name: 'Regular', value: regular },
+      { name: 'Atende Parc.', value: atendeParcialmente },
+      { name: 'Muito Ruim', value: muitoRuim },
+    ].filter(d => d.value > 0);
+  }, [colabData]);
+
+  const colabRadarDimensao = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.dimensao && r.media > 0) {
+        const e = map.get(r.dimensao) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      dimensao: name.length > 18 ? name.substring(0, 18) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+      fullMark: 5,
+    }));
+  }, [colabData]);
+
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
   const resColumns: ColumnDef[] = [
