@@ -17,7 +17,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
-import { UserCog, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { UserCog, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 const emptyUsuario: Omit<Usuario, 'id'> = {
@@ -43,6 +43,7 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
   const [usuarios, setUsuarios] = useState<Usuario[]>(initialUsuarios);
   const [filterTipo, setFilterTipo] = useState<string>('all');
   const [filterDept, setFilterDept] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -60,6 +61,10 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
   const filtered = usuarios.filter((u) => {
     if (filterTipo !== 'all' && u.tipoUsuario !== filterTipo) return false;
     if (filterDept !== 'all' && u.departamento !== filterDept) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (!u.nome.toLowerCase().includes(term) && !u.email.toLowerCase().includes(term) && !u.cargo.toLowerCase().includes(term) && !u.departamento.toLowerCase().includes(term)) return false;
+    }
     return true;
   });
 
