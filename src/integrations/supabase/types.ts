@@ -122,6 +122,45 @@ export type Database = {
         }
         Relationships: []
       }
+      relatorios: {
+        Row: {
+          campos_selecionados: Json
+          configuracao: Json | null
+          created_at: string
+          descricao: string | null
+          filtros: Json | null
+          id: string
+          tabela_origem: string
+          tipo_grafico: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          campos_selecionados?: Json
+          configuracao?: Json | null
+          created_at?: string
+          descricao?: string | null
+          filtros?: Json | null
+          id?: string
+          tabela_origem: string
+          tipo_grafico?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          campos_selecionados?: Json
+          configuracao?: Json | null
+          created_at?: string
+          descricao?: string | null
+          filtros?: Json | null
+          id?: string
+          tabela_origem?: string
+          tipo_grafico?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       resultados: {
         Row: {
           area: string
