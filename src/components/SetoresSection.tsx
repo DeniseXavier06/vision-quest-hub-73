@@ -178,24 +178,19 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Nome</SortableTableHead>
-                  <SortableTableHead sortKey="sigla" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Sigla</SortableTableHead>
-                  <SortableTableHead sortKey="tipo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Tipo</SortableTableHead>
-                  <SortableTableHead sortKey="ativo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.nome}</TableCell>
-                    <TableCell><Badge variant="outline">{s.sigla}</Badge></TableCell>
-                    <TableCell><Badge variant="secondary">{tipoLabels[s.tipo]}</Badge></TableCell>
-                    <TableCell>
-                      <Badge variant={s.ativo ? 'default' : 'outline'} className={s.ativo ? 'bg-success/10 text-success' : ''}>
-                        {s.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderSetorCell(col.key, s))}
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(s)}><Eye className="w-4 h-4" /></Button>
