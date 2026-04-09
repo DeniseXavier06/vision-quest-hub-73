@@ -1,7 +1,23 @@
-import { avaliacoesData, statusLabels } from '@/lib/mockData';
+import { useState } from 'react';
+import { avaliacoesData as initialAvaliacoes, statusLabels, type Avaliacao } from '@/lib/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Calendar, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   planejado: 'bg-muted text-muted-foreground',
@@ -9,17 +25,94 @@ const statusColors: Record<string, string> = {
   concluido: 'bg-success/10 text-success',
 };
 
+const emptyAvaliacao: Omit<Avaliacao, 'id'> = {
+  tipo: '',
+  descricao: '',
+  dataInicio: '',
+  dataFim: '',
+  status: 'planejado',
+  responsavel: '',
+};
+
+const tiposAvaliacao = [
+  'Perfil Acadêmico',
+  'Avaliação Quantitativa',
+  'Avaliação Qualitativa',
+  'Comunidade Externa',
+];
+
 const CronogramaSection = () => {
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>(initialAvaliacoes);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
+  const [formData, setFormData] = useState<Omit<Avaliacao, 'id'>>(emptyAvaliacao);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const openCreate = () => {
+    setFormData(emptyAvaliacao);
+    setEditingId(null);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
+  const openEdit = (av: Avaliacao) => {
+    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+    setEditingId(av.id);
+    setDialogMode('edit');
+    setDialogOpen(true);
+  };
+
+  const openView = (av: Avaliacao) => {
+    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+    setEditingId(av.id);
+    setDialogMode('view');
+    setDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    if (!formData.tipo || !formData.dataInicio || !formData.dataFim || !formData.responsavel) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    if (dialogMode === 'create') {
+      setAvaliacoes((prev) => [...prev, { ...formData, id: crypto.randomUUID() }]);
+      toast.success('Avaliação cadastrada com sucesso!');
+    } else if (dialogMode === 'edit' && editingId) {
+      setAvaliacoes((prev) => prev.map((a) => (a.id === editingId ? { ...a, ...formData } : a)));
+      toast.success('Avaliação atualizada com sucesso!');
+    }
+    setDialogOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (deleteId) {
+      setAvaliacoes((prev) => prev.filter((a) => a.id !== deleteId));
+      toast.success('Avaliação excluída com sucesso!');
+      setDeleteId(null);
+    }
+  };
+
+  const isReadOnly = dialogMode === 'view';
+  const dialogTitle = dialogMode === 'create' ? 'Nova Avaliação' : dialogMode === 'edit' ? 'Editar Avaliação' : 'Detalhes da Avaliação';
+
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-heading font-bold text-foreground">Cronograma de Avaliações</h2>
-        <p className="text-sm text-muted-foreground mt-1">Calendário das avaliações institucionais</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-heading font-bold text-foreground">Cronograma de Avaliações</h2>
+          <p className="text-sm text-muted-foreground mt-1">Calendário das avaliações institucionais</p>
+        </div>
+        <Button onClick={openCreate} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Nova Avaliação
+        </Button>
       </div>
 
-      {/* Timeline */}
+      {/* Cards */}
       <div className="space-y-4">
-        {avaliacoesData.map((av, idx) => (
+        {avaliacoes.map((av) => (
           <Card key={av.id}>
             <CardContent className="flex items-start gap-4 p-5">
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
@@ -34,44 +127,48 @@ const CronogramaSection = () => {
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{av.descricao}</p>
                 <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
-                  <span>
-                    📅 {new Date(av.dataInicio).toLocaleDateString('pt-BR')} — {new Date(av.dataFim).toLocaleDateString('pt-BR')}
-                  </span>
+                  <span>📅 {new Date(av.dataInicio).toLocaleDateString('pt-BR')} — {new Date(av.dataFim).toLocaleDateString('pt-BR')}</span>
                   <span>👤 {av.responsavel}</span>
                 </div>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(av)} title="Visualizar">
+                  <Eye className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(av)} title="Editar">
+                  <Pencil className="w-4 h-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(av.id)} title="Excluir">
+                  <Trash2 className="w-4 h-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Barra visual do cronograma */}
+      {/* Linha do Tempo */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading">Linha do Tempo</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="relative">
-            {/* Months bar */}
             <div className="flex text-xs text-muted-foreground mb-3">
               {['Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out'].map((m) => (
                 <div key={m} className="flex-1 text-center">{m}</div>
               ))}
             </div>
             <div className="space-y-2">
-              {avaliacoesData.map((av) => {
-                const startMonth = new Date(av.dataInicio).getMonth() - 2; // March = 0
+              {avaliacoes.map((av) => {
+                const startMonth = new Date(av.dataInicio).getMonth() - 2;
                 const endMonth = new Date(av.dataFim).getMonth() - 2;
                 const totalMonths = 8;
-                const left = (startMonth / totalMonths) * 100;
-                const width = ((endMonth - startMonth + 1) / totalMonths) * 100;
-
+                const left = Math.max(0, (startMonth / totalMonths) * 100);
+                const width = Math.max(5, ((endMonth - startMonth + 1) / totalMonths) * 100);
                 return (
                   <div key={av.id} className="relative h-8">
-                    <div
-                      className="absolute h-full rounded-md bg-primary/20 flex items-center px-2"
-                      style={{ left: `${left}%`, width: `${width}%` }}
-                    >
+                    <div className="absolute h-full rounded-md bg-primary/20 flex items-center px-2" style={{ left: `${left}%`, width: `${width}%` }}>
                       <span className="text-xs font-medium text-primary truncate">{av.tipo}</span>
                     </div>
                   </div>
@@ -81,6 +178,90 @@ const CronogramaSection = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          <DialogHeader>
+            <DialogTitle className="font-heading">{dialogTitle}</DialogTitle>
+            <DialogDescription>
+              {dialogMode === 'create' ? 'Cadastre uma nova avaliação no cronograma.' : dialogMode === 'edit' ? 'Altere os dados da avaliação.' : 'Detalhes completos da avaliação.'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Avaliação *</Label>
+                {isReadOnly ? (
+                  <Input value={formData.tipo} readOnly />
+                ) : (
+                  <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {tiposAvaliacao.map((t) => (
+                        <SelectItem key={t} value={t}>{t}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label>Responsável *</Label>
+                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} readOnly={isReadOnly} placeholder="Nome do responsável" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })} readOnly={isReadOnly} placeholder="Descreva a avaliação" rows={2} />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início *</Label>
+                <Input type="date" value={formData.dataInicio} onChange={(e) => setFormData({ ...formData, dataInicio: e.target.value })} readOnly={isReadOnly} />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim *</Label>
+                <Input type="date" value={formData.dataFim} onChange={(e) => setFormData({ ...formData, dataFim: e.target.value })} readOnly={isReadOnly} />
+              </div>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                {isReadOnly ? (
+                  <Input value={statusLabels[formData.status]} readOnly />
+                ) : (
+                  <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="planejado">Planejado</SelectItem>
+                      <SelectItem value="em_execucao">Em execução</SelectItem>
+                      <SelectItem value="concluido">Concluído</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </div>
+          </div>
+          {!isReadOnly && (
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSave}>{dialogMode === 'create' ? 'Cadastrar' : 'Salvar Alterações'}</Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete */}
+      <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">Excluir Avaliação</AlertDialogTitle>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta avaliação? Esta operação não pode ser desfeita.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
