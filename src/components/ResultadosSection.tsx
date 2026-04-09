@@ -58,6 +58,55 @@ const chartColors = [
 ];
 const pieColors = ['#1e3a5f', '#2d8a9e', '#5cbdb9', '#e8b84a', '#c45c7c', '#6c5ce7', '#4a6741', '#cd7f32', '#8b6f5e', '#574b90'];
 
+// Cores padronizadas por conceito (conforme referência CPA)
+const CONCEITO_COLORS: Record<string, string> = {
+  'E': '#34a853',       // Excelente - verde
+  'EXCELENTE': '#34a853',
+  'B': '#4285f4',       // Bom - azul
+  'BOM': '#4285f4',
+  'AP': '#fbbc04',      // Atende Parcialmente - amarelo
+  'ATENDE PARCIALMENTE': '#fbbc04',
+  'RE': '#ea4335',      // Regular - vermelho/laranja
+  'REGULAR': '#ea4335',
+  'MR': '#c5221f',      // Muito Ruim - vermelho escuro
+  'MUITO RUIM': '#c5221f',
+  'MUITO_RUIM': '#c5221f',
+  '--': '#1a237e',      // Não se aplica - azul escuro
+};
+
+const RESPOSTA_COLORS: Record<string, string> = {
+  'Excelente': '#34a853',
+  'Bom': '#4285f4',
+  'Regular': '#ea4335',
+  'Atende Parc.': '#fbbc04',
+  'Muito Ruim': '#c5221f',
+};
+
+function getConceptColor(name: string): string {
+  return CONCEITO_COLORS[name] || CONCEITO_COLORS[name.toUpperCase()] || pieColors[0];
+}
+
+// Custom label renderer for bars showing value
+const renderBarLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (width < 20 && height < 15) return null;
+  return (
+    <text x={x + width / 2} y={y + height / 2} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600}>
+      {typeof value === 'number' ? (value % 1 === 0 ? value : value.toFixed(2)) : value}
+    </text>
+  );
+};
+
+const renderHBarLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (width < 25) return null;
+  return (
+    <text x={x + width - 4} y={y + height / 2} fill="#fff" textAnchor="end" dominantBaseline="middle" fontSize={10} fontWeight={600}>
+      {typeof value === 'number' ? (value % 1 === 0 ? value : value.toFixed(2)) : value}
+    </text>
+  );
+};
+
 function parseNum(val: unknown): number {
   if (val == null || val === '') return 0;
   const n = Number(val);
@@ -584,7 +633,7 @@ const ResultadosSection = () => {
                     <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={150} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Bar dataKey="registros" radius={[0, 4, 4, 0]}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -598,10 +647,11 @@ const ResultadosSection = () => {
               {pieDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={false} outerRadius={110} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value" label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}>
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -622,7 +672,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                    <Bar dataKey="media" radius={[4, 4, 0, 0]}>{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -639,7 +689,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Bar dataKey="registros" radius={[4, 4, 0, 0]}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -687,9 +737,14 @@ const ResultadosSection = () => {
                   {colabConceitos.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
-                        <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={false} outerRadius={110} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                          {colabConceitos.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
+                        <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={true} outerRadius={110} innerRadius={60} dataKey="value"
+                          label={({ name, percent, value }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                          {colabConceitos.map((entry, idx) => (<Cell key={idx} fill={getConceptColor(entry.name)} />))}
                         </Pie>
+                        <Legend formatter={(value: string) => {
+                          const labels: Record<string, string> = { 'E': 'Excelente (4.7–5.0)', 'B': 'Bom (4.1–4.6)', 'AP': 'Atende Parcialmente (3.1–4.0)', 'RE': 'Regular (2.2–3.0)', 'MR': 'Muito Ruim (1.0–2.1)' };
+                          return labels[value] || value;
+                        }} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
                       </PieChart>
                     </ResponsiveContainer>
@@ -710,7 +765,7 @@ const ResultadosSection = () => {
                         <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                         <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                        <Bar dataKey="media" radius={[0, 4, 4, 0]}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
+                        <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -724,15 +779,14 @@ const ResultadosSection = () => {
                 <div className="h-[350px]">
                   {colabRespostas.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={colabRespostas} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <BarChart data={colabRespostas} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                         <YAxis tick={{ fontSize: 11 }} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]}>
-                          {colabRespostas.map((_, idx) => {
-                            const colors = ['#2d8a9e', '#5cbdb9', '#e8b84a', '#cd7f32', '#c45c7c'];
-                            return <Cell key={idx} fill={colors[idx % colors.length]} />;
-                          })}
+                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]} label={renderBarLabel}>
+                          {colabRespostas.map((entry, idx) => (
+                            <Cell key={idx} fill={RESPOSTA_COLORS[entry.name] || chartColors[idx % chartColors.length]} />
+                          ))}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -752,7 +806,7 @@ const ResultadosSection = () => {
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
                       <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
                       <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                      <Bar dataKey="media" radius={[4, 4, 0, 0]}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
