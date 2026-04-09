@@ -706,7 +706,7 @@ const ResultadosSection = () => {
                   <PieChart>
                     <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
                       label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
-                      fontSize={fs('dimPie')}>
+                      fontSize={fs('dimPie')} onClick={handleDimensaoClick} cursor="pointer">
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
