@@ -338,7 +338,7 @@ const AcoesSection = () => {
               <div className="space-y-2">
                 <Label>Status</Label>
                 {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
-                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as AcaoLocal['status'] })} options={statusSelectOptions} />
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as StatusAcao })} options={statusSelectOptions} />
                 )}
               </div>
               <div className="space-y-2">
