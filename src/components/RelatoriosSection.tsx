@@ -316,16 +316,16 @@ const RelatoriosSection = () => {
       tabela_origem: formTabela,
       campos_selecionados: formCampos,
       tipo_grafico: formTipoGrafico,
-      filtros: formFiltros,
-      configuracao: { campoAgrupamento: formAgrupamento, campoValor: formValor, agregacao: formAgregacao },
+      filtros: formFiltros as any,
+      configuracao: { campoAgrupamento: formAgrupamento, campoValor: formValor, agregacao: formAgregacao } as any,
     };
 
     if (dialogMode === 'create') {
-      const { error } = await supabase.from('relatorios').insert(payload);
+      const { error } = await supabase.from('relatorios').insert(payload as any);
       if (error) { toast.error('Erro ao criar relatório'); setSaving(false); return; }
       toast.success('Relatório criado!');
     } else if (editingId) {
-      const { error } = await supabase.from('relatorios').update(payload).eq('id', editingId);
+      const { error } = await supabase.from('relatorios').update(payload as any).eq('id', editingId);
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
       toast.success('Relatório atualizado!');
     }
