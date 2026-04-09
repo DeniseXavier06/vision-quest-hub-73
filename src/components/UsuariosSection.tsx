@@ -85,6 +85,8 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
     return true;
   });
 
+  const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+
   const openCreate = () => { setFormData(emptyUsuario); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('view'); setDialogOpen(true); };
