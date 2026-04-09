@@ -14,7 +14,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Calendar, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
@@ -48,6 +48,7 @@ const statusSelectOptions = [
 
 const CronogramaSection = () => {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>(initialAvaliacoes);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
@@ -94,8 +95,19 @@ const CronogramaSection = () => {
         <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Nova Avaliação</Button>
       </div>
 
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-[350px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Pesquisar avaliações..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {avaliacoes.map((av) => (
+        {avaliacoes.filter((av) => {
+          if (!searchTerm) return true;
+          const term = searchTerm.toLowerCase();
+          return av.tipo.toLowerCase().includes(term) || av.descricao.toLowerCase().includes(term) || av.responsavel.toLowerCase().includes(term);
+        }).map((av) => (
           <Card key={av.id}>
             <CardContent className="flex items-start gap-4 p-5">
               <div className="w-12 h-12 rounded-lg bg-primary/10 flex flex-col items-center justify-center flex-shrink-0">
