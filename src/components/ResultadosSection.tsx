@@ -58,6 +58,55 @@ const chartColors = [
 ];
 const pieColors = ['#1e3a5f', '#2d8a9e', '#5cbdb9', '#e8b84a', '#c45c7c', '#6c5ce7', '#4a6741', '#cd7f32', '#8b6f5e', '#574b90'];
 
+// Cores padronizadas por conceito (conforme referência CPA)
+const CONCEITO_COLORS: Record<string, string> = {
+  'E': '#34a853',       // Excelente - verde
+  'EXCELENTE': '#34a853',
+  'B': '#4285f4',       // Bom - azul
+  'BOM': '#4285f4',
+  'AP': '#fbbc04',      // Atende Parcialmente - amarelo
+  'ATENDE PARCIALMENTE': '#fbbc04',
+  'RE': '#ea4335',      // Regular - vermelho/laranja
+  'REGULAR': '#ea4335',
+  'MR': '#c5221f',      // Muito Ruim - vermelho escuro
+  'MUITO RUIM': '#c5221f',
+  'MUITO_RUIM': '#c5221f',
+  '--': '#1a237e',      // Não se aplica - azul escuro
+};
+
+const RESPOSTA_COLORS: Record<string, string> = {
+  'Excelente': '#34a853',
+  'Bom': '#4285f4',
+  'Regular': '#ea4335',
+  'Atende Parc.': '#fbbc04',
+  'Muito Ruim': '#c5221f',
+};
+
+function getConceptColor(name: string): string {
+  return CONCEITO_COLORS[name] || CONCEITO_COLORS[name.toUpperCase()] || pieColors[0];
+}
+
+// Custom label renderer for bars showing value
+const renderBarLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (width < 20 && height < 15) return null;
+  return (
+    <text x={x + width / 2} y={y + height / 2} fill="#fff" textAnchor="middle" dominantBaseline="middle" fontSize={10} fontWeight={600}>
+      {typeof value === 'number' ? (value % 1 === 0 ? value : value.toFixed(2)) : value}
+    </text>
+  );
+};
+
+const renderHBarLabel = (props: any) => {
+  const { x, y, width, height, value } = props;
+  if (width < 25) return null;
+  return (
+    <text x={x + width - 4} y={y + height / 2} fill="#fff" textAnchor="end" dominantBaseline="middle" fontSize={10} fontWeight={600}>
+      {typeof value === 'number' ? (value % 1 === 0 ? value : value.toFixed(2)) : value}
+    </text>
+  );
+};
+
 function parseNum(val: unknown): number {
   if (val == null || val === '') return 0;
   const n = Number(val);
