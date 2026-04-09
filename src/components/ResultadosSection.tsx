@@ -191,6 +191,17 @@ const ResultadosSection = () => {
   const [importObservacoes, setImportObservacoes] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartFontSizes, setChartFontSizes] = useState<Record<string, number>>(loadChartFontSizes);
+
+  const updateFontSize = useCallback((chartId: string, size: number) => {
+    setChartFontSizes(prev => {
+      const next = { ...prev, [chartId]: size };
+      localStorage.setItem(FONT_SIZE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const fs = (chartId: string) => chartFontSizes[chartId] || DEFAULT_FONT_SIZE;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
