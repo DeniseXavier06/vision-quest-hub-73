@@ -387,15 +387,24 @@ const ResultadosSection = () => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.curso) map.set(r.curso, (map.get(r.curso) || 0) + 1); });
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, count]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count,
+      name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count,
     }));
   }, [filtered]);
 
   const pieDimensao = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.dimensao) map.set(r.dimensao, (map.get(r.dimensao) || 0) + 1); });
-    return [...map.entries()].map(([name, value]) => ({ name: name.length > 25 ? name.substring(0, 25) + '…' : name, value }));
+    return [...map.entries()].map(([name, value]) => ({ name: name.length > 25 ? name.substring(0, 25) + '…' : name, fullName: name, value }));
   }, [filtered]);
+
+  const handleCursoBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterCurso(data.fullName); setPage(0); }
+  }, []);
+
+  const handleDimensaoClick = useCallback((_: any, index: number) => {
+    const item = pieDimensao[index];
+    if (item?.fullName) { setFilterDimensao(item.fullName); setPage(0); }
+  }, [pieDimensao]);
 
   const mediaPorDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
