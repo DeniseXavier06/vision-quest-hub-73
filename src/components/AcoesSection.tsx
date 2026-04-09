@@ -122,6 +122,7 @@ const AcoesSection = () => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
+    if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!a.nome.toLowerCase().includes(term) && !a.responsavel.toLowerCase().includes(term) && !a.eixo.toLowerCase().includes(term) && !a.meta.toLowerCase().includes(term)) return false;
