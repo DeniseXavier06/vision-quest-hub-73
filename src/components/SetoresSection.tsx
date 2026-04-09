@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 

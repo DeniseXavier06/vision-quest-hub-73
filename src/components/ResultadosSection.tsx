@@ -17,6 +17,7 @@ import {
 import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 

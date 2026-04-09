@@ -21,6 +21,7 @@ import {
 import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
