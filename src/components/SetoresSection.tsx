@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
+import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
 const emptySetor: Omit<Setor, 'id'> = {
@@ -85,6 +86,33 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
     if (deleteId) { setSetores((prev) => prev.filter((s) => s.id !== deleteId)); toast.success('Setor excluído!'); setDeleteId(null); }
   };
 
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
+        if (!rows.length) { toast.error('Arquivo vazio.'); return; }
+        const tipoMap: Record<string, Setor['tipo']> = { departamento: 'departamento', coordenação: 'coordenacao', coordenacao: 'coordenacao', setor: 'setor' };
+        const imported: Setor[] = rows.map((r) => ({
+          id: crypto.randomUUID(),
+          nome: String(r['NOME'] || r['Nome'] || r['nome'] || ''),
+          sigla: String(r['SIGLA'] || r['Sigla'] || r['sigla'] || ''),
+          tipo: tipoMap[String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase()] || 'departamento',
+          descricao: String(r['DESCRIÇÃO'] || r['Descrição'] || r['DESCRICAO'] || r['descricao'] || ''),
+          ativo: true,
+        })).filter((s) => s.nome && s.sigla);
+        setSetores((prev) => [...prev, ...imported]);
+        toast.success(`${imported.length} setores importados!`);
+      } catch { toast.error('Erro ao ler o arquivo.'); }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
   const isReadOnly = dialogMode === 'view';
   const tipoLabels: Record<string, string> = { departamento: 'Departamento', coordenacao: 'Coordenação', setor: 'Setor' };
 
@@ -95,7 +123,13 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
           <h2 className="text-2xl font-heading font-bold text-foreground">Setores</h2>
           <p className="text-sm text-muted-foreground mt-1">Departamentos e Coordenações da instituição</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Setor</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => document.getElementById('import-setores')?.click()}>
+            <Upload className="w-4 h-4" />Importar
+          </Button>
+          <input id="import-setores" type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+          <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Setor</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
