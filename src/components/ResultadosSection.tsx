@@ -12,9 +12,10 @@ import {
 } from '@/components/ui/table';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie,
+  PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  LineChart, Line, Legend,
 } from 'recharts';
-import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye } from 'lucide-react';
+import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
@@ -316,6 +317,73 @@ const ResultadosSection = () => {
     return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count }));
   }, [filtered]);
 
+  // === Colaboradores-specific charts ===
+  const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
+
+  const colabMediaDimensao = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.dimensao && r.media > 0) {
+        const e = map.get(r.dimensao) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      name: name.length > 25 ? name.substring(0, 25) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+    })).sort((a, b) => b.media - a.media);
+  }, [colabData]);
+
+  const colabConceitos = useMemo(() => {
+    const map = new Map<string, number>();
+    colabData.forEach(r => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
+    return [...map.entries()].map(([name, value]) => ({ name, value }));
+  }, [colabData]);
+
+  const colabMediaArea = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.area && r.media > 0) {
+        const e = map.get(r.area) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.area, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      name: name.length > 25 ? name.substring(0, 25) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+    })).sort((a, b) => b.media - a.media).slice(0, 15);
+  }, [colabData]);
+
+  const colabRespostas = useMemo(() => {
+    let excelente = 0, bom = 0, regular = 0, atendeParcialmente = 0, muitoRuim = 0;
+    colabData.forEach(r => {
+      excelente += r.excelente; bom += r.bom; regular += r.regular;
+      atendeParcialmente += r.atendeParcialmente; muitoRuim += r.muitoRuim;
+    });
+    return [
+      { name: 'Excelente', value: excelente },
+      { name: 'Bom', value: bom },
+      { name: 'Regular', value: regular },
+      { name: 'Atende Parc.', value: atendeParcialmente },
+      { name: 'Muito Ruim', value: muitoRuim },
+    ].filter(d => d.value > 0);
+  }, [colabData]);
+
+  const colabRadarDimensao = useMemo(() => {
+    const map = new Map<string, { sum: number; count: number }>();
+    colabData.forEach(r => {
+      if (r.dimensao && r.media > 0) {
+        const e = map.get(r.dimensao) || { sum: 0, count: 0 };
+        e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
+      }
+    });
+    return [...map.entries()].map(([name, { sum, count }]) => ({
+      dimensao: name.length > 18 ? name.substring(0, 18) + '…' : name,
+      media: Number((sum / count).toFixed(2)),
+      fullMark: 5,
+    }));
+  }, [colabData]);
+
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
   const resColumns: ColumnDef[] = [
@@ -579,6 +647,120 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* === Colaboradores Section === */}
+      {colabData.length > 0 && (
+        <>
+          <div className="pt-4">
+            <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Gráficos — Colaboradores
+              <Badge variant="secondary" className="ml-2">{colabData.length.toLocaleString('pt-BR')} registros</Badge>
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">Visão específica dos resultados do perfil Colaboradores</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabRadarDimensao.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={colabRadarDimensao} cx="50%" cy="50%" outerRadius="70%">
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: 9 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10 }} />
+                        <Radar name="Média" dataKey="media" stroke="hsl(214, 60%, 35%)" fill="hsl(214, 60%, 35%)" fillOpacity={0.3} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabConceitos.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={false} outerRadius={110} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                          {colabConceitos.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabMediaArea.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={colabMediaArea} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                        <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                        <Bar dataKey="media" radius={[0, 4, 4, 0]}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabRespostas.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={colabRespostas} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]}>
+                          {colabRespostas.map((_, idx) => {
+                            const colors = ['#2d8a9e', '#5cbdb9', '#e8b84a', '#cd7f32', '#c45c7c'];
+                            return <Cell key={idx} fill={colors[idx % colors.length]} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                {colabMediaDimensao.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={colabMediaDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
+                      <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Data Table */}
       <Card>
