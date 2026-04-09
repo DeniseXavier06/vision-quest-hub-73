@@ -797,6 +797,11 @@ const RelatoriosSection = () => {
                   )}
                 </div>
                 <div className="flex gap-2">
+                  {previewRelatorio && previewRelatorio.tipo_grafico === 'table' && (
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => { setPreviewOpen(false); createChartFromReport(previewRelatorio); }}>
+                      <BarChart3 className="w-3.5 h-3.5" />Criar Gráfico
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportExcel}>
                     <FileSpreadsheet className="w-3.5 h-3.5" />Excel
                   </Button>
