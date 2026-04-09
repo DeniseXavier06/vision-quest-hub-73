@@ -78,6 +78,24 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
+  const setorColumns: ColumnDef[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'sigla', label: 'Sigla' },
+    { key: 'tipo', label: 'Tipo' },
+    { key: 'ativo', label: 'Status' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(setorColumns);
+
+  const renderSetorCell = (key: string, s: Setor) => {
+    switch (key) {
+      case 'nome': return <TableCell key={key} className="font-medium">{s.nome}</TableCell>;
+      case 'sigla': return <TableCell key={key}><Badge variant="outline">{s.sigla}</Badge></TableCell>;
+      case 'tipo': return <TableCell key={key}><Badge variant="secondary">{tipoLabels[s.tipo]}</Badge></TableCell>;
+      case 'ativo': return <TableCell key={key}><Badge variant={s.ativo ? 'default' : 'outline'} className={s.ativo ? 'bg-success/10 text-success' : ''}>{s.ativo ? 'Ativo' : 'Inativo'}</Badge></TableCell>;
+      default: return null;
+    }
+  };
+
   const openCreate = () => { setFormData(emptySetor); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('view'); setDialogOpen(true); };
