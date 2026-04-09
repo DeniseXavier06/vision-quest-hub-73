@@ -633,7 +633,7 @@ const ResultadosSection = () => {
                     <XAxis type="number" tick={{ fontSize: 11 }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={150} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Bar dataKey="registros" radius={[0, 4, 4, 0]}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
