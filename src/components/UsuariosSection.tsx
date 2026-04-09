@@ -88,6 +88,28 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
+  const userColumns: ColumnDef[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'email', label: 'E-mail' },
+    { key: 'cargo', label: 'Cargo' },
+    { key: 'departamento', label: 'Departamento' },
+    { key: 'tipoUsuario', label: 'Tipo' },
+    { key: 'ativo', label: 'Status' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(userColumns);
+
+  const renderUserCell = (key: string, u: Usuario) => {
+    switch (key) {
+      case 'nome': return <TableCell key={key} className="font-medium">{u.nome}</TableCell>;
+      case 'email': return <TableCell key={key} className="text-sm text-muted-foreground">{u.email}</TableCell>;
+      case 'cargo': return <TableCell key={key} className="text-sm">{u.cargo}</TableCell>;
+      case 'departamento': return <TableCell key={key} className="text-sm">{u.departamento}</TableCell>;
+      case 'tipoUsuario': return <TableCell key={key}><Badge variant="secondary">{tipoUsuarioLabels[u.tipoUsuario]}</Badge></TableCell>;
+      case 'ativo': return <TableCell key={key}><Badge variant={u.ativo ? 'default' : 'outline'} className={u.ativo ? 'bg-success/10 text-success' : ''}>{u.ativo ? 'Ativo' : 'Inativo'}</Badge></TableCell>;
+      default: return null;
+    }
+  };
+
   const openCreate = () => { setFormData(emptyUsuario); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('view'); setDialogOpen(true); };
@@ -193,28 +215,19 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Nome</SortableTableHead>
-                  <SortableTableHead sortKey="email" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>E-mail</SortableTableHead>
-                  <SortableTableHead sortKey="cargo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Cargo</SortableTableHead>
-                  <SortableTableHead sortKey="departamento" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Departamento</SortableTableHead>
-                  <SortableTableHead sortKey="tipoUsuario" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Tipo</SortableTableHead>
-                  <SortableTableHead sortKey="ativo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((u) => (
                   <TableRow key={u.id}>
-                    <TableCell className="font-medium">{u.nome}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>
-                    <TableCell className="text-sm">{u.cargo}</TableCell>
-                    <TableCell className="text-sm">{u.departamento}</TableCell>
-                    <TableCell><Badge variant="secondary">{tipoUsuarioLabels[u.tipoUsuario]}</Badge></TableCell>
-                    <TableCell>
-                      <Badge variant={u.ativo ? 'default' : 'outline'} className={u.ativo ? 'bg-success/10 text-success' : ''}>
-                        {u.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderUserCell(col.key, u))}
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(u)}><Eye className="w-4 h-4" /></Button>
