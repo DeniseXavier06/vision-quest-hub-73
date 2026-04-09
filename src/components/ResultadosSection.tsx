@@ -764,7 +764,7 @@ const ResultadosSection = () => {
                         <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
                         <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                        <Bar dataKey="media" radius={[0, 4, 4, 0]}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
+                        <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -805,7 +805,7 @@ const ResultadosSection = () => {
                       <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
                       <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
                       <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                      <Bar dataKey="media" radius={[4, 4, 0, 0]}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
