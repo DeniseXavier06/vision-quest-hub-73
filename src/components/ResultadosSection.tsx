@@ -99,12 +99,11 @@ const ResultadosSection = () => {
   const [importPeriodo, setImportPeriodo] = useState('');
   const [importPerfil, setImportPerfil] = useState('');
   const [importObservacoes, setImportObservacoes] = useState('');
-  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    // Fetch all rows using pagination (Supabase default limit is 1000)
     let allRows: any[] = [];
     let from = 0;
     const PAGE = 1000;
@@ -148,11 +147,18 @@ const ResultadosSection = () => {
 
   useEffect(() => { fetchData(); fetchImportacoes(); }, [fetchData, fetchImportacoes]);
 
+  const resetImportState = () => {
+    setShowImportDialog(false);
+    setPendingFiles([]);
+    setImportPeriodo('');
+    setImportPerfil('');
+    setImportObservacoes('');
+  };
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setPendingFiles(files);
-    // Auto-detect perfil from filename
     const name = files[0].name.toUpperCase();
     if (name.includes('ALUNO')) setImportPerfil('Alunos');
     else if (name.includes('PROFESSOR')) setImportPerfil('Professores');
@@ -164,20 +170,19 @@ const ResultadosSection = () => {
   };
 
   const handleImportConfirm = async () => {
-    if (!pendingFiles || !importPeriodo || !importPerfil) {
+    if (pendingFiles.length === 0 || !importPeriodo || !importPerfil) {
       toast.error('Preencha o período e o perfil');
       return;
     }
     setImporting(true);
     try {
-      for (const file of Array.from(pendingFiles)) {
+      for (const file of pendingFiles) {
         const buffer = await file.arrayBuffer();
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
-        let tipo = importPerfil;
-        const allRows = json.map((row) => parseRow(row, tipo));
+        const allRows = json.map((row) => parseRow(row, importPerfil));
 
         // Create import record
         const { data: imp, error: impErr } = await supabase.from('importacoes').insert({
