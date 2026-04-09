@@ -690,7 +690,7 @@ const ResultadosSection = () => {
                     <XAxis type="number" tick={{ fontSize: fs('cursoBar') }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: fs('cursoBar') - 1 }} width={150} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('cursoBar')}px` }} />
-                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel} onClick={handleCursoBarClick} cursor="pointer">{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
