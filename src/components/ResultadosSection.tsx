@@ -778,15 +778,14 @@ const ResultadosSection = () => {
                 <div className="h-[350px]">
                   {colabRespostas.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={colabRespostas} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <BarChart data={colabRespostas} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
                         <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                         <YAxis tick={{ fontSize: 11 }} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]}>
-                          {colabRespostas.map((_, idx) => {
-                            const colors = ['#2d8a9e', '#5cbdb9', '#e8b84a', '#cd7f32', '#c45c7c'];
-                            return <Cell key={idx} fill={colors[idx % colors.length]} />;
-                          })}
+                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]} label={renderBarLabel}>
+                          {colabRespostas.map((entry, idx) => (
+                            <Cell key={idx} fill={RESPOSTA_COLORS[entry.name] || chartColors[idx % chartColors.length]} />
+                          ))}
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
