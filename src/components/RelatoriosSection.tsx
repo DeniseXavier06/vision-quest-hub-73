@@ -582,6 +582,9 @@ const RelatoriosSection = () => {
                     <Button variant="default" size="sm" className="flex-1 gap-1 text-xs" onClick={() => executeRelatorio(r)}>
                       <Play className="w-3 h-3" />Executar
                     </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" title="Criar gráfico a partir deste relatório" onClick={() => createChartFromReport(r)}>
+                      <BarChart3 className="w-3.5 h-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
