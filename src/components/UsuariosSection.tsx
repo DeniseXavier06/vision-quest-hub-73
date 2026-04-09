@@ -101,7 +101,11 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
         <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Cadastro</Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-[350px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Pesquisar coordenadores..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+        </div>
         <SearchableSelect value={filterTipo} onValueChange={setFilterTipo} options={filterTipoOptions} placeholder="Filtrar por tipo" className="w-[200px]" />
         <SearchableSelect value={filterDept} onValueChange={setFilterDept} options={filterDeptOptions} placeholder="Filtrar por departamento" className="w-[200px]" />
       </div>
