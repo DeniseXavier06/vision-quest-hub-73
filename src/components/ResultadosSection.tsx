@@ -781,21 +781,22 @@ const ResultadosSection = () => {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos<ChartFontControl chartId="conceitoPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabConceitos.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={true} outerRadius={110} innerRadius={60} dataKey="value"
-                          label={({ name, percent, value }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          fontSize={fs('conceitoPie')}>
                           {colabConceitos.map((entry, idx) => (<Cell key={idx} fill={getConceptColor(entry.name)} />))}
                         </Pie>
                         <Legend formatter={(value: string) => {
                           const labels: Record<string, string> = { 'E': 'Excelente (4.7–5.0)', 'B': 'Bom (4.1–4.6)', 'AP': 'Atende Parcialmente (3.1–4.0)', 'RE': 'Regular (2.2–3.0)', 'MR': 'Muito Ruim (1.0–2.1)' };
                           return labels[value] || value;
-                        }} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        }} wrapperStyle={{ fontSize: `${fs('conceitoPie')}px` }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('conceitoPie')}px` }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
