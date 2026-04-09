@@ -14,7 +14,183 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      acoes: {
+        Row: {
+          created_at: string
+          eixo: string
+          id: string
+          meta: string | null
+          nome: string
+          percentual_progresso: number
+          prazo: string
+          responsavel: string
+          status: Database["public"]["Enums"]["status_acao"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          eixo: string
+          id?: string
+          meta?: string | null
+          nome: string
+          percentual_progresso?: number
+          prazo: string
+          responsavel: string
+          status?: Database["public"]["Enums"]["status_acao"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          eixo?: string
+          id?: string
+          meta?: string | null
+          nome?: string
+          percentual_progresso?: number
+          prazo?: string
+          responsavel?: string
+          status?: Database["public"]["Enums"]["status_acao"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      avaliacoes: {
+        Row: {
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          descricao: string | null
+          id: string
+          responsavel: string
+          status: Database["public"]["Enums"]["status_avaliacao"]
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          descricao?: string | null
+          id?: string
+          responsavel: string
+          status?: Database["public"]["Enums"]["status_avaliacao"]
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          descricao?: string | null
+          id?: string
+          responsavel?: string
+          status?: Database["public"]["Enums"]["status_avaliacao"]
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      reunioes: {
+        Row: {
+          created_at: string
+          data_hora: string
+          id: string
+          local: string
+          status: Database["public"]["Enums"]["status_reuniao"]
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora: string
+          id?: string
+          local: string
+          status?: Database["public"]["Enums"]["status_reuniao"]
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          id?: string
+          local?: string
+          status?: Database["public"]["Enums"]["status_reuniao"]
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      setores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          sigla: string
+          tipo: Database["public"]["Enums"]["tipo_setor"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          sigla: string
+          tipo?: Database["public"]["Enums"]["tipo_setor"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          sigla?: string
+          tipo?: Database["public"]["Enums"]["tipo_setor"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      usuarios_cpa: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          created_at: string
+          departamento: string | null
+          email: string
+          id: string
+          nome: string
+          tipo_usuario: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          departamento?: string | null
+          email: string
+          id?: string
+          nome: string
+          tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          departamento?: string | null
+          email?: string
+          id?: string
+          nome?: string
+          tipo_usuario?: Database["public"]["Enums"]["tipo_usuario"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +199,11 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      status_acao: "nao_iniciada" | "em_andamento" | "concluida"
+      status_avaliacao: "planejado" | "em_execucao" | "concluido"
+      status_reuniao: "agendada" | "realizada" | "cancelada"
+      tipo_setor: "departamento" | "coordenacao" | "setor"
+      tipo_usuario: "coordenador" | "gestor" | "admin_cpa"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +330,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      status_acao: ["nao_iniciada", "em_andamento", "concluida"],
+      status_avaliacao: ["planejado", "em_execucao", "concluido"],
+      status_reuniao: ["agendada", "realizada", "cancelada"],
+      tipo_setor: ["departamento", "coordenacao", "setor"],
+      tipo_usuario: ["coordenador", "gestor", "admin_cpa"],
+    },
   },
 } as const
