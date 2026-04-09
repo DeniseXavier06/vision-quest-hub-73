@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Plus, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Building2, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 const emptySetor: Omit<Setor, 'id'> = {
@@ -47,6 +47,7 @@ interface SetoresSectionProps {
 
 const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
   const [filterTipo, setFilterTipo] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<Omit<Setor, 'id'>>(emptySetor);
@@ -57,6 +58,10 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
 
   const filtered = setores.filter((s) => {
     if (filterTipo !== 'all' && s.tipo !== filterTipo) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      if (!s.nome.toLowerCase().includes(term) && !s.sigla.toLowerCase().includes(term) && !s.descricao.toLowerCase().includes(term)) return false;
+    }
     return true;
   });
 
@@ -93,7 +98,11 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
         <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Setor</Button>
       </div>
 
-      <div className="flex flex-wrap gap-3">
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-[350px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Pesquisar setores..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+        </div>
         <SearchableSelect value={filterTipo} onValueChange={setFilterTipo} options={filterTipoOptions} placeholder="Filtrar por tipo" className="w-[200px]" />
       </div>
 
