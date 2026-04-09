@@ -15,7 +15,8 @@ import {
   PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   LineChart, Line, Legend,
 } from 'recharts';
-import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users } from 'lucide-react';
+import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users, Settings2, Minus, Plus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
@@ -107,6 +108,42 @@ const renderHBarLabel = (props: any) => {
   );
 };
 
+// ─── Chart font size control ───
+const FONT_SIZE_KEY = 'chart-font-sizes';
+const DEFAULT_FONT_SIZE = 11;
+
+function loadChartFontSizes(): Record<string, number> {
+  try {
+    const saved = localStorage.getItem(FONT_SIZE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function ChartFontControl({ chartId, sizes, onChange }: { chartId: string; sizes: Record<string, number>; onChange: (id: string, size: number) => void }) {
+  const size = sizes[chartId] || DEFAULT_FONT_SIZE;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto flex-shrink-0" title="Tamanho da fonte">
+          <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-3" align="end">
+        <p className="text-xs font-medium mb-2">Tamanho da fonte</p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onChange(chartId, Math.max(7, size - 1))} disabled={size <= 7}>
+            <Minus className="w-3 h-3" />
+          </Button>
+          <span className="text-sm font-mono w-8 text-center">{size}</span>
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onChange(chartId, Math.min(20, size + 1))} disabled={size >= 20}>
+            <Plus className="w-3 h-3" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function parseNum(val: unknown): number {
   if (val == null || val === '') return 0;
   const n = Number(val);
@@ -154,6 +191,17 @@ const ResultadosSection = () => {
   const [importObservacoes, setImportObservacoes] = useState('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(true);
+  const [chartFontSizes, setChartFontSizes] = useState<Record<string, number>>(loadChartFontSizes);
+
+  const updateFontSize = useCallback((chartId: string, size: number) => {
+    setChartFontSizes(prev => {
+      const next = { ...prev, [chartId]: size };
+      localStorage.setItem(FONT_SIZE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
+  const fs = (chartId: string) => chartFontSizes[chartId] || DEFAULT_FONT_SIZE;
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -624,15 +672,15 @@ const ResultadosSection = () => {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Registros por Curso</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Registros por Curso<ChartFontControl chartId="cursoBar" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[350px]">
               {chartByCurso.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartByCurso} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                    <XAxis type="number" tick={{ fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={150} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                    <XAxis type="number" tick={{ fontSize: fs('cursoBar') }} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: fs('cursoBar') - 1 }} width={150} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('cursoBar')}px` }} />
                     <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -641,17 +689,19 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[350px]">
               {pieDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value" label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}>
+                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
+                      label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
+                      fontSize={fs('dimPie')}>
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Legend />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
+                    <Legend wrapperStyle={{ fontSize: `${fs('dimPie')}px` }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -663,15 +713,15 @@ const ResultadosSection = () => {
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão<ChartFontControl chartId="mediaDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[300px]">
               {mediaPorDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={mediaPorDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
-                    <YAxis tick={{ fontSize: 11 }} domain={[0, 'auto']} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                    <XAxis dataKey="name" tick={{ fontSize: fs('mediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
+                    <YAxis tick={{ fontSize: fs('mediaDim') }} domain={[0, 'auto']} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
                     <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -680,15 +730,15 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Desempenho por Dimensão</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Desempenho por Dimensão<ChartFontControl chartId="desempDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[300px]">
               {desempenhoDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={desempenhoDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                    <XAxis dataKey="name" tick={{ fontSize: fs('desempDim') - 1 }} angle={-30} textAnchor="end" height={80} />
+                    <YAxis tick={{ fontSize: fs('desempDim') }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('desempDim')}px` }} />
                     <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -712,15 +762,15 @@ const ResultadosSection = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão<ChartFontControl chartId="radarDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabRadarDimensao.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <RadarChart data={colabRadarDimensao} cx="50%" cy="50%" outerRadius="70%">
                         <PolarGrid />
-                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: 9 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10 }} />
+                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: fs('radarDim') - 2 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: fs('radarDim') - 1 }} />
                         <Radar name="Média" dataKey="media" stroke="hsl(214, 60%, 35%)" fill="hsl(214, 60%, 35%)" fillOpacity={0.3} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
                       </RadarChart>
@@ -731,21 +781,22 @@ const ResultadosSection = () => {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos<ChartFontControl chartId="conceitoPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabConceitos.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={true} outerRadius={110} innerRadius={60} dataKey="value"
-                          label={({ name, percent, value }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          fontSize={fs('conceitoPie')}>
                           {colabConceitos.map((entry, idx) => (<Cell key={idx} fill={getConceptColor(entry.name)} />))}
                         </Pie>
                         <Legend formatter={(value: string) => {
                           const labels: Record<string, string> = { 'E': 'Excelente (4.7–5.0)', 'B': 'Bom (4.1–4.6)', 'AP': 'Atende Parcialmente (3.1–4.0)', 'RE': 'Regular (2.2–3.0)', 'MR': 'Muito Ruim (1.0–2.1)' };
                           return labels[value] || value;
-                        }} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        }} wrapperStyle={{ fontSize: `${fs('conceitoPie')}px` }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('conceitoPie')}px` }} />
                       </PieChart>
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -756,15 +807,15 @@ const ResultadosSection = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área<ChartFontControl chartId="mediaArea" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabMediaArea.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={colabMediaArea} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                        <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                        <XAxis type="number" tick={{ fontSize: fs('mediaArea') }} domain={[0, 'auto']} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: fs('mediaArea') - 1 }} width={180} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaArea')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
                         <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -774,15 +825,15 @@ const ResultadosSection = () => {
             </Card>
 
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas<ChartFontControl chartId="respostas" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabRespostas.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={colabRespostas} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
-                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        <XAxis dataKey="name" tick={{ fontSize: fs('respostas') }} />
+                        <YAxis tick={{ fontSize: fs('respostas') }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('respostas')}px` }} />
                         <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]} label={renderBarLabel}>
                           {colabRespostas.map((entry, idx) => (
                             <Cell key={idx} fill={RESPOSTA_COLORS[entry.name] || chartColors[idx % chartColors.length]} />
@@ -797,15 +848,15 @@ const ResultadosSection = () => {
           </div>
 
           <Card>
-            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)</CardTitle></CardHeader>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)<ChartFontControl chartId="colabMediaDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
             <CardContent>
               <div className="h-[300px]">
                 {colabMediaDimensao.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={colabMediaDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                      <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
-                      <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
-                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                      <XAxis dataKey="name" tick={{ fontSize: fs('colabMediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
+                      <YAxis tick={{ fontSize: fs('colabMediaDim') }} domain={[0, 5]} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('colabMediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
                       <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
