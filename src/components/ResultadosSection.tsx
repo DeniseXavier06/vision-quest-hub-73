@@ -647,10 +647,11 @@ const ResultadosSection = () => {
               {pieDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={false} outerRadius={110} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value" label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}>
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
