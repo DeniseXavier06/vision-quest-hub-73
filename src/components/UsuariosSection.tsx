@@ -8,9 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -31,6 +29,12 @@ const emptyUsuario: Omit<Usuario, 'id'> = {
   ativo: true,
 };
 
+const tipoUsuarioOptions = [
+  { value: 'coordenador', label: 'Coordenador' },
+  { value: 'gestor', label: 'Gestor' },
+  { value: 'admin_cpa', label: 'Admin CPA' },
+];
+
 interface UsuariosSectionProps {
   setores: Setor[];
 }
@@ -48,6 +52,10 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
 
   const setoresAtivos = setores.filter((s) => s.ativo);
   const depts = [...new Set(usuarios.map((u) => u.departamento))];
+
+  const filterTipoOptions = [{ value: 'all', label: 'Todos os tipos' }, ...tipoUsuarioOptions];
+  const filterDeptOptions = [{ value: 'all', label: 'Todos os departamentos' }, ...depts.map((d) => ({ value: d, label: d }))];
+  const deptFormOptions = setoresAtivos.map((s) => ({ value: s.nome, label: `${s.nome} (${s.sigla})` }));
 
   const filtered = usuarios.filter((u) => {
     if (filterTipo !== 'all' && u.tipoUsuario !== filterTipo) return false;
@@ -89,22 +97,8 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Select value={filterTipo} onValueChange={setFilterTipo}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filtrar por tipo" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            <SelectItem value="coordenador">Coordenador</SelectItem>
-            <SelectItem value="gestor">Gestor</SelectItem>
-            <SelectItem value="admin_cpa">Admin CPA</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={filterDept} onValueChange={setFilterDept}>
-          <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filtrar por departamento" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os departamentos</SelectItem>
-            {depts.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect value={filterTipo} onValueChange={setFilterTipo} options={filterTipoOptions} placeholder="Filtrar por tipo" className="w-[200px]" />
+        <SearchableSelect value={filterDept} onValueChange={setFilterDept} options={filterDeptOptions} placeholder="Filtrar por departamento" className="w-[200px]" />
       </div>
 
       <Card>
@@ -180,34 +174,16 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
               </div>
               <div className="space-y-2">
                 <Label>Departamento / Coordenação *</Label>
-                {isReadOnly ? (
-                  <Input value={formData.departamento} readOnly />
-                ) : (
-                  <Select value={formData.departamento} onValueChange={(v) => setFormData({ ...formData, departamento: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {setoresAtivos.map((s) => (
-                        <SelectItem key={s.id} value={s.nome}>{s.nome} ({s.sigla})</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {isReadOnly ? <Input value={formData.departamento} readOnly /> : (
+                  <SearchableSelect value={formData.departamento} onValueChange={(v) => setFormData({ ...formData, departamento: v })} options={deptFormOptions} placeholder="Selecione" />
                 )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de Usuário</Label>
-                {isReadOnly ? (
-                  <Input value={tipoUsuarioLabels[formData.tipoUsuario]} readOnly />
-                ) : (
-                  <Select value={formData.tipoUsuario} onValueChange={(v) => setFormData({ ...formData, tipoUsuario: v as Usuario['tipoUsuario'] })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="coordenador">Coordenador</SelectItem>
-                      <SelectItem value="gestor">Gestor</SelectItem>
-                      <SelectItem value="admin_cpa">Admin CPA</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {isReadOnly ? <Input value={tipoUsuarioLabels[formData.tipoUsuario]} readOnly /> : (
+                  <SearchableSelect value={formData.tipoUsuario} onValueChange={(v) => setFormData({ ...formData, tipoUsuario: v as Usuario['tipoUsuario'] })} options={tipoUsuarioOptions} />
                 )}
               </div>
               <div className="space-y-2">

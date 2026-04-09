@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -33,6 +34,12 @@ export const useSetores = () => {
   return { setores, setSetores };
 };
 
+const tipoOptions = [
+  { value: 'departamento', label: 'Departamento' },
+  { value: 'coordenacao', label: 'Coordenação' },
+  { value: 'setor', label: 'Setor' },
+];
+
 interface SetoresSectionProps {
   setores: Setor[];
   setSetores: React.Dispatch<React.SetStateAction<Setor[]>>;
@@ -45,6 +52,8 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
   const [formData, setFormData] = useState<Omit<Setor, 'id'>>(emptySetor);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const filterTipoOptions = [{ value: 'all', label: 'Todos os tipos' }, ...tipoOptions];
 
   const filtered = setores.filter((s) => {
     if (filterTipo !== 'all' && s.tipo !== filterTipo) return false;
@@ -85,12 +94,7 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <select className="rounded-md border border-input bg-background px-3 py-2 text-sm" value={filterTipo} onChange={(e) => setFilterTipo(e.target.value)}>
-          <option value="all">Todos os tipos</option>
-          <option value="departamento">Departamento</option>
-          <option value="coordenacao">Coordenação</option>
-          <option value="setor">Setor</option>
-        </select>
+        <SearchableSelect value={filterTipo} onValueChange={setFilterTipo} options={filterTipoOptions} placeholder="Filtrar por tipo" className="w-[200px]" />
       </div>
 
       <Card>
@@ -158,14 +162,8 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo</Label>
-                {isReadOnly ? (
-                  <Input value={tipoLabels[formData.tipo]} readOnly />
-                ) : (
-                  <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={formData.tipo} onChange={(e) => setFormData({ ...formData, tipo: e.target.value as Setor['tipo'] })}>
-                    <option value="departamento">Departamento</option>
-                    <option value="coordenacao">Coordenação</option>
-                    <option value="setor">Setor</option>
-                  </select>
+                {isReadOnly ? <Input value={tipoLabels[formData.tipo]} readOnly /> : (
+                  <SearchableSelect value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v as Setor['tipo'] })} options={tipoOptions} />
                 )}
               </div>
               <div className="space-y-2">
