@@ -20,6 +20,8 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
+import { useSortable } from '@/hooks/use-sortable';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -165,7 +167,7 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading flex items-center gap-2">
             <Building2 className="w-4 h-4 text-primary" />
-            {filtered.length} {filtered.length === 1 ? 'registro' : 'registros'}
+            {sortedFiltered.length} {sortedFiltered.length === 1 ? 'registro' : 'registros'}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -173,15 +175,15 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Sigla</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Nome</SortableTableHead>
+                  <SortableTableHead sortKey="sigla" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Sigla</SortableTableHead>
+                  <SortableTableHead sortKey="tipo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Tipo</SortableTableHead>
+                  <SortableTableHead sortKey="ativo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((s) => (
+                {sortedFiltered.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell className="font-medium">{s.nome}</TableCell>
                     <TableCell><Badge variant="outline">{s.sigla}</Badge></TableCell>

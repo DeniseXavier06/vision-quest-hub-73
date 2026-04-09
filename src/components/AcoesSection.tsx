@@ -19,6 +19,8 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import { useSortable } from '@/hooks/use-sortable';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -122,6 +124,8 @@ const AcoesSection = () => {
     }
     return true;
   });
+
+  const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
@@ -256,7 +260,7 @@ const AcoesSection = () => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading flex items-center gap-2">
             <ListChecks className="w-4 h-4 text-primary" />
-            {filtered.length} {filtered.length === 1 ? 'ação encontrada' : 'ações encontradas'}
+            {sortedFiltered.length} {sortedFiltered.length === 1 ? 'ação encontrada' : 'ações encontradas'}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -264,18 +268,18 @@ const AcoesSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Ação</TableHead>
-                  <TableHead>Eixo</TableHead>
-                  <TableHead>Meta</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Progresso</TableHead>
-                  <TableHead>Prazo</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Ação</SortableTableHead>
+                  <SortableTableHead sortKey="eixo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Eixo</SortableTableHead>
+                  <SortableTableHead sortKey="meta" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Meta</SortableTableHead>
+                  <SortableTableHead sortKey="responsavel" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Responsável</SortableTableHead>
+                  <SortableTableHead sortKey="percentualProgresso" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Progresso</SortableTableHead>
+                  <SortableTableHead sortKey="prazo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Prazo</SortableTableHead>
+                  <SortableTableHead sortKey="status" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((acao) => (
+                {sortedFiltered.map((acao) => (
                   <TableRow key={acao.id}>
                     <TableCell className="font-medium max-w-[200px] truncate">{acao.nome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{acao.eixo}</TableCell>
