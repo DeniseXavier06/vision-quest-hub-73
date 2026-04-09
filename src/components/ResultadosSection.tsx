@@ -648,6 +648,120 @@ const ResultadosSection = () => {
         </Card>
       </div>
 
+      {/* === Colaboradores Section === */}
+      {colabData.length > 0 && (
+        <>
+          <div className="pt-4">
+            <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
+              <Users className="w-5 h-5 text-primary" />
+              Gráficos — Colaboradores
+              <Badge variant="secondary" className="ml-2">{colabData.length.toLocaleString('pt-BR')} registros</Badge>
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">Visão específica dos resultados do perfil Colaboradores</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Radar — Média por Dimensão</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabRadarDimensao.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart data={colabRadarDimensao} cx="50%" cy="50%" outerRadius="70%">
+                        <PolarGrid />
+                        <PolarAngleAxis dataKey="dimensao" tick={{ fontSize: 9 }} />
+                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fontSize: 10 }} />
+                        <Radar name="Média" dataKey="media" stroke="hsl(214, 60%, 35%)" fill="hsl(214, 60%, 35%)" fillOpacity={0.3} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição de Conceitos</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabConceitos.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie data={colabConceitos} cx="50%" cy="50%" labelLine={false} outerRadius={110} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                          {colabConceitos.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
+                        </Pie>
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabMediaArea.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={colabMediaArea} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                        <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                        <Bar dataKey="media" radius={[0, 4, 4, 0]}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Distribuição de Respostas</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-[350px]">
+                  {colabRespostas.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={colabRespostas} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                        <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
+                        <Bar dataKey="value" name="Respostas" radius={[4, 4, 0, 0]}>
+                          {colabRespostas.map((_, idx) => {
+                            const colors = ['#2d8a9e', '#5cbdb9', '#e8b84a', '#cd7f32', '#c45c7c'];
+                            return <Cell key={idx} fill={colors[idx % colors.length]} />;
+                          })}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão (Colaboradores)</CardTitle></CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                {colabMediaDimensao.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={colabMediaDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
+                      <YAxis tick={{ fontSize: 11 }} domain={[0, 5]} />
+                      <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
       {/* Data Table */}
       <Card>
         <CardHeader className="pb-3">
