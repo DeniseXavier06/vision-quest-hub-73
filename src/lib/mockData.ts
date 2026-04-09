@@ -98,6 +98,27 @@ export const avaliacoesData: Avaliacao[] = [
   { id: '4', tipo: 'Comunidade Externa', descricao: 'Pesquisa com egressos e empregadores', dataInicio: '2026-08-01', dataFim: '2026-09-30', status: 'planejado', responsavel: 'Pedro Oliveira' },
 ];
 
+export interface Setor {
+  id: string;
+  nome: string;
+  sigla: string;
+  tipo: 'departamento' | 'coordenacao' | 'setor';
+  descricao: string;
+  ativo: boolean;
+}
+
+export const setoresData: Setor[] = [
+  { id: '1', nome: 'Administração', sigla: 'ADM', tipo: 'departamento', descricao: 'Departamento de Administração', ativo: true },
+  { id: '2', nome: 'Engenharia', sigla: 'ENG', tipo: 'coordenacao', descricao: 'Coordenação de Engenharia', ativo: true },
+  { id: '3', nome: 'Pedagogia', sigla: 'PED', tipo: 'coordenacao', descricao: 'Coordenação de Pedagogia', ativo: true },
+  { id: '4', nome: 'Tecnologia da Informação', sigla: 'TI', tipo: 'setor', descricao: 'Setor de TI', ativo: true },
+  { id: '5', nome: 'Infraestrutura', sigla: 'INFRA', tipo: 'setor', descricao: 'Setor de Infraestrutura', ativo: true },
+  { id: '6', nome: 'Ciências Humanas', sigla: 'CH', tipo: 'departamento', descricao: 'Departamento de Ciências Humanas', ativo: true },
+  { id: '7', nome: 'Ciências Exatas', sigla: 'CE', tipo: 'departamento', descricao: 'Departamento de Ciências Exatas', ativo: true },
+  { id: '8', nome: 'Saúde', sigla: 'SAU', tipo: 'coordenacao', descricao: 'Coordenação de Saúde', ativo: true },
+  { id: '9', nome: 'Direito', sigla: 'DIR', tipo: 'coordenacao', descricao: 'Coordenação de Direito', ativo: true },
+];
+
 export const statusLabels: Record<string, string> = {
   nao_iniciada: 'Não iniciada',
   em_andamento: 'Em andamento',
