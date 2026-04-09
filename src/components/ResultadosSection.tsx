@@ -104,27 +104,40 @@ const ResultadosSection = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const { data: rows } = await supabase.from('resultados').select('*').order('created_at', { ascending: false });
-    if (rows) {
-      setData(rows.map((r: any) => ({
-        semestre: r.semestre,
-        nivel: r.nivel,
-        curso: r.curso,
-        dimensao: r.dimensao,
-        area: r.area,
-        textoQuestao: r.texto_questao,
-        excelente: r.excelente,
-        bom: r.bom,
-        atendeParcialmente: r.atende_parcialmente,
-        regular: r.regular,
-        muitoRuim: r.muito_ruim,
-        naoSeAplica: r.nao_se_aplica,
-        total: r.total,
-        media: Number(r.media),
-        conceito: r.conceito,
-        tipoAvaliacao: r.tipo_avaliacao,
-      })));
+    // Fetch all rows using pagination (Supabase default limit is 1000)
+    let allRows: any[] = [];
+    let from = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data: rows, error } = await supabase
+        .from('resultados')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) { console.error('Fetch error:', error); break; }
+      if (!rows || rows.length === 0) break;
+      allRows = allRows.concat(rows);
+      if (rows.length < PAGE) break;
+      from += PAGE;
     }
+    setData(allRows.map((r: any) => ({
+      semestre: r.semestre,
+      nivel: r.nivel,
+      curso: r.curso,
+      dimensao: r.dimensao,
+      area: r.area,
+      textoQuestao: r.texto_questao,
+      excelente: r.excelente,
+      bom: r.bom,
+      atendeParcialmente: r.atende_parcialmente,
+      regular: r.regular,
+      muitoRuim: r.muito_ruim,
+      naoSeAplica: r.nao_se_aplica,
+      total: r.total,
+      media: Number(r.media),
+      conceito: r.conceito,
+      tipoAvaliacao: r.tipo_avaliacao,
+    })));
     setLoading(false);
   }, []);
 
@@ -221,8 +234,11 @@ const ResultadosSection = () => {
 
   const handleDeleteImport = async (imp: Importacao) => {
     if (!confirm(`Excluir importação "${imp.nome_arquivo}" e todos os ${imp.total_registros} registros?`)) return;
+    // Delete resultados first, then importacao
+    const { error: resErr } = await supabase.from('resultados').delete().eq('importacao_id', imp.id);
+    if (resErr) { console.error('Erro ao excluir resultados:', resErr); toast.error('Erro ao excluir resultados'); return; }
     const { error } = await supabase.from('importacoes').delete().eq('id', imp.id);
-    if (error) { toast.error('Erro ao excluir'); return; }
+    if (error) { toast.error('Erro ao excluir importação'); return; }
     toast.success('Importação excluída');
     fetchData();
     fetchImportacoes();
