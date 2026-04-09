@@ -89,6 +89,33 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
     if (deleteId) { setUsuarios((prev) => prev.filter((u) => u.id !== deleteId)); toast.success('Registro excluído!'); setDeleteId(null); }
   };
 
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: 'binary' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
+        if (!rows.length) { toast.error('Arquivo vazio.'); return; }
+        const imported: Usuario[] = rows.map((r) => ({
+          id: crypto.randomUUID(),
+          nome: String(r['NOME'] || r['Nome'] || r['nome'] || ''),
+          email: String(r['EMAIL'] || r['Email'] || r['email'] || r['E-MAIL'] || r['E-mail'] || ''),
+          cargo: String(r['CARGO'] || r['Cargo'] || r['cargo'] || ''),
+          departamento: String(r['DEPARTAMENTO'] || r['Departamento'] || r['departamento'] || r['COORDENAÇÃO'] || r['Coordenação'] || ''),
+          tipoUsuario: (['coordenador', 'gestor', 'admin_cpa'].includes(String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase()) ? String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase() : 'coordenador') as Usuario['tipoUsuario'],
+          ativo: true,
+        })).filter((u) => u.nome);
+        setUsuarios((prev) => [...prev, ...imported]);
+        toast.success(`${imported.length} coordenadores/gestores importados!`);
+      } catch { toast.error('Erro ao ler o arquivo.'); }
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = '';
+  };
+
   const isReadOnly = dialogMode === 'view';
   const dialogTitle = dialogMode === 'create' ? 'Novo Cadastro' : dialogMode === 'edit' ? 'Editar Cadastro' : 'Detalhes do Cadastro';
 
@@ -99,7 +126,13 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
           <h2 className="text-2xl font-heading font-bold text-foreground">Coordenadores & Gestores</h2>
           <p className="text-sm text-muted-foreground mt-1">Cadastro de membros vinculados à CPA</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Cadastro</Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => document.getElementById('import-usuarios')?.click()}>
+            <Upload className="w-4 h-4" />Importar
+          </Button>
+          <input id="import-usuarios" type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+          <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Cadastro</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
