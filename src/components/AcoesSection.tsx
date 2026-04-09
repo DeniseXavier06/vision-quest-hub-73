@@ -113,6 +113,8 @@ const AcoesSection = () => {
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
   const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
+  const responsaveis = [...new Set(acoes.flatMap((a) => a.responsavel.split(',').map(r => r.trim())).filter(Boolean))].sort();
+  const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
 
