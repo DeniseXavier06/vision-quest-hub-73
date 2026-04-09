@@ -75,6 +75,8 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
     return true;
   });
 
+  const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+
   const openCreate = () => { setFormData(emptySetor); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('view'); setDialogOpen(true); };
