@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { acoesData as initialAcoes, statusLabels, type Acao } from '@/lib/mockData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -6,7 +6,6 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
@@ -18,8 +17,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ListChecks, Plus, Eye, Pencil, Trash2, Search } from 'lucide-react';
+import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const statusColors: Record<string, string> = {
   nao_iniciada: 'bg-muted text-muted-foreground',
@@ -28,22 +28,14 @@ const statusColors: Record<string, string> = {
 };
 
 const emptyAcao: Omit<Acao, 'id' | 'diasRestantes'> = {
-  nome: '',
-  eixo: '',
-  meta: '',
-  responsavel: '',
-  status: 'nao_iniciada',
-  percentualProgresso: 0,
-  prazo: '',
+  nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '',
 };
 
 const eixosOptions = [
-  'Planejamento e Avaliação',
-  'Políticas Acadêmicas',
-  'Políticas de Gestão',
-  'Infraestrutura',
-  'Valorização Profissional',
-  'Imagem Institucional',
+  'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
+  'Infraestrutura', 'Valorização Profissional', 'Imagem Institucional',
+  'Ambiente Virtual Aprendizagem', 'Avaliando a Infraestrutura', 'Avaliando a Valorização Profissional',
+  'Avaliando a Comunicação', 'Avaliando os Serviços', 'Avaliando a Gestão',
 ];
 
 const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
@@ -52,6 +44,29 @@ const statusSelectOptions = [
   { value: 'em_andamento', label: 'Em andamento' },
   { value: 'concluida', label: 'Concluída' },
 ];
+
+function parseStatus(val: string): 'nao_iniciada' | 'em_andamento' | 'concluida' {
+  const v = (val || '').toLowerCase().trim();
+  if (v.includes('andamento') || v.includes('progresso')) return 'em_andamento';
+  if (v.includes('conclu') || v.includes('finaliz')) return 'concluida';
+  return 'nao_iniciada';
+}
+
+function parsePrazo(val: string): string {
+  if (!val) return '';
+  // Try DD/MM/YYYY format
+  const parts = val.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (parts) return `${parts[3]}-${parts[2].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+  // Try ISO format
+  if (/^\d{4}-\d{2}-\d{2}/.test(val)) return val.substring(0, 10);
+  return '';
+}
+
+function parseProgress(val: unknown): number {
+  if (val == null || val === '') return 0;
+  const n = Number(String(val).replace('%', '').replace(',', '.'));
+  return isNaN(n) ? 0 : Math.min(100, Math.max(0, Math.round(n)));
+}
 
 const AcoesSection = () => {
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
@@ -63,6 +78,7 @@ const AcoesSection = () => {
   const [formData, setFormData] = useState<Omit<Acao, 'id' | 'diasRestantes'>>(emptyAcao);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [importing, setImporting] = useState(false);
 
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
   const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
@@ -109,6 +125,70 @@ const AcoesSection = () => {
     if (deleteId) { setAcoes((prev) => prev.filter((a) => a.id !== deleteId)); toast.success('Ação excluída com sucesso!'); setDeleteId(null); }
   };
 
+  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setImporting(true);
+    try {
+      const newAcoes: Acao[] = [];
+      for (const file of Array.from(files)) {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
+
+        for (const row of json) {
+          // Get the action text from various possible column names
+          const acao = String(
+            row['Ação'] ?? row['ACAO'] ?? row['ação'] ??
+            // Handle the long column header from Presenciais CSV
+            Object.entries(row).find(([key]) => key.startsWith('•') || key.includes('Realizar verificação'))?.[1] ??
+            ''
+          ).trim();
+
+          if (!acao) continue; // Skip rows without an action
+
+          const responsavel = String(row['Responsável'] ?? row['RESPONSAVEL'] ?? row['responsavel'] ?? '').trim();
+          const area = String(row['Área'] ?? row['AREA'] ?? row['Area'] ?? row['área'] ?? '').trim();
+          const dimensao = String(row['DIMENSAO'] ?? row['Dimensão'] ?? row['dimensao'] ?? '').trim();
+          const curso = String(row['NOME_CURSO'] ?? row['nome_curso'] ?? '').trim();
+          const questao = String(row['TEXTO_QUESTAO'] ?? row['QUESTÃO'] ?? row['texto_questao'] ?? '').trim();
+          const prazoRaw = String(row['Prazo'] ?? row['PRAZO'] ?? row['prazo'] ?? '');
+          const statusRaw = String(row['Status'] ?? row['STATUS'] ?? row['status'] ?? '');
+          const progressRaw = row['% Progresso'] ?? row['%_PROGRESSO'] ?? row['progresso'] ?? 0;
+          const prioridadeRaw = String(row['Prioridade'] ?? row['PRIORIDADE'] ?? '');
+
+          const eixo = area || dimensao || 'Sem Eixo';
+          const meta = curso ? `${curso}${questao ? ' - ' + questao : ''}` : questao || '';
+
+          newAcoes.push({
+            id: crypto.randomUUID(),
+            nome: acao,
+            eixo,
+            meta,
+            responsavel: responsavel || 'Não informado',
+            status: parseStatus(statusRaw),
+            percentualProgresso: parseProgress(progressRaw),
+            prazo: parsePrazo(prazoRaw) || new Date().toISOString().slice(0, 10),
+            diasRestantes: 0,
+          });
+        }
+      }
+
+      // Calculate dias restantes
+      newAcoes.forEach((a) => { a.diasRestantes = calcDiasRestantes(a.prazo); });
+
+      setAcoes((prev) => [...prev, ...newAcoes]);
+      toast.success(`${newAcoes.length} ações importadas de ${files.length} arquivo(s)!`);
+    } catch (err) {
+      toast.error('Erro ao importar. Verifique o formato do arquivo.');
+      console.error(err);
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  }, []);
+
   const isReadOnly = dialogMode === 'view';
   const dialogTitle = dialogMode === 'create' ? 'Nova Ação' : dialogMode === 'edit' ? 'Editar Ação' : 'Detalhes da Ação';
 
@@ -119,7 +199,15 @@ const AcoesSection = () => {
           <h2 className="text-2xl font-heading font-bold text-foreground">Ações</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestão das ações do plano CPA</p>
         </div>
-        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Nova Ação</Button>
+        <div className="flex gap-2">
+          <label className="cursor-pointer">
+            <Button variant="outline" className="gap-2" disabled={importing} asChild>
+              <span><Upload className="w-4 h-4" />{importing ? 'Importando...' : 'Importar'}</span>
+            </Button>
+            <input type="file" accept=".xlsx,.xls,.csv" multiple className="hidden" onChange={handleImport} />
+          </label>
+          <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Nova Ação</Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
