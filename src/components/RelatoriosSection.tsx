@@ -288,6 +288,21 @@ const RelatoriosSection = () => {
     setDialogOpen(true);
   };
 
+  const createChartFromReport = (r: Relatorio) => {
+    resetForm();
+    setFormTitulo(`Gráfico - ${r.titulo}`);
+    setFormDescricao(`Gráfico baseado no relatório "${r.titulo}"`);
+    setFormTabela(r.tabela_origem);
+    setFormCampos(r.campos_selecionados);
+    setFormTipoGrafico('bar');
+    setFormAgrupamento(r.configuracao.campoAgrupamento || '');
+    setFormValor(r.configuracao.campoValor || '');
+    setFormAgregacao(r.configuracao.agregacao || 'count');
+    setFormFiltros(Array.isArray(r.filtros) ? r.filtros : []);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
   const toggleCampo = (key: string) => {
     setFormCampos((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
   };
