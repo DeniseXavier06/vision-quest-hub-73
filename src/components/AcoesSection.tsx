@@ -88,6 +88,7 @@ const AcoesSection = () => {
   const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
   const [filterEixo, setFilterEixo] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterResponsavel, setFilterResponsavel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAcao, setFilterAcao] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -112,6 +113,8 @@ const AcoesSection = () => {
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
   const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
+  const responsaveis = [...new Set(acoes.flatMap((a) => a.responsavel.split(',').map(r => r.trim())).filter(Boolean))].sort();
+  const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
 
@@ -119,6 +122,7 @@ const AcoesSection = () => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
+    if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!a.nome.toLowerCase().includes(term) && !a.responsavel.toLowerCase().includes(term) && !a.eixo.toLowerCase().includes(term) && !a.meta.toLowerCase().includes(term)) return false;
@@ -279,6 +283,7 @@ const AcoesSection = () => {
         <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[220px]" />
         <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
+        <SearchableSelect value={filterResponsavel} onValueChange={setFilterResponsavel} options={filterResponsavelOptions} placeholder="Filtrar por responsável" className="w-[220px]" />
       </div>
 
       <Card>
