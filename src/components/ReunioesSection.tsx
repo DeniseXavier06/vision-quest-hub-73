@@ -92,15 +92,25 @@ const ReunioesSection = () => {
     setDeleteDialogOpen(true);
   };
 
+  // Converte datetime-local para ISO com offset local para preservar o horário
+  const toLocalISO = (dtLocal: string) => {
+    const d = new Date(dtLocal);
+    const offset = -d.getTimezoneOffset();
+    const sign = offset >= 0 ? '+' : '-';
+    const pad = (n: number) => String(Math.floor(Math.abs(n))).padStart(2, '0');
+    return `${dtLocal}:00${sign}${pad(offset / 60)}:${pad(offset % 60)}`;
+  };
+
   const handleSave = async () => {
     if (!form.titulo || !form.data_hora || !form.tipo || !form.local) {
       toast.error('Preencha todos os campos obrigatórios');
       return;
     }
+    const dataHoraISO = toLocalISO(form.data_hora);
     if (editing) {
       const { error } = await supabase.from('reunioes').update({
         titulo: form.titulo,
-        data_hora: form.data_hora,
+        data_hora: dataHoraISO,
         tipo: form.tipo,
         status: form.status,
         local: form.local,
@@ -110,7 +120,7 @@ const ReunioesSection = () => {
     } else {
       const { error } = await supabase.from('reunioes').insert({
         titulo: form.titulo,
-        data_hora: form.data_hora,
+        data_hora: dataHoraISO,
         tipo: form.tipo,
         status: form.status,
         local: form.local,
