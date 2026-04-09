@@ -807,15 +807,15 @@ const ResultadosSection = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área</CardTitle></CardHeader>
+              <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Área<ChartFontControl chartId="mediaArea" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
               <CardContent>
                 <div className="h-[350px]">
                   {colabMediaArea.length > 0 ? (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={colabMediaArea} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                        <XAxis type="number" tick={{ fontSize: 11 }} domain={[0, 'auto']} />
-                        <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={180} />
-                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
+                        <XAxis type="number" tick={{ fontSize: fs('mediaArea') }} domain={[0, 'auto']} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: fs('mediaArea') - 1 }} width={180} />
+                        <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaArea')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
                         <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
                       </BarChart>
                     </ResponsiveContainer>
