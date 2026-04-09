@@ -414,14 +414,18 @@ const ResultadosSection = () => {
         e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
       }
     });
-    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, media: Number((sum / count).toFixed(2)) }));
+    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }));
   }, [filtered]);
 
   const desempenhoDimensao = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.dimensao) map.set(r.dimensao, (map.get(r.dimensao) || 0) + 1); });
-    return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count }));
+    return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
   }, [filtered]);
+
+  const handleDimensaoBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
+  }, []);
 
   // === Colaboradores-specific charts ===
   const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
