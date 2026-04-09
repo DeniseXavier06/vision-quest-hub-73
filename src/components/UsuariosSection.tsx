@@ -19,6 +19,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { UserCog, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
+import { useSortable } from '@/hooks/use-sortable';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -82,6 +84,8 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
     }
     return true;
   });
+
+  const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
   const openCreate = () => { setFormData(emptyUsuario); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('edit'); setDialogOpen(true); };
@@ -180,7 +184,7 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading flex items-center gap-2">
             <UserCog className="w-4 h-4 text-primary" />
-            {filtered.length} {filtered.length === 1 ? 'registro encontrado' : 'registros encontrados'}
+            {sortedFiltered.length} {sortedFiltered.length === 1 ? 'registro encontrado' : 'registros encontrados'}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
@@ -188,17 +192,17 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Cargo</TableHead>
-                  <TableHead>Departamento</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Nome</SortableTableHead>
+                  <SortableTableHead sortKey="email" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>E-mail</SortableTableHead>
+                  <SortableTableHead sortKey="cargo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Cargo</SortableTableHead>
+                  <SortableTableHead sortKey="departamento" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Departamento</SortableTableHead>
+                  <SortableTableHead sortKey="tipoUsuario" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Tipo</SortableTableHead>
+                  <SortableTableHead sortKey="ativo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((u) => (
+                {sortedFiltered.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.nome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{u.email}</TableCell>

@@ -15,6 +15,8 @@ import {
   PieChart, Pie,
 } from 'recharts';
 import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye } from 'lucide-react';
+import { useSortable } from '@/hooks/use-sortable';
+import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -313,8 +315,9 @@ const ResultadosSection = () => {
     return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count }));
   }, [filtered]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+  const totalPages = Math.ceil(sortedFiltered.length / PAGE_SIZE);
+  const paged = sortedFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
   const clearFilters = () => {
     setFilterSemestre('all'); setFilterNivel('all'); setFilterCurso('all');
@@ -545,7 +548,7 @@ const ResultadosSection = () => {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading flex items-center justify-between">
-            <span className="flex items-center gap-2"><Database className="w-4 h-4 text-primary" />{filtered.length.toLocaleString('pt-BR')} registros</span>
+            <span className="flex items-center gap-2"><Database className="w-4 h-4 text-primary" />{sortedFiltered.length.toLocaleString('pt-BR')} registros</span>
             {totalPages > 1 && (
               <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}><ChevronLeft className="w-4 h-4" /></Button>
@@ -560,18 +563,18 @@ const ResultadosSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="sticky top-0 bg-background">Tipo</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Semestre</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Curso</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Dimensão</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Área</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Questão</TableHead>
-                  <TableHead className="sticky top-0 bg-background text-right">Excelente</TableHead>
-                  <TableHead className="sticky top-0 bg-background text-right">Bom</TableHead>
-                  <TableHead className="sticky top-0 bg-background text-right">Regular</TableHead>
-                  <TableHead className="sticky top-0 bg-background text-right">Total</TableHead>
-                  <TableHead className="sticky top-0 bg-background text-right">Média</TableHead>
-                  <TableHead className="sticky top-0 bg-background">Conceito</TableHead>
+                  <SortableTableHead sortKey="tipoAvaliacao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Tipo</SortableTableHead>
+                  <SortableTableHead sortKey="semestre" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Semestre</SortableTableHead>
+                  <SortableTableHead sortKey="curso" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Curso</SortableTableHead>
+                  <SortableTableHead sortKey="dimensao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Dimensão</SortableTableHead>
+                  <SortableTableHead sortKey="area" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Área</SortableTableHead>
+                  <SortableTableHead sortKey="textoQuestao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Questão</SortableTableHead>
+                  <SortableTableHead sortKey="excelente" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Excelente</SortableTableHead>
+                  <SortableTableHead sortKey="bom" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Bom</SortableTableHead>
+                  <SortableTableHead sortKey="regular" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Regular</SortableTableHead>
+                  <SortableTableHead sortKey="total" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Total</SortableTableHead>
+                  <SortableTableHead sortKey="media" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Média</SortableTableHead>
+                  <SortableTableHead sortKey="conceito" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Conceito</SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
