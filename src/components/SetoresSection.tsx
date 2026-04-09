@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { setoresData as initialSetores, type Setor } from '@/lib/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { type Setor } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -28,11 +29,6 @@ const emptySetor: Omit<Setor, 'id'> = {
   tipo: 'departamento',
   descricao: '',
   ativo: true,
-};
-
-export const useSetores = () => {
-  const [setores, setSetores] = useState<Setor[]>(initialSetores);
-  return { setores, setSetores };
 };
 
 const tipoOptions = [
@@ -47,6 +43,7 @@ interface SetoresSectionProps {
 }
 
 const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
+  const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -54,6 +51,16 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
   const [formData, setFormData] = useState<Omit<Setor, 'id'>>(emptySetor);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const fetchSetores = useCallback(async () => {
+    const { data, error } = await supabase.from('setores').select('*').order('nome');
+    if (error) { toast.error('Erro ao carregar setores.'); return; }
+    setSetores(data.map((s) => ({ id: s.id, nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao || '', ativo: s.ativo })));
+    setLoading(false);
+  }, [setSetores]);
+
+  useEffect(() => { fetchSetores(); }, [fetchSetores]);
 
   const filterTipoOptions = [{ value: 'all', label: 'Todos os tipos' }, ...tipoOptions];
 
@@ -70,43 +77,55 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
   const openEdit = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('view'); setDialogOpen(true); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nome || !formData.sigla) { toast.error('Preencha nome e sigla.'); return; }
+    setSaving(true);
     if (dialogMode === 'create') {
-      setSetores((prev) => [...prev, { ...formData, id: crypto.randomUUID() }]);
+      const { error } = await supabase.from('setores').insert({ nome: formData.nome, sigla: formData.sigla, tipo: formData.tipo, descricao: formData.descricao || null, ativo: formData.ativo });
+      if (error) { toast.error('Erro ao cadastrar.'); setSaving(false); return; }
       toast.success('Setor cadastrado com sucesso!');
     } else if (dialogMode === 'edit' && editingId) {
-      setSetores((prev) => prev.map((s) => (s.id === editingId ? { ...s, ...formData } : s)));
+      const { error } = await supabase.from('setores').update({ nome: formData.nome, sigla: formData.sigla, tipo: formData.tipo, descricao: formData.descricao || null, ativo: formData.ativo }).eq('id', editingId);
+      if (error) { toast.error('Erro ao atualizar.'); setSaving(false); return; }
       toast.success('Setor atualizado com sucesso!');
     }
+    setSaving(false);
     setDialogOpen(false);
+    fetchSetores();
   };
 
-  const handleDelete = () => {
-    if (deleteId) { setSetores((prev) => prev.filter((s) => s.id !== deleteId)); toast.success('Setor excluído!'); setDeleteId(null); }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('setores').delete().eq('id', deleteId);
+    if (error) { toast.error('Erro ao excluir.'); return; }
+    toast.success('Setor excluído!');
+    setDeleteId(null);
+    fetchSetores();
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const wb = XLSX.read(evt.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
         if (!rows.length) { toast.error('Arquivo vazio.'); return; }
-        const tipoMap: Record<string, Setor['tipo']> = { departamento: 'departamento', coordenação: 'coordenacao', coordenacao: 'coordenacao', setor: 'setor' };
-        const imported: Setor[] = rows.map((r) => ({
-          id: crypto.randomUUID(),
+        const tipoMap: Record<string, Setor['tipo']> = { departamento: 'departamento', 'coordenação': 'coordenacao', coordenacao: 'coordenacao', setor: 'setor' };
+        const toInsert = rows.map((r) => ({
           nome: String(r['NOME'] || r['Nome'] || r['nome'] || ''),
           sigla: String(r['SIGLA'] || r['Sigla'] || r['sigla'] || ''),
-          tipo: tipoMap[String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase()] || 'departamento',
-          descricao: String(r['DESCRIÇÃO'] || r['Descrição'] || r['DESCRICAO'] || r['descricao'] || ''),
+          tipo: tipoMap[String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase()] || 'departamento' as const,
+          descricao: String(r['DESCRIÇÃO'] || r['Descrição'] || r['DESCRICAO'] || r['descricao'] || '') || null,
           ativo: true,
         })).filter((s) => s.nome && s.sigla);
-        setSetores((prev) => [...prev, ...imported]);
-        toast.success(`${imported.length} setores importados!`);
+        if (!toInsert.length) { toast.error('Nenhum registro válido encontrado.'); return; }
+        const { error } = await supabase.from('setores').insert(toInsert);
+        if (error) { toast.error('Erro ao importar.'); return; }
+        toast.success(`${toInsert.length} setores importados!`);
+        fetchSetores();
       } catch { toast.error('Erro ao ler o arquivo.'); }
     };
     reader.readAsBinaryString(file);
@@ -115,6 +134,8 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
 
   const isReadOnly = dialogMode === 'view';
   const tipoLabels: Record<string, string> = { departamento: 'Departamento', coordenacao: 'Coordenação', setor: 'Setor' };
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
@@ -225,7 +246,7 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
           {!isReadOnly && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>{dialogMode === 'create' ? 'Cadastrar' : 'Salvar'}</Button>
+              <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}{dialogMode === 'create' ? 'Cadastrar' : 'Salvar'}</Button>
             </DialogFooter>
           )}
         </DialogContent>

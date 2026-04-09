@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { usuariosData as initialUsuarios, tipoUsuarioLabels, type Usuario, type Setor } from '@/lib/mockData';
+import { useState, useEffect, useCallback } from 'react';
+import { tipoUsuarioLabels, type Usuario, type Setor } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
-import { UserCog, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import { UserCog, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -41,16 +42,29 @@ interface UsuariosSectionProps {
 }
 
 const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
-  const [usuarios, setUsuarios] = useState<Usuario[]>(initialUsuarios);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterTipo, setFilterTipo] = useState<string>('all');
   const [filterDept, setFilterDept] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<Omit<Usuario, 'id'>>(emptyUsuario);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  const fetchUsuarios = useCallback(async () => {
+    const { data, error } = await supabase.from('usuarios_cpa').select('*').order('nome');
+    if (error) { toast.error('Erro ao carregar coordenadores.'); return; }
+    setUsuarios(data.map((u) => ({
+      id: u.id, nome: u.nome, email: u.email, cargo: u.cargo || '', departamento: u.departamento || '',
+      tipoUsuario: u.tipo_usuario, ativo: u.ativo,
+    })));
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchUsuarios(); }, [fetchUsuarios]);
 
   const setoresAtivos = setores.filter((s) => s.ativo);
   const depts = [...new Set(usuarios.map((u) => u.departamento))];
@@ -73,43 +87,59 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
   const openEdit = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('edit'); setDialogOpen(true); };
   const openView = (u: Usuario) => { setFormData({ nome: u.nome, email: u.email, cargo: u.cargo, departamento: u.departamento, tipoUsuario: u.tipoUsuario, ativo: u.ativo }); setEditingId(u.id); setDialogMode('view'); setDialogOpen(true); };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.nome || !formData.email || !formData.departamento) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+    setSaving(true);
+    const payload = { nome: formData.nome, email: formData.email, cargo: formData.cargo || null, departamento: formData.departamento, tipo_usuario: formData.tipoUsuario, ativo: formData.ativo };
     if (dialogMode === 'create') {
-      setUsuarios((prev) => [...prev, { ...formData, id: crypto.randomUUID() }]);
+      const { error } = await supabase.from('usuarios_cpa').insert(payload);
+      if (error) { toast.error('Erro ao cadastrar.'); setSaving(false); return; }
       toast.success('Coordenador/Gestor cadastrado com sucesso!');
     } else if (dialogMode === 'edit' && editingId) {
-      setUsuarios((prev) => prev.map((u) => (u.id === editingId ? { ...u, ...formData } : u)));
+      const { error } = await supabase.from('usuarios_cpa').update(payload).eq('id', editingId);
+      if (error) { toast.error('Erro ao atualizar.'); setSaving(false); return; }
       toast.success('Dados atualizados com sucesso!');
     }
+    setSaving(false);
     setDialogOpen(false);
+    fetchUsuarios();
   };
 
-  const handleDelete = () => {
-    if (deleteId) { setUsuarios((prev) => prev.filter((u) => u.id !== deleteId)); toast.success('Registro excluído!'); setDeleteId(null); }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('usuarios_cpa').delete().eq('id', deleteId);
+    if (error) { toast.error('Erro ao excluir.'); return; }
+    toast.success('Registro excluído!');
+    setDeleteId(null);
+    fetchUsuarios();
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const wb = XLSX.read(evt.target?.result, { type: 'binary' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json<Record<string, any>>(ws);
         if (!rows.length) { toast.error('Arquivo vazio.'); return; }
-        const imported: Usuario[] = rows.map((r) => ({
-          id: crypto.randomUUID(),
-          nome: String(r['NOME'] || r['Nome'] || r['nome'] || ''),
-          email: String(r['EMAIL'] || r['Email'] || r['email'] || r['E-MAIL'] || r['E-mail'] || ''),
-          cargo: String(r['CARGO'] || r['Cargo'] || r['cargo'] || ''),
-          departamento: String(r['DEPARTAMENTO'] || r['Departamento'] || r['departamento'] || r['COORDENAÇÃO'] || r['Coordenação'] || ''),
-          tipoUsuario: (['coordenador', 'gestor', 'admin_cpa'].includes(String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase()) ? String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase() : 'coordenador') as Usuario['tipoUsuario'],
-          ativo: true,
-        })).filter((u) => u.nome);
-        setUsuarios((prev) => [...prev, ...imported]);
-        toast.success(`${imported.length} coordenadores/gestores importados!`);
+        const toInsert = rows.map((r) => {
+          const tipoRaw = String(r['TIPO'] || r['Tipo'] || r['tipo'] || '').toLowerCase();
+          return {
+            nome: String(r['NOME'] || r['Nome'] || r['nome'] || ''),
+            email: String(r['EMAIL'] || r['Email'] || r['email'] || r['E-MAIL'] || r['E-mail'] || ''),
+            cargo: String(r['CARGO'] || r['Cargo'] || r['cargo'] || '') || null,
+            departamento: String(r['DEPARTAMENTO'] || r['Departamento'] || r['departamento'] || r['COORDENAÇÃO'] || r['Coordenação'] || ''),
+            tipo_usuario: (['coordenador', 'gestor', 'admin_cpa'].includes(tipoRaw) ? tipoRaw : 'coordenador') as 'coordenador' | 'gestor' | 'admin_cpa',
+            ativo: true,
+          };
+        }).filter((u) => u.nome && u.email);
+        if (!toInsert.length) { toast.error('Nenhum registro válido.'); return; }
+        const { error } = await supabase.from('usuarios_cpa').insert(toInsert);
+        if (error) { toast.error('Erro ao importar.'); return; }
+        toast.success(`${toInsert.length} coordenadores/gestores importados!`);
+        fetchUsuarios();
       } catch { toast.error('Erro ao ler o arquivo.'); }
     };
     reader.readAsBinaryString(file);
@@ -118,6 +148,8 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
 
   const isReadOnly = dialogMode === 'view';
   const dialogTitle = dialogMode === 'create' ? 'Novo Cadastro' : dialogMode === 'edit' ? 'Editar Cadastro' : 'Detalhes do Cadastro';
+
+  if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-6">
@@ -241,7 +273,7 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
           {!isReadOnly && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>{dialogMode === 'create' ? 'Cadastrar' : 'Salvar Alterações'}</Button>
+              <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="w-4 h-4 animate-spin mr-1" />}{dialogMode === 'create' ? 'Cadastrar' : 'Salvar Alterações'}</Button>
             </DialogFooter>
           )}
         </DialogContent>
