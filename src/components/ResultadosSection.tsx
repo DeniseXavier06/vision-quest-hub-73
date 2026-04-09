@@ -332,7 +332,7 @@ const ResultadosSection = () => {
     { key: 'media', label: 'Média', className: 'text-right' },
     { key: 'conceito', label: 'Conceito' },
   ];
-  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(resColumns);
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(resColumns, 'resultados');
 
   const renderResCell = (key: string, r: ResultadoRow) => {
     switch (key) {

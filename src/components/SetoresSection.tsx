@@ -84,7 +84,7 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
     { key: 'tipo', label: 'Tipo' },
     { key: 'ativo', label: 'Status' },
   ];
-  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(setorColumns);
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(setorColumns, 'setores');
 
   const renderSetorCell = (key: string, s: Setor) => {
     switch (key) {
