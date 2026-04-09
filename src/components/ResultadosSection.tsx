@@ -17,6 +17,7 @@ import {
 import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 
@@ -316,6 +317,41 @@ const ResultadosSection = () => {
   }, [filtered]);
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+
+  const resColumns: ColumnDef[] = [
+    { key: 'tipoAvaliacao', label: 'Tipo' },
+    { key: 'semestre', label: 'Semestre' },
+    { key: 'curso', label: 'Curso' },
+    { key: 'dimensao', label: 'Dimensão' },
+    { key: 'area', label: 'Área' },
+    { key: 'textoQuestao', label: 'Questão' },
+    { key: 'excelente', label: 'Excelente', className: 'text-right' },
+    { key: 'bom', label: 'Bom', className: 'text-right' },
+    { key: 'regular', label: 'Regular', className: 'text-right' },
+    { key: 'total', label: 'Total', className: 'text-right' },
+    { key: 'media', label: 'Média', className: 'text-right' },
+    { key: 'conceito', label: 'Conceito' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(resColumns);
+
+  const renderResCell = (key: string, r: ResultadoRow) => {
+    switch (key) {
+      case 'tipoAvaliacao': return <TableCell key={key}><Badge variant="outline" className="text-xs">{r.tipoAvaliacao}</Badge></TableCell>;
+      case 'semestre': return <TableCell key={key} className="text-sm">{r.semestre}</TableCell>;
+      case 'curso': return <TableCell key={key} className="text-sm max-w-[150px] truncate">{r.curso}</TableCell>;
+      case 'dimensao': return <TableCell key={key} className="text-sm max-w-[150px] truncate">{r.dimensao}</TableCell>;
+      case 'area': return <TableCell key={key} className="text-sm max-w-[120px] truncate">{r.area}</TableCell>;
+      case 'textoQuestao': return <TableCell key={key} className="text-sm max-w-[200px] truncate">{r.textoQuestao}</TableCell>;
+      case 'excelente': return <TableCell key={key} className="text-sm text-right">{r.excelente}</TableCell>;
+      case 'bom': return <TableCell key={key} className="text-sm text-right">{r.bom}</TableCell>;
+      case 'regular': return <TableCell key={key} className="text-sm text-right">{r.regular}</TableCell>;
+      case 'total': return <TableCell key={key} className="text-sm text-right font-medium">{r.total}</TableCell>;
+      case 'media': return <TableCell key={key} className="text-sm text-right font-medium">{r.media.toFixed(2)}</TableCell>;
+      case 'conceito': return <TableCell key={key}><Badge variant="secondary" className={r.conceito === 'EXCELENTE' ? 'bg-success/10 text-success' : r.conceito === 'BOM' ? 'bg-primary/10 text-primary' : r.conceito === 'REGULAR' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'}>{r.conceito}</Badge></TableCell>;
+      default: return null;
+    }
+  };
+
   const totalPages = Math.ceil(sortedFiltered.length / PAGE_SIZE);
   const paged = sortedFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
@@ -563,42 +599,19 @@ const ResultadosSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="tipoAvaliacao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Tipo</SortableTableHead>
-                  <SortableTableHead sortKey="semestre" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Semestre</SortableTableHead>
-                  <SortableTableHead sortKey="curso" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Curso</SortableTableHead>
-                  <SortableTableHead sortKey="dimensao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Dimensão</SortableTableHead>
-                  <SortableTableHead sortKey="area" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Área</SortableTableHead>
-                  <SortableTableHead sortKey="textoQuestao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Questão</SortableTableHead>
-                  <SortableTableHead sortKey="excelente" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Excelente</SortableTableHead>
-                  <SortableTableHead sortKey="bom" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Bom</SortableTableHead>
-                  <SortableTableHead sortKey="regular" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Regular</SortableTableHead>
-                  <SortableTableHead sortKey="total" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Total</SortableTableHead>
-                  <SortableTableHead sortKey="media" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Média</SortableTableHead>
-                  <SortableTableHead sortKey="conceito" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Conceito</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      className={`sticky top-0 bg-background ${col.className || ''}`}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paged.map((r, idx) => (
                   <TableRow key={`${page}-${idx}`}>
-                    <TableCell><Badge variant="outline" className="text-xs">{r.tipoAvaliacao}</Badge></TableCell>
-                    <TableCell className="text-sm">{r.semestre}</TableCell>
-                    <TableCell className="text-sm max-w-[150px] truncate">{r.curso}</TableCell>
-                    <TableCell className="text-sm max-w-[150px] truncate">{r.dimensao}</TableCell>
-                    <TableCell className="text-sm max-w-[120px] truncate">{r.area}</TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{r.textoQuestao}</TableCell>
-                    <TableCell className="text-sm text-right">{r.excelente}</TableCell>
-                    <TableCell className="text-sm text-right">{r.bom}</TableCell>
-                    <TableCell className="text-sm text-right">{r.regular}</TableCell>
-                    <TableCell className="text-sm text-right font-medium">{r.total}</TableCell>
-                    <TableCell className="text-sm text-right font-medium">{r.media.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={
-                        r.conceito === 'EXCELENTE' ? 'bg-success/10 text-success' :
-                        r.conceito === 'BOM' ? 'bg-primary/10 text-primary' :
-                        r.conceito === 'REGULAR' ? 'bg-warning/10 text-warning' :
-                        'bg-muted text-muted-foreground'
-                      }>{r.conceito}</Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderResCell(col.key, r))}
                   </TableRow>
                 ))}
               </TableBody>

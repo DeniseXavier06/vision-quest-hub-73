@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Building2, Plus, Eye, Pencil, Trash2, Search, Upload, Loader2 } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
+import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -76,6 +77,24 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
   });
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+
+  const setorColumns: ColumnDef[] = [
+    { key: 'nome', label: 'Nome' },
+    { key: 'sigla', label: 'Sigla' },
+    { key: 'tipo', label: 'Tipo' },
+    { key: 'ativo', label: 'Status' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(setorColumns);
+
+  const renderSetorCell = (key: string, s: Setor) => {
+    switch (key) {
+      case 'nome': return <TableCell key={key} className="font-medium">{s.nome}</TableCell>;
+      case 'sigla': return <TableCell key={key}><Badge variant="outline">{s.sigla}</Badge></TableCell>;
+      case 'tipo': return <TableCell key={key}><Badge variant="secondary">{tipoLabels[s.tipo]}</Badge></TableCell>;
+      case 'ativo': return <TableCell key={key}><Badge variant={s.ativo ? 'default' : 'outline'} className={s.ativo ? 'bg-success/10 text-success' : ''}>{s.ativo ? 'Ativo' : 'Inativo'}</Badge></TableCell>;
+      default: return null;
+    }
+  };
 
   const openCreate = () => { setFormData(emptySetor); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (s: Setor) => { setFormData({ nome: s.nome, sigla: s.sigla, tipo: s.tipo, descricao: s.descricao, ativo: s.ativo }); setEditingId(s.id); setDialogMode('edit'); setDialogOpen(true); };
@@ -177,24 +196,19 @@ const SetoresSection = ({ setores, setSetores }: SetoresSectionProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Nome</SortableTableHead>
-                  <SortableTableHead sortKey="sigla" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Sigla</SortableTableHead>
-                  <SortableTableHead sortKey="tipo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Tipo</SortableTableHead>
-                  <SortableTableHead sortKey="ativo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell className="font-medium">{s.nome}</TableCell>
-                    <TableCell><Badge variant="outline">{s.sigla}</Badge></TableCell>
-                    <TableCell><Badge variant="secondary">{tipoLabels[s.tipo]}</Badge></TableCell>
-                    <TableCell>
-                      <Badge variant={s.ativo ? 'default' : 'outline'} className={s.ativo ? 'bg-success/10 text-success' : ''}>
-                        {s.ativo ? 'Ativo' : 'Inativo'}
-                      </Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderSetorCell(col.key, s))}
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(s)}><Eye className="w-4 h-4" /></Button>
