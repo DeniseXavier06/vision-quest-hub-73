@@ -283,6 +283,7 @@ const AcoesSection = () => {
         <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[220px]" />
         <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
+        <SearchableSelect value={filterResponsavel} onValueChange={setFilterResponsavel} options={filterResponsavelOptions} placeholder="Filtrar por responsável" className="w-[220px]" />
       </div>
 
       <Card>
