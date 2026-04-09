@@ -317,6 +317,41 @@ const ResultadosSection = () => {
   }, [filtered]);
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
+
+  const resColumns: ColumnDef[] = [
+    { key: 'tipoAvaliacao', label: 'Tipo' },
+    { key: 'semestre', label: 'Semestre' },
+    { key: 'curso', label: 'Curso' },
+    { key: 'dimensao', label: 'Dimensão' },
+    { key: 'area', label: 'Área' },
+    { key: 'textoQuestao', label: 'Questão' },
+    { key: 'excelente', label: 'Excelente', className: 'text-right' },
+    { key: 'bom', label: 'Bom', className: 'text-right' },
+    { key: 'regular', label: 'Regular', className: 'text-right' },
+    { key: 'total', label: 'Total', className: 'text-right' },
+    { key: 'media', label: 'Média', className: 'text-right' },
+    { key: 'conceito', label: 'Conceito' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(resColumns);
+
+  const renderResCell = (key: string, r: ResultadoRow) => {
+    switch (key) {
+      case 'tipoAvaliacao': return <TableCell key={key}><Badge variant="outline" className="text-xs">{r.tipoAvaliacao}</Badge></TableCell>;
+      case 'semestre': return <TableCell key={key} className="text-sm">{r.semestre}</TableCell>;
+      case 'curso': return <TableCell key={key} className="text-sm max-w-[150px] truncate">{r.curso}</TableCell>;
+      case 'dimensao': return <TableCell key={key} className="text-sm max-w-[150px] truncate">{r.dimensao}</TableCell>;
+      case 'area': return <TableCell key={key} className="text-sm max-w-[120px] truncate">{r.area}</TableCell>;
+      case 'textoQuestao': return <TableCell key={key} className="text-sm max-w-[200px] truncate">{r.textoQuestao}</TableCell>;
+      case 'excelente': return <TableCell key={key} className="text-sm text-right">{r.excelente}</TableCell>;
+      case 'bom': return <TableCell key={key} className="text-sm text-right">{r.bom}</TableCell>;
+      case 'regular': return <TableCell key={key} className="text-sm text-right">{r.regular}</TableCell>;
+      case 'total': return <TableCell key={key} className="text-sm text-right font-medium">{r.total}</TableCell>;
+      case 'media': return <TableCell key={key} className="text-sm text-right font-medium">{r.media.toFixed(2)}</TableCell>;
+      case 'conceito': return <TableCell key={key}><Badge variant="secondary" className={r.conceito === 'EXCELENTE' ? 'bg-success/10 text-success' : r.conceito === 'BOM' ? 'bg-primary/10 text-primary' : r.conceito === 'REGULAR' ? 'bg-warning/10 text-warning' : 'bg-muted text-muted-foreground'}>{r.conceito}</Badge></TableCell>;
+      default: return null;
+    }
+  };
+
   const totalPages = Math.ceil(sortedFiltered.length / PAGE_SIZE);
   const paged = sortedFiltered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
 
