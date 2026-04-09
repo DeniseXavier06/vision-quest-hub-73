@@ -86,6 +86,7 @@ const AcoesSection = () => {
   const [filterEixo, setFilterEixo] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterAcao, setFilterAcao] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
@@ -108,8 +109,11 @@ const AcoesSection = () => {
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
   const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
+  const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
+  const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
 
   const filtered = acoes.filter((a) => {
+    if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (searchTerm) {
@@ -244,6 +248,7 @@ const AcoesSection = () => {
           <Input placeholder="Pesquisar ações..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
         <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[220px]" />
+        <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
       </div>
 
