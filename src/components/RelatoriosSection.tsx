@@ -288,6 +288,21 @@ const RelatoriosSection = () => {
     setDialogOpen(true);
   };
 
+  const createChartFromReport = (r: Relatorio) => {
+    resetForm();
+    setFormTitulo(`Gráfico - ${r.titulo}`);
+    setFormDescricao(`Gráfico baseado no relatório "${r.titulo}"`);
+    setFormTabela(r.tabela_origem);
+    setFormCampos(r.campos_selecionados);
+    setFormTipoGrafico('bar');
+    setFormAgrupamento(r.configuracao.campoAgrupamento || '');
+    setFormValor(r.configuracao.campoValor || '');
+    setFormAgregacao(r.configuracao.agregacao || 'count');
+    setFormFiltros(Array.isArray(r.filtros) ? r.filtros : []);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
   const toggleCampo = (key: string) => {
     setFormCampos((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
   };
@@ -567,6 +582,9 @@ const RelatoriosSection = () => {
                     <Button variant="default" size="sm" className="flex-1 gap-1 text-xs" onClick={() => executeRelatorio(r)}>
                       <Play className="w-3 h-3" />Executar
                     </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" title="Criar gráfico a partir deste relatório" onClick={() => createChartFromReport(r)}>
+                      <BarChart3 className="w-3.5 h-3.5" />
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setDeleteId(r.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                   </div>
@@ -779,6 +797,11 @@ const RelatoriosSection = () => {
                   )}
                 </div>
                 <div className="flex gap-2">
+                  {previewRelatorio && previewRelatorio.tipo_grafico === 'table' && (
+                    <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => { setPreviewOpen(false); createChartFromReport(previewRelatorio); }}>
+                      <BarChart3 className="w-3.5 h-3.5" />Criar Gráfico
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportExcel}>
                     <FileSpreadsheet className="w-3.5 h-3.5" />Excel
                   </Button>
