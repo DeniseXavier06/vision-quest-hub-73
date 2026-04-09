@@ -1,3 +1,27 @@
+export interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  cargo: string;
+  departamento: string;
+  tipoUsuario: 'coordenador' | 'gestor' | 'admin_cpa';
+  ativo: boolean;
+}
+
+export const usuariosData: Usuario[] = [
+  { id: '1', nome: 'Maria Silva', email: 'maria.silva@univ.edu.br', cargo: 'Coordenadora de Curso', departamento: 'Engenharia', tipoUsuario: 'coordenador', ativo: true },
+  { id: '2', nome: 'João Santos', email: 'joao.santos@univ.edu.br', cargo: 'Gestor Acadêmico', departamento: 'Administração', tipoUsuario: 'gestor', ativo: true },
+  { id: '3', nome: 'Ana Costa', email: 'ana.costa@univ.edu.br', cargo: 'Coordenadora CPA', departamento: 'Pedagogia', tipoUsuario: 'admin_cpa', ativo: true },
+  { id: '4', nome: 'Carlos Lima', email: 'carlos.lima@univ.edu.br', cargo: 'Coordenador de Curso', departamento: 'TI', tipoUsuario: 'coordenador', ativo: true },
+  { id: '5', nome: 'Pedro Oliveira', email: 'pedro.oliveira@univ.edu.br', cargo: 'Gestor de Infraestrutura', departamento: 'Infraestrutura', tipoUsuario: 'gestor', ativo: false },
+];
+
+export const tipoUsuarioLabels: Record<string, string> = {
+  coordenador: 'Coordenador',
+  gestor: 'Gestor',
+  admin_cpa: 'Admin CPA',
+};
+
 export interface Eixo {
   id: string;
   nome: string;

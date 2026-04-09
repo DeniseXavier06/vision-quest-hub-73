@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   GraduationCap,
+  UserCog,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ interface SidebarCPAProps {
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'usuarios', label: 'Coordenadores', icon: UserCog },
   { id: 'acoes', label: 'Ações', icon: ListChecks },
   { id: 'cronograma', label: 'Cronograma', icon: Calendar },
   { id: 'resultados', label: 'Resultados', icon: BarChart3 },
