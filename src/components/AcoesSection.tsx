@@ -40,7 +40,8 @@ const statusColors: Record<string, string> = {
   concluida: 'bg-success/10 text-success',
 };
 
-const emptyForm = { nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada' as const, percentualProgresso: 0, prazo: '' };
+type StatusAcao = 'nao_iniciada' | 'em_andamento' | 'concluida';
+const emptyForm: { nome: string; eixo: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
