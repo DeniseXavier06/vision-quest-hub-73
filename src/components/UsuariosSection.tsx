@@ -96,7 +96,7 @@ const UsuariosSection = ({ setores }: UsuariosSectionProps) => {
     { key: 'tipoUsuario', label: 'Tipo' },
     { key: 'ativo', label: 'Status' },
   ];
-  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(userColumns);
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(userColumns, 'usuarios');
 
   const renderUserCell = (key: string, u: Usuario) => {
     switch (key) {

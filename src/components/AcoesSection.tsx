@@ -137,7 +137,7 @@ const AcoesSection = () => {
     { key: 'prazo', label: 'Prazo' },
     { key: 'status', label: 'Status' },
   ];
-  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(acaoColumns);
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(acaoColumns, 'acoes');
 
   const renderAcaoCell = (key: string, acao: AcaoLocal) => {
     switch (key) {
