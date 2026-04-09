@@ -387,15 +387,24 @@ const ResultadosSection = () => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.curso) map.set(r.curso, (map.get(r.curso) || 0) + 1); });
     return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, count]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count,
+      name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count,
     }));
   }, [filtered]);
 
   const pieDimensao = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.dimensao) map.set(r.dimensao, (map.get(r.dimensao) || 0) + 1); });
-    return [...map.entries()].map(([name, value]) => ({ name: name.length > 25 ? name.substring(0, 25) + '…' : name, value }));
+    return [...map.entries()].map(([name, value]) => ({ name: name.length > 25 ? name.substring(0, 25) + '…' : name, fullName: name, value }));
   }, [filtered]);
+
+  const handleCursoBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterCurso(data.fullName); setPage(0); }
+  }, []);
+
+  const handleDimensaoClick = useCallback((_: any, index: number) => {
+    const item = pieDimensao[index];
+    if (item?.fullName) { setFilterDimensao(item.fullName); setPage(0); }
+  }, [pieDimensao]);
 
   const mediaPorDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
@@ -405,14 +414,18 @@ const ResultadosSection = () => {
         e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
       }
     });
-    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, media: Number((sum / count).toFixed(2)) }));
+    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }));
   }, [filtered]);
 
   const desempenhoDimensao = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.dimensao) map.set(r.dimensao, (map.get(r.dimensao) || 0) + 1); });
-    return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, registros: count }));
+    return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
   }, [filtered]);
+
+  const handleDimensaoBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
+  }, []);
 
   // === Colaboradores-specific charts ===
   const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
@@ -681,7 +694,7 @@ const ResultadosSection = () => {
                     <XAxis type="number" tick={{ fontSize: fs('cursoBar') }} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: fs('cursoBar') - 1 }} width={150} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('cursoBar')}px` }} />
-                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel} onClick={handleCursoBarClick} cursor="pointer">{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -697,7 +710,7 @@ const ResultadosSection = () => {
                   <PieChart>
                     <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
                       label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
-                      fontSize={fs('dimPie')}>
+                      fontSize={fs('dimPie')} onClick={handleDimensaoClick} cursor="pointer">
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
@@ -722,7 +735,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: fs('mediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: fs('mediaDim') }} domain={[0, 'auto']} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -739,7 +752,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: fs('desempDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: fs('desempDim') }} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('desempDim')}px` }} />
-                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
