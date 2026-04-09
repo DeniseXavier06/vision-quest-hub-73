@@ -258,7 +258,7 @@ const RelatoriosSection = () => {
 
     const { data, error } = await query.limit(5000);
     if (error) { toast.error('Erro ao consultar dados'); setPreviewLoading(false); return; }
-    setPreviewData(data || []);
+    setPreviewData((data as Record<string, unknown>[]) || []);
     setPreviewLoading(false);
   };
 
