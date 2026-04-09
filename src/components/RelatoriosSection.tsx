@@ -24,9 +24,11 @@ import {
 } from 'recharts';
 import {
   FileText, Plus, Eye, Pencil, Trash2, Search, BarChart3, PieChart as PieChartIcon,
-  TrendingUp, Layers, Play, Save, Loader2,
+  TrendingUp, Layers, Play, Save, Loader2, Download, FileSpreadsheet, Filter,
+  BookTemplate, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 // ─── Table/field metadata ───
 interface FieldDef {
@@ -121,6 +123,12 @@ const chartColors = [
   'hsl(170, 50%, 40%)', 'hsl(25, 70%, 50%)', 'hsl(300, 40%, 45%)', 'hsl(60, 60%, 40%)',
 ];
 
+interface FilterConfig {
+  campo: string;
+  operador: 'eq' | 'like' | 'gte' | 'lte' | 'neq';
+  valor: string;
+}
+
 interface Relatorio {
   id: string;
   titulo: string;
@@ -128,7 +136,7 @@ interface Relatorio {
   tabela_origem: string;
   campos_selecionados: string[];
   tipo_grafico: string;
-  filtros: Record<string, string>;
+  filtros: FilterConfig[];
   configuracao: { campoAgrupamento?: string; campoValor?: string; agregacao?: string };
   created_at: string;
 }
@@ -137,6 +145,65 @@ const AGREGACOES = [
   { value: 'count', label: 'Contagem' },
   { value: 'sum', label: 'Soma' },
   { value: 'avg', label: 'Média' },
+];
+
+const OPERADORES = [
+  { value: 'eq', label: 'Igual a' },
+  { value: 'neq', label: 'Diferente de' },
+  { value: 'like', label: 'Contém' },
+  { value: 'gte', label: 'Maior ou igual' },
+  { value: 'lte', label: 'Menor ou igual' },
+];
+
+// ─── Pre-built templates ───
+interface ReportTemplate {
+  nome: string;
+  descricao: string;
+  tabela: string;
+  campos: string[];
+  tipoGrafico: string;
+  agrupamento: string;
+  valor: string;
+  agregacao: string;
+  filtros: FilterConfig[];
+}
+
+const TEMPLATES: ReportTemplate[] = [
+  {
+    nome: 'Ações por Eixo',
+    descricao: 'Relatório de ações agrupadas por eixo com status e progresso',
+    tabela: 'acoes', campos: ['nome', 'eixo', 'responsavel', 'status', 'prazo', 'percentual_progresso'],
+    tipoGrafico: 'bar', agrupamento: 'eixo', valor: 'percentual_progresso', agregacao: 'avg', filtros: [],
+  },
+  {
+    nome: 'Progresso Geral por Eixo',
+    descricao: 'Resumo do percentual médio de progresso por eixo',
+    tabela: 'acoes', campos: ['eixo', 'percentual_progresso'],
+    tipoGrafico: 'bar', agrupamento: 'eixo', valor: 'percentual_progresso', agregacao: 'avg', filtros: [],
+  },
+  {
+    nome: 'Prazos Vencidos',
+    descricao: 'Ações com prazo vencido e status diferente de concluída',
+    tabela: 'acoes', campos: ['nome', 'eixo', 'responsavel', 'status', 'prazo', 'percentual_progresso'],
+    tipoGrafico: 'table', agrupamento: '', valor: '', agregacao: 'count',
+    filtros: [
+      { campo: 'prazo', operador: 'lte', valor: new Date().toISOString().split('T')[0] },
+      { campo: 'status', operador: 'neq', valor: 'concluida' },
+    ],
+  },
+  {
+    nome: 'Resultados por Dimensão',
+    descricao: 'Média das avaliações agrupada por dimensão',
+    tabela: 'resultados', campos: ['dimensao', 'media', 'conceito', 'tipo_avaliacao'],
+    tipoGrafico: 'bar', agrupamento: 'dimensao', valor: 'media', agregacao: 'avg', filtros: [],
+  },
+  {
+    nome: 'Reuniões Realizadas',
+    descricao: 'Lista de reuniões com status "realizada"',
+    tabela: 'reunioes', campos: ['titulo', 'data_hora', 'tipo', 'status', 'local'],
+    tipoGrafico: 'table', agrupamento: '', valor: '', agregacao: 'count',
+    filtros: [{ campo: 'status', operador: 'eq', valor: 'realizada' }],
+  },
 ];
 
 const RelatoriosSection = () => {
@@ -164,6 +231,7 @@ const RelatoriosSection = () => {
   const [formAgrupamento, setFormAgrupamento] = useState('');
   const [formValor, setFormValor] = useState('');
   const [formAgregacao, setFormAgregacao] = useState('count');
+  const [formFiltros, setFormFiltros] = useState<FilterConfig[]>([]);
 
   const fetchRelatorios = useCallback(async () => {
     const { data, error } = await supabase.from('relatorios').select('*').order('created_at', { ascending: false });
@@ -171,7 +239,7 @@ const RelatoriosSection = () => {
     setRelatorios((data || []).map((r: any) => ({
       ...r,
       campos_selecionados: r.campos_selecionados || [],
-      filtros: r.filtros || {},
+      filtros: Array.isArray(r.filtros) ? r.filtros : [],
       configuracao: r.configuracao || {},
     })));
     setLoading(false);
@@ -186,10 +254,25 @@ const RelatoriosSection = () => {
   const resetForm = () => {
     setFormTitulo(''); setFormDescricao(''); setFormTabela(''); setFormCampos([]);
     setFormTipoGrafico('bar'); setFormAgrupamento(''); setFormValor(''); setFormAgregacao('count');
-    setEditingId(null);
+    setFormFiltros([]); setEditingId(null);
   };
 
   const openCreate = () => { resetForm(); setDialogMode('create'); setDialogOpen(true); };
+
+  const applyTemplate = (tpl: ReportTemplate) => {
+    setFormTitulo(tpl.nome);
+    setFormDescricao(tpl.descricao);
+    setFormTabela(tpl.tabela);
+    setFormCampos(tpl.campos);
+    setFormTipoGrafico(tpl.tipoGrafico);
+    setFormAgrupamento(tpl.agrupamento);
+    setFormValor(tpl.valor);
+    setFormAgregacao(tpl.agregacao);
+    setFormFiltros(tpl.filtros);
+    setDialogMode('create');
+    setDialogOpen(true);
+  };
+
   const openEdit = (r: Relatorio) => {
     setFormTitulo(r.titulo);
     setFormDescricao(r.descricao);
@@ -199,6 +282,7 @@ const RelatoriosSection = () => {
     setFormAgrupamento(r.configuracao.campoAgrupamento || '');
     setFormValor(r.configuracao.campoValor || '');
     setFormAgregacao(r.configuracao.agregacao || 'count');
+    setFormFiltros(Array.isArray(r.filtros) ? r.filtros : []);
     setEditingId(r.id);
     setDialogMode('edit');
     setDialogOpen(true);
@@ -206,6 +290,18 @@ const RelatoriosSection = () => {
 
   const toggleCampo = (key: string) => {
     setFormCampos((prev) => prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]);
+  };
+
+  // ─── Filter helpers ───
+  const addFilter = () => {
+    if (!tabelaAtual) return;
+    setFormFiltros(prev => [...prev, { campo: tabelaAtual.fields[0].key, operador: 'eq', valor: '' }]);
+  };
+  const updateFilter = (idx: number, patch: Partial<FilterConfig>) => {
+    setFormFiltros(prev => prev.map((f, i) => i === idx ? { ...f, ...patch } : f));
+  };
+  const removeFilter = (idx: number) => {
+    setFormFiltros(prev => prev.filter((_, i) => i !== idx));
   };
 
   const handleSave = async () => {
@@ -220,16 +316,16 @@ const RelatoriosSection = () => {
       tabela_origem: formTabela,
       campos_selecionados: formCampos,
       tipo_grafico: formTipoGrafico,
-      filtros: {},
-      configuracao: { campoAgrupamento: formAgrupamento, campoValor: formValor, agregacao: formAgregacao },
+      filtros: formFiltros as any,
+      configuracao: { campoAgrupamento: formAgrupamento, campoValor: formValor, agregacao: formAgregacao } as any,
     };
 
     if (dialogMode === 'create') {
-      const { error } = await supabase.from('relatorios').insert(payload);
+      const { error } = await supabase.from('relatorios').insert(payload as any);
       if (error) { toast.error('Erro ao criar relatório'); setSaving(false); return; }
       toast.success('Relatório criado!');
     } else if (editingId) {
-      const { error } = await supabase.from('relatorios').update(payload).eq('id', editingId);
+      const { error } = await supabase.from('relatorios').update(payload as any).eq('id', editingId);
       if (error) { toast.error('Erro ao atualizar'); setSaving(false); return; }
       toast.success('Relatório atualizado!');
     }
@@ -253,8 +349,26 @@ const RelatoriosSection = () => {
     setPreviewRelatorio(r);
     setPreviewOpen(true);
 
-    const selectFields = r.campos_selecionados.join(',');
-    let query = supabase.from(r.tabela_origem as any).select(selectFields);
+    // Build query with all selected fields + filter fields
+    const allFields = new Set(r.campos_selecionados);
+    if (r.configuracao.campoAgrupamento) allFields.add(r.configuracao.campoAgrupamento);
+    if (r.configuracao.campoValor) allFields.add(r.configuracao.campoValor);
+    const filters = Array.isArray(r.filtros) ? r.filtros : [];
+    filters.forEach(f => allFields.add(f.campo));
+
+    let query = supabase.from(r.tabela_origem as any).select([...allFields].join(','));
+
+    // Apply filters
+    filters.forEach((f) => {
+      if (!f.valor) return;
+      switch (f.operador) {
+        case 'eq': query = query.eq(f.campo, f.valor); break;
+        case 'neq': query = query.neq(f.campo, f.valor); break;
+        case 'like': query = query.ilike(f.campo, `%${f.valor}%`); break;
+        case 'gte': query = query.gte(f.campo, f.valor); break;
+        case 'lte': query = query.lte(f.campo, f.valor); break;
+      }
+    });
 
     const { data, error } = await query.limit(5000);
     if (error) { toast.error('Erro ao consultar dados'); setPreviewLoading(false); return; }
@@ -287,6 +401,69 @@ const RelatoriosSection = () => {
       .slice(0, 30);
   }, [previewData, previewRelatorio]);
 
+  // ─── Export functions ───
+  const getFieldLabel = (tableKey: string, fieldKey: string) => {
+    return TABLES.find(t => t.key === tableKey)?.fields.find(f => f.key === fieldKey)?.label || fieldKey;
+  };
+
+  const exportExcel = () => {
+    if (!previewRelatorio || !previewData.length) return;
+    const headers = previewRelatorio.campos_selecionados.map(c => getFieldLabel(previewRelatorio.tabela_origem, c));
+    const rows = previewData.map(row =>
+      previewRelatorio.campos_selecionados.map(c => String((row as any)[c] ?? ''))
+    );
+    const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+
+    // Add chart data if available
+    if (chartData.length > 0) {
+      const chartHeaders = ['Grupo', 'Valor'];
+      const chartRows = chartData.map(d => [d.name, d.value]);
+      const ws2 = XLSX.utils.aoa_to_sheet([chartHeaders, ...chartRows]);
+      XLSX.utils.book_append_sheet(wb, ws2, 'Gráfico');
+    }
+
+    XLSX.writeFile(wb, `${previewRelatorio.titulo.replace(/\s+/g, '_')}.xlsx`);
+    toast.success('Excel exportado!');
+  };
+
+  const exportPDF = async () => {
+    if (!previewRelatorio || !previewData.length) return;
+    const { default: jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
+
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(16);
+    doc.text(previewRelatorio.titulo, 14, 18);
+    if (previewRelatorio.descricao) {
+      doc.setFontSize(10);
+      doc.text(previewRelatorio.descricao, 14, 26);
+    }
+    doc.setFontSize(8);
+    doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')} | ${previewData.length} registros`, 14, 33);
+
+    const headers = previewRelatorio.campos_selecionados.map(c =>
+      getFieldLabel(previewRelatorio.tabela_origem, c)
+    );
+    const rows = previewData.map(row =>
+      previewRelatorio.campos_selecionados.map(c => String((row as any)[c] ?? ''))
+    );
+
+    (doc as any).autoTable({
+      head: [headers],
+      body: rows,
+      startY: 38,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [30, 58, 95], textColor: 255, fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { left: 14, right: 14 },
+    });
+
+    doc.save(`${previewRelatorio.titulo.replace(/\s+/g, '_')}.pdf`);
+    toast.success('PDF exportado!');
+  };
+
   const filtered = relatorios.filter((r) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
@@ -308,6 +485,30 @@ const RelatoriosSection = () => {
         <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Novo Relatório</Button>
       </div>
 
+      {/* ─── Templates ─── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-heading flex items-center gap-2">
+            <BookTemplate className="w-4 h-4 text-primary" />
+            Modelos Prontos
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2">
+            {TEMPLATES.map((tpl, idx) => (
+              <button
+                key={idx}
+                onClick={() => applyTemplate(tpl)}
+                className="text-left p-3 rounded-lg border border-border hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              >
+                <p className="text-xs font-medium text-foreground">{tpl.nome}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{tpl.descricao}</p>
+              </button>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-wrap gap-3 items-center">
         <div className="relative flex-1 min-w-[200px] max-w-[350px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -323,7 +524,7 @@ const RelatoriosSection = () => {
             </div>
             <h3 className="text-lg font-heading font-semibold text-foreground mb-1">Nenhum relatório</h3>
             <p className="text-sm text-muted-foreground max-w-md mb-4">
-              Crie relatórios personalizados escolhendo tabelas, campos e tipos de gráficos.
+              Crie relatórios personalizados ou use os modelos prontos acima.
             </p>
             <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Criar Primeiro Relatório</Button>
           </CardContent>
@@ -332,6 +533,7 @@ const RelatoriosSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((r) => {
             const ChartIcon = CHART_TYPES.find((c) => c.value === r.tipo_grafico)?.icon || BarChart3;
+            const filterCount = Array.isArray(r.filtros) ? r.filtros.length : 0;
             return (
               <Card key={r.id} className="hover:shadow-md transition-shadow">
                 <CardHeader className="pb-3">
@@ -352,6 +554,11 @@ const RelatoriosSection = () => {
                     <Badge variant="outline" className="text-[11px]">{getTableLabel(r.tabela_origem)}</Badge>
                     <Badge variant="secondary" className="text-[11px]">{getChartLabel(r.tipo_grafico)}</Badge>
                     <Badge variant="secondary" className="text-[11px]">{r.campos_selecionados.length} campos</Badge>
+                    {filterCount > 0 && (
+                      <Badge variant="secondary" className="text-[11px] gap-1">
+                        <Filter className="w-2.5 h-2.5" />{filterCount} filtro{filterCount > 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-[11px] text-muted-foreground mb-3">
                     Criado em {new Date(r.created_at).toLocaleDateString('pt-BR')}
@@ -372,10 +579,10 @@ const RelatoriosSection = () => {
 
       {/* ─── Create / Edit Dialog ─── */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) { setDialogOpen(false); resetForm(); } else setDialogOpen(true); }}>
-        <DialogContent className="sm:max-w-[650px] max-h-[85vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-heading">{dialogMode === 'create' ? 'Novo Relatório' : 'Editar Relatório'}</DialogTitle>
-            <DialogDescription>Configure os dados e visualização do relatório</DialogDescription>
+            <DialogDescription>Configure os dados, filtros e visualização do relatório</DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-5 py-2">
@@ -396,7 +603,7 @@ const RelatoriosSection = () => {
               <Label>Tabela de Origem *</Label>
               <SearchableSelect
                 value={formTabela}
-                onValueChange={(v) => { setFormTabela(v); setFormCampos([]); setFormAgrupamento(''); setFormValor(''); }}
+                onValueChange={(v) => { setFormTabela(v); setFormCampos([]); setFormAgrupamento(''); setFormValor(''); setFormFiltros([]); }}
                 options={TABLES.map((t) => ({ value: t.key, label: t.label }))}
                 placeholder="Selecione a tabela"
                 className="w-full"
@@ -422,6 +629,50 @@ const RelatoriosSection = () => {
                   <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormCampos(tabelaAtual.fields.map((f) => f.key))}>Selecionar todos</Button>
                   <Button variant="ghost" size="sm" className="text-xs" onClick={() => setFormCampos([])}>Limpar seleção</Button>
                 </div>
+              </div>
+            )}
+
+            {/* ─── Filtros Dinâmicos ─── */}
+            {tabelaAtual && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <Filter className="w-3.5 h-3.5" />Filtros
+                  </Label>
+                  <Button variant="outline" size="sm" className="text-xs gap-1" onClick={addFilter}>
+                    <Plus className="w-3 h-3" />Adicionar Filtro
+                  </Button>
+                </div>
+                {formFiltros.length === 0 && (
+                  <p className="text-xs text-muted-foreground">Nenhum filtro aplicado. Todos os registros serão retornados.</p>
+                )}
+                {formFiltros.map((filtro, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 border rounded-lg bg-muted/20">
+                    <SearchableSelect
+                      value={filtro.campo}
+                      onValueChange={(v) => updateFilter(idx, { campo: v })}
+                      options={tabelaAtual.fields.map(f => ({ value: f.key, label: f.label }))}
+                      placeholder="Campo"
+                      className="flex-1 min-w-[120px]"
+                    />
+                    <SearchableSelect
+                      value={filtro.operador}
+                      onValueChange={(v) => updateFilter(idx, { operador: v as FilterConfig['operador'] })}
+                      options={OPERADORES}
+                      placeholder="Operador"
+                      className="w-[140px]"
+                    />
+                    <Input
+                      value={filtro.valor}
+                      onChange={(e) => updateFilter(idx, { valor: e.target.value })}
+                      placeholder="Valor"
+                      className="flex-1 min-w-[100px]"
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => removeFilter(idx)}>
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -515,12 +766,40 @@ const RelatoriosSection = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Stats */}
-              <div className="flex gap-4">
-                <Badge variant="outline">{previewData.length.toLocaleString('pt-BR')} registros</Badge>
-                <Badge variant="secondary">{previewRelatorio?.campos_selecionados.length} campos</Badge>
-                <Badge variant="secondary">{getTableLabel(previewRelatorio?.tabela_origem || '')}</Badge>
+              {/* Stats + Export buttons */}
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="outline">{previewData.length.toLocaleString('pt-BR')} registros</Badge>
+                  <Badge variant="secondary">{previewRelatorio?.campos_selecionados.length} campos</Badge>
+                  <Badge variant="secondary">{getTableLabel(previewRelatorio?.tabela_origem || '')}</Badge>
+                  {Array.isArray(previewRelatorio?.filtros) && previewRelatorio.filtros.length > 0 && (
+                    <Badge variant="secondary" className="gap-1">
+                      <Filter className="w-2.5 h-2.5" />{previewRelatorio.filtros.length} filtro(s)
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportExcel}>
+                    <FileSpreadsheet className="w-3.5 h-3.5" />Excel
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportPDF}>
+                    <Download className="w-3.5 h-3.5" />PDF
+                  </Button>
+                </div>
               </div>
+
+              {/* Active filters display */}
+              {Array.isArray(previewRelatorio?.filtros) && previewRelatorio.filtros.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {previewRelatorio.filtros.map((f, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] gap-1">
+                      {getFieldLabel(previewRelatorio.tabela_origem, f.campo)}
+                      {' '}{OPERADORES.find(o => o.value === f.operador)?.label || f.operador}
+                      {' '}"{f.valor}"
+                    </Badge>
+                  ))}
+                </div>
+              )}
 
               {/* Chart */}
               {previewRelatorio?.tipo_grafico !== 'table' && chartData.length > 0 && (
@@ -529,7 +808,7 @@ const RelatoriosSection = () => {
                     <CardTitle className="text-sm font-heading">
                       {previewRelatorio?.configuracao.campoAgrupamento
                         ? `${AGREGACOES.find((a) => a.value === previewRelatorio?.configuracao.agregacao)?.label || 'Contagem'} por ${
-                          TABLES.find((t) => t.key === previewRelatorio?.tabela_origem)?.fields.find((f) => f.key === previewRelatorio?.configuracao.campoAgrupamento)?.label || previewRelatorio?.configuracao.campoAgrupamento
+                          getFieldLabel(previewRelatorio.tabela_origem, previewRelatorio.configuracao.campoAgrupamento)
                         }`
                         : 'Gráfico'}
                     </CardTitle>
@@ -585,10 +864,11 @@ const RelatoriosSection = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {previewRelatorio?.campos_selecionados.map((c) => {
-                            const fieldDef = TABLES.find((t) => t.key === previewRelatorio.tabela_origem)?.fields.find((f) => f.key === c);
-                            return <TableHead key={c} className="sticky top-0 bg-background text-xs">{fieldDef?.label || c}</TableHead>;
-                          })}
+                          {previewRelatorio?.campos_selecionados.map((c) => (
+                            <TableHead key={c} className="sticky top-0 bg-background text-xs">
+                              {getFieldLabel(previewRelatorio.tabela_origem, c)}
+                            </TableHead>
+                          ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
