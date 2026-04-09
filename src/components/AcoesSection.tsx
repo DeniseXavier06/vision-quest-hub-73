@@ -46,12 +46,18 @@ const eixosOptions = [
   'Imagem Institucional',
 ];
 
+const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
+const statusSelectOptions = [
+  { value: 'nao_iniciada', label: 'Não iniciada' },
+  { value: 'em_andamento', label: 'Em andamento' },
+  { value: 'concluida', label: 'Concluída' },
+];
+
 const AcoesSection = () => {
   const [acoes, setAcoes] = useState<Acao[]>(initialAcoes);
   const [filterEixo, setFilterEixo] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
-  // Modal states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<Omit<Acao, 'id' | 'diasRestantes'>>(emptyAcao);
@@ -59,6 +65,8 @@ const AcoesSection = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
+  const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
 
   const filtered = acoes.filter((a) => {
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
@@ -71,76 +79,30 @@ const AcoesSection = () => {
     return Math.ceil(diff / (1000 * 60 * 60 * 24));
   };
 
-  const openCreate = () => {
-    setFormData(emptyAcao);
-    setEditingId(null);
-    setDialogMode('create');
-    setDialogOpen(true);
-  };
-
+  const openCreate = () => { setFormData(emptyAcao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (acao: Acao) => {
-    setFormData({
-      nome: acao.nome,
-      eixo: acao.eixo,
-      meta: acao.meta,
-      responsavel: acao.responsavel,
-      status: acao.status,
-      percentualProgresso: acao.percentualProgresso,
-      prazo: acao.prazo,
-    });
-    setEditingId(acao.id);
-    setDialogMode('edit');
-    setDialogOpen(true);
+    setFormData({ nome: acao.nome, eixo: acao.eixo, meta: acao.meta, responsavel: acao.responsavel, status: acao.status, percentualProgresso: acao.percentualProgresso, prazo: acao.prazo });
+    setEditingId(acao.id); setDialogMode('edit'); setDialogOpen(true);
   };
-
   const openView = (acao: Acao) => {
-    setFormData({
-      nome: acao.nome,
-      eixo: acao.eixo,
-      meta: acao.meta,
-      responsavel: acao.responsavel,
-      status: acao.status,
-      percentualProgresso: acao.percentualProgresso,
-      prazo: acao.prazo,
-    });
-    setEditingId(acao.id);
-    setDialogMode('view');
-    setDialogOpen(true);
+    setFormData({ nome: acao.nome, eixo: acao.eixo, meta: acao.meta, responsavel: acao.responsavel, status: acao.status, percentualProgresso: acao.percentualProgresso, prazo: acao.prazo });
+    setEditingId(acao.id); setDialogMode('view'); setDialogOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) {
-      toast.error('Preencha todos os campos obrigatórios.');
-      return;
-    }
-
+    if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     if (dialogMode === 'create') {
-      const newAcao: Acao = {
-        ...formData,
-        id: crypto.randomUUID(),
-        diasRestantes: calcDiasRestantes(formData.prazo),
-      };
-      setAcoes((prev) => [...prev, newAcao]);
+      setAcoes((prev) => [...prev, { ...formData, id: crypto.randomUUID(), diasRestantes: calcDiasRestantes(formData.prazo) }]);
       toast.success('Ação criada com sucesso!');
     } else if (dialogMode === 'edit' && editingId) {
-      setAcoes((prev) =>
-        prev.map((a) =>
-          a.id === editingId
-            ? { ...a, ...formData, diasRestantes: calcDiasRestantes(formData.prazo) }
-            : a
-        )
-      );
+      setAcoes((prev) => prev.map((a) => a.id === editingId ? { ...a, ...formData, diasRestantes: calcDiasRestantes(formData.prazo) } : a));
       toast.success('Ação atualizada com sucesso!');
     }
     setDialogOpen(false);
   };
 
   const handleDelete = () => {
-    if (deleteId) {
-      setAcoes((prev) => prev.filter((a) => a.id !== deleteId));
-      toast.success('Ação excluída com sucesso!');
-      setDeleteId(null);
-    }
+    if (deleteId) { setAcoes((prev) => prev.filter((a) => a.id !== deleteId)); toast.success('Ação excluída com sucesso!'); setDeleteId(null); }
   };
 
   const isReadOnly = dialogMode === 'view';
@@ -153,15 +115,12 @@ const AcoesSection = () => {
           <h2 className="text-2xl font-heading font-bold text-foreground">Ações</h2>
           <p className="text-sm text-muted-foreground mt-1">Gestão das ações do plano CPA</p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Ação
-        </Button>
+        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Nova Ação</Button>
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={eixosOptions} placeholder="Filtrar por eixo" />
-        <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={['nao_iniciada', 'em_andamento', 'concluida']} placeholder="Filtrar por status" />
+        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[220px]" />
+        <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
       </div>
 
       <Card>
@@ -197,25 +156,15 @@ const AcoesSection = () => {
                         <span className="text-xs text-muted-foreground w-8">{acao.percentualProgresso}%</span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {new Date(acao.prazo).toLocaleDateString('pt-BR')}
-                    </TableCell>
+                    <TableCell className="text-sm">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
-                      <Badge className={statusColors[acao.status]} variant="secondary">
-                        {statusLabels[acao.status]}
-                      </Badge>
+                      <Badge className={statusColors[acao.status]} variant="secondary">{statusLabels[acao.status]}</Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(acao)} title="Visualizar">
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(acao)} title="Editar">
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir">
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(acao)} title="Editar"><Pencil className="w-4 h-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -226,7 +175,6 @@ const AcoesSection = () => {
         </CardContent>
       </Card>
 
-      {/* Create / Edit / View Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -235,107 +183,64 @@ const AcoesSection = () => {
               {dialogMode === 'create' ? 'Preencha os dados para criar uma nova ação.' : dialogMode === 'edit' ? 'Altere os dados da ação.' : 'Detalhes completos da ação.'}
             </DialogDescription>
           </DialogHeader>
-
           <div className="grid gap-4 py-2">
             <div className="space-y-2">
               <Label>Nome da Ação *</Label>
-              <Input
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                readOnly={isReadOnly}
-                placeholder="Ex: Divulgar resultados do Perfil Acadêmico"
-              />
+              <Input value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })} readOnly={isReadOnly} placeholder="Ex: Divulgar resultados do Perfil Acadêmico" />
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Eixo *</Label>
-                {isReadOnly ? (
-                  <Input value={formData.eixo} readOnly />
-                ) : (
-                  <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosOptions} placeholder="Selecione" />
+                {isReadOnly ? <Input value={formData.eixo} readOnly /> : (
+                  <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosSelectOptions} placeholder="Selecione" />
                 )}
               </div>
               <div className="space-y-2">
                 <Label>Meta</Label>
-                <Input
-                  value={formData.meta}
-                  onChange={(e) => setFormData({ ...formData, meta: e.target.value })}
-                  readOnly={isReadOnly}
-                  placeholder="Meta associada"
-                />
+                <Input value={formData.meta} onChange={(e) => setFormData({ ...formData, meta: e.target.value })} readOnly={isReadOnly} placeholder="Meta associada" />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Responsável *</Label>
-                <Input
-                  value={formData.responsavel}
-                  onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })}
-                  readOnly={isReadOnly}
-                  placeholder="Nome do responsável"
-                />
+                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} readOnly={isReadOnly} placeholder="Nome do responsável" />
               </div>
               <div className="space-y-2">
                 <Label>Prazo *</Label>
-                <Input
-                  type="date"
-                  value={formData.prazo}
-                  onChange={(e) => setFormData({ ...formData, prazo: e.target.value })}
-                  readOnly={isReadOnly}
-                />
+                <Input type="date" value={formData.prazo} onChange={(e) => setFormData({ ...formData, prazo: e.target.value })} readOnly={isReadOnly} />
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Status</Label>
-                {isReadOnly ? (
-                  <Input value={statusLabels[formData.status]} readOnly />
-                ) : (
-                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Acao['status'] })} options={['nao_iniciada', 'em_andamento', 'concluida']} />
+                {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Acao['status'] })} options={statusSelectOptions} />
                 )}
               </div>
               <div className="space-y-2">
                 <Label>Progresso (%)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={formData.percentualProgresso}
-                  onChange={(e) => setFormData({ ...formData, percentualProgresso: Math.min(100, Math.max(0, Number(e.target.value))) })}
-                  readOnly={isReadOnly}
-                />
+                <Input type="number" min={0} max={100} value={formData.percentualProgresso} onChange={(e) => setFormData({ ...formData, percentualProgresso: Math.min(100, Math.max(0, Number(e.target.value))) })} readOnly={isReadOnly} />
               </div>
             </div>
           </div>
-
           {!isReadOnly && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>
-                {dialogMode === 'create' ? 'Criar Ação' : 'Salvar Alterações'}
-              </Button>
+              <Button onClick={handleSave}>{dialogMode === 'create' ? 'Criar Ação' : 'Salvar Alterações'}</Button>
             </DialogFooter>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="font-heading">Excluir Ação</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir esta ação? Esta operação não pode ser desfeita.
-            </AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta ação? Esta operação não pode ser desfeita.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Excluir</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

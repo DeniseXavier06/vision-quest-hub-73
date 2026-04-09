@@ -6,9 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -41,6 +39,13 @@ const tiposAvaliacao = [
   'Comunidade Externa',
 ];
 
+const tipoSelectOptions = tiposAvaliacao.map((t) => ({ value: t, label: t }));
+const statusSelectOptions = [
+  { value: 'planejado', label: 'Planejado' },
+  { value: 'em_execucao', label: 'Em execução' },
+  { value: 'concluido', label: 'Concluído' },
+];
+
 const CronogramaSection = () => {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>(initialAvaliacoes);
 
@@ -50,32 +55,18 @@ const CronogramaSection = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  const openCreate = () => {
-    setFormData(emptyAvaliacao);
-    setEditingId(null);
-    setDialogMode('create');
-    setDialogOpen(true);
-  };
-
+  const openCreate = () => { setFormData(emptyAvaliacao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (av: Avaliacao) => {
     setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
-    setEditingId(av.id);
-    setDialogMode('edit');
-    setDialogOpen(true);
+    setEditingId(av.id); setDialogMode('edit'); setDialogOpen(true);
   };
-
   const openView = (av: Avaliacao) => {
     setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
-    setEditingId(av.id);
-    setDialogMode('view');
-    setDialogOpen(true);
+    setEditingId(av.id); setDialogMode('view'); setDialogOpen(true);
   };
 
   const handleSave = () => {
-    if (!formData.tipo || !formData.dataInicio || !formData.dataFim || !formData.responsavel) {
-      toast.error('Preencha todos os campos obrigatórios.');
-      return;
-    }
+    if (!formData.tipo || !formData.dataInicio || !formData.dataFim || !formData.responsavel) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     if (dialogMode === 'create') {
       setAvaliacoes((prev) => [...prev, { ...formData, id: crypto.randomUUID() }]);
       toast.success('Avaliação cadastrada com sucesso!');
@@ -87,11 +78,7 @@ const CronogramaSection = () => {
   };
 
   const handleDelete = () => {
-    if (deleteId) {
-      setAvaliacoes((prev) => prev.filter((a) => a.id !== deleteId));
-      toast.success('Avaliação excluída com sucesso!');
-      setDeleteId(null);
-    }
+    if (deleteId) { setAvaliacoes((prev) => prev.filter((a) => a.id !== deleteId)); toast.success('Avaliação excluída com sucesso!'); setDeleteId(null); }
   };
 
   const isReadOnly = dialogMode === 'view';
@@ -104,13 +91,9 @@ const CronogramaSection = () => {
           <h2 className="text-2xl font-heading font-bold text-foreground">Cronograma de Avaliações</h2>
           <p className="text-sm text-muted-foreground mt-1">Calendário das avaliações institucionais</p>
         </div>
-        <Button onClick={openCreate} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Avaliação
-        </Button>
+        <Button onClick={openCreate} className="gap-2"><Plus className="w-4 h-4" />Nova Avaliação</Button>
       </div>
 
-      {/* Cards */}
       <div className="space-y-4">
         {avaliacoes.map((av) => (
           <Card key={av.id}>
@@ -121,9 +104,7 @@ const CronogramaSection = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <h3 className="text-sm font-heading font-semibold text-foreground">{av.tipo}</h3>
-                  <Badge className={statusColors[av.status]} variant="secondary">
-                    {statusLabels[av.status]}
-                  </Badge>
+                  <Badge className={statusColors[av.status]} variant="secondary">{statusLabels[av.status]}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">{av.descricao}</p>
                 <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
@@ -132,22 +113,15 @@ const CronogramaSection = () => {
                 </div>
               </div>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(av)} title="Visualizar">
-                  <Eye className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(av)} title="Editar">
-                  <Pencil className="w-4 h-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(av.id)} title="Excluir">
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(av)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(av)} title="Editar"><Pencil className="w-4 h-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(av.id)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Linha do Tempo */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-heading">Linha do Tempo</CardTitle>
@@ -179,7 +153,6 @@ const CronogramaSection = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[550px]">
           <DialogHeader>
@@ -192,17 +165,8 @@ const CronogramaSection = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo de Avaliação *</Label>
-                {isReadOnly ? (
-                  <Input value={formData.tipo} readOnly />
-                ) : (
-                  <Select value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {tiposAvaliacao.map((t) => (
-                        <SelectItem key={t} value={t}>{t}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {isReadOnly ? <Input value={formData.tipo} readOnly /> : (
+                  <SearchableSelect value={formData.tipo} onValueChange={(v) => setFormData({ ...formData, tipo: v })} options={tipoSelectOptions} placeholder="Selecione" />
                 )}
               </div>
               <div className="space-y-2">
@@ -225,17 +189,8 @@ const CronogramaSection = () => {
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                {isReadOnly ? (
-                  <Input value={statusLabels[formData.status]} readOnly />
-                ) : (
-                  <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="planejado">Planejado</SelectItem>
-                      <SelectItem value="em_execucao">Em execução</SelectItem>
-                      <SelectItem value="concluido">Concluído</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} options={statusSelectOptions} />
                 )}
               </div>
             </div>
@@ -249,7 +204,6 @@ const CronogramaSection = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete */}
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
