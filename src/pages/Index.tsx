@@ -6,9 +6,11 @@ import CronogramaSection from '@/components/CronogramaSection';
 import ResultadosSection from '@/components/ResultadosSection';
 import ReunioesSection from '@/components/ReunioesSection';
 import RelatoriosSection from '@/components/RelatoriosSection';
+import UsuariosSection from '@/components/UsuariosSection';
 
 const sections: Record<string, React.ComponentType> = {
   dashboard: DashboardOverview,
+  usuarios: UsuariosSection,
   acoes: AcoesSection,
   cronograma: CronogramaSection,
   resultados: ResultadosSection,
