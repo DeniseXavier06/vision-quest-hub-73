@@ -391,20 +391,15 @@ const ResultadosSection = () => {
     }));
   }, [filtered]);
 
-  const pieDimensao = useMemo(() => {
+  const pieConceito = useMemo(() => {
     const map = new Map<string, number>();
-    filtered.forEach((r) => { if (r.dimensao) map.set(r.dimensao, (map.get(r.dimensao) || 0) + 1); });
-    return [...map.entries()].map(([name, value]) => ({ name: name.length > 25 ? name.substring(0, 25) + '…' : name, fullName: name, value }));
+    filtered.forEach((r) => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
+    return [...map.entries()].sort((a, b) => b[1] - a[1]).map(([name, value]) => ({ name, fullName: name, value }));
   }, [filtered]);
 
   const handleCursoBarClick = useCallback((data: any) => {
     if (data?.fullName) { setFilterCurso(data.fullName); setPage(0); }
   }, []);
-
-  const handleDimensaoClick = useCallback((_: any, index: number) => {
-    const item = pieDimensao[index];
-    if (item?.fullName) { setFilterDimensao(item.fullName); setPage(0); }
-  }, [pieDimensao]);
 
   const mediaPorDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
@@ -710,16 +705,16 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Conceito<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[350px]" onDoubleClick={handleDimensaoChartDoubleClick} title="Duplo clique para resetar filtro">
-              {pieDimensao.length > 0 ? (
+            <div className="h-[350px]">
+              {pieConceito.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
+                    <Pie data={pieConceito} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
                       label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
-                      fontSize={fs('dimPie')} onClick={handleDimensaoClick} cursor="pointer">
-                      {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
+                      fontSize={fs('dimPie')} cursor="pointer">
+                      {pieConceito.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
                     <Legend wrapperStyle={{ fontSize: `${fs('dimPie')}px` }} />
