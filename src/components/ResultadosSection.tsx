@@ -108,6 +108,42 @@ const renderHBarLabel = (props: any) => {
   );
 };
 
+// ─── Chart font size control ───
+const FONT_SIZE_KEY = 'chart-font-sizes';
+const DEFAULT_FONT_SIZE = 11;
+
+function loadChartFontSizes(): Record<string, number> {
+  try {
+    const saved = localStorage.getItem(FONT_SIZE_KEY);
+    return saved ? JSON.parse(saved) : {};
+  } catch { return {}; }
+}
+
+function ChartFontControl({ chartId, sizes, onChange }: { chartId: string; sizes: Record<string, number>; onChange: (id: string, size: number) => void }) {
+  const size = sizes[chartId] || DEFAULT_FONT_SIZE;
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-6 w-6 ml-auto flex-shrink-0" title="Tamanho da fonte">
+          <Settings2 className="w-3.5 h-3.5 text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-3" align="end">
+        <p className="text-xs font-medium mb-2">Tamanho da fonte</p>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onChange(chartId, Math.max(7, size - 1))} disabled={size <= 7}>
+            <Minus className="w-3 h-3" />
+          </Button>
+          <span className="text-sm font-mono w-8 text-center">{size}</span>
+          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => onChange(chartId, Math.min(20, size + 1))} disabled={size >= 20}>
+            <Plus className="w-3 h-3" />
+          </Button>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function parseNum(val: unknown): number {
   if (val == null || val === '') return 0;
   const n = Number(val);
