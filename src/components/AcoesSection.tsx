@@ -266,6 +266,7 @@ const AcoesSection = () => {
                 <TableRow>
                   <TableHead>Ação</TableHead>
                   <TableHead>Eixo</TableHead>
+                  <TableHead>Meta</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Progresso</TableHead>
                   <TableHead>Prazo</TableHead>
@@ -278,6 +279,7 @@ const AcoesSection = () => {
                   <TableRow key={acao.id}>
                     <TableCell className="font-medium max-w-[200px] truncate">{acao.nome}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{acao.eixo}</TableCell>
+                    <TableCell className="text-sm max-w-[200px] truncate">{acao.meta || '—'}</TableCell>
                     <TableCell className="text-sm">{acao.responsavel}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2 min-w-[100px]">
