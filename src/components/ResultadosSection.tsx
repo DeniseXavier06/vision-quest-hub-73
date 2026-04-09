@@ -181,10 +181,13 @@ const ResultadosSection = () => {
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
-
         const allRows = json.map((row) => parseRow(row, importPerfil));
 
-        // Create import record
+        if (allRows.length === 0) {
+          toast.error(`O arquivo "${file.name}" não possui linhas válidas para importar`);
+          continue;
+        }
+
         const { data: imp, error: impErr } = await supabase.from('importacoes').insert({
           periodo: importPeriodo,
           perfil: importPerfil,
@@ -193,9 +196,10 @@ const ResultadosSection = () => {
           observacoes: importObservacoes || '',
         }).select().single();
 
-        if (impErr) { toast.error('Erro ao registrar importação'); continue; }
+        if (impErr || !imp) {
+          throw impErr ?? new Error('Erro ao registrar importação');
+        }
 
-        // Insert results in batches of 500
         const BATCH = 500;
         for (let i = 0; i < allRows.length; i += BATCH) {
           const batch = allRows.slice(i, i + BATCH).map((r) => ({
@@ -218,20 +222,17 @@ const ResultadosSection = () => {
             tipo_avaliacao: r.tipoAvaliacao,
           }));
           const { error } = await supabase.from('resultados').insert(batch);
-          if (error) { console.error(error); toast.error(`Erro ao inserir lote ${i}`); }
+          if (error) throw error;
         }
+
         toast.success(`${allRows.length} registros de "${file.name}" importados!`);
       }
-      setShowImportDialog(false);
-      setPendingFiles(null);
-      setImportPeriodo('');
-      setImportPerfil('');
-      setImportObservacoes('');
-      fetchData();
-      fetchImportacoes();
+
+      resetImportState();
+      await Promise.all([fetchData(), fetchImportacoes()]);
     } catch (err) {
-      toast.error('Erro ao importar');
-      console.error(err);
+      console.error('Erro ao importar resultados:', err);
+      toast.error(err instanceof Error ? err.message : 'Erro ao importar');
     } finally {
       setImporting(false);
     }
