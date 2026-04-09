@@ -1,9 +1,19 @@
+import { useState } from 'react';
 import { reunioesData, statusLabels } from '@/lib/mockData';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, MapPin, Clock } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Users, MapPin, Clock, Search } from 'lucide-react';
 
 const ReunioesSection = () => {
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filtered = reunioesData.filter((r) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
+    return r.titulo.toLowerCase().includes(term) || r.local.toLowerCase().includes(term) || r.tipo.toLowerCase().includes(term);
+  });
+
   return (
     <div className="space-y-6">
       <div>
@@ -11,8 +21,15 @@ const ReunioesSection = () => {
         <p className="text-sm text-muted-foreground mt-1">Agenda de reuniões da CPA</p>
       </div>
 
+      <div className="flex flex-wrap gap-3 items-center">
+        <div className="relative flex-1 min-w-[200px] max-w-[350px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Pesquisar reuniões..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
+        </div>
+      </div>
+
       <div className="space-y-4">
-        {reunioesData.map((reuniao) => {
+        {filtered.map((reuniao) => {
           const date = new Date(reuniao.dataHora);
           return (
             <Card key={reuniao.id}>
