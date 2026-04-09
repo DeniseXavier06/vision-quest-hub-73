@@ -10,9 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/ui/searchable-select';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from '@/components/ui/dialog';
@@ -162,29 +160,8 @@ const AcoesSection = () => {
       </div>
 
       <div className="flex flex-wrap gap-3">
-        <Select value={filterEixo} onValueChange={setFilterEixo}>
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Filtrar por eixo" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os eixos</SelectItem>
-            {eixos.map((e) => (
-              <SelectItem key={e} value={e}>{e}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filtrar por status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os status</SelectItem>
-            <SelectItem value="nao_iniciada">Não iniciada</SelectItem>
-            <SelectItem value="em_andamento">Em andamento</SelectItem>
-            <SelectItem value="concluida">Concluída</SelectItem>
-          </SelectContent>
-        </Select>
+        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={eixosOptions} placeholder="Filtrar por eixo" />
+        <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={['nao_iniciada', 'em_andamento', 'concluida']} placeholder="Filtrar por status" />
       </div>
 
       <Card>
@@ -276,14 +253,7 @@ const AcoesSection = () => {
                 {isReadOnly ? (
                   <Input value={formData.eixo} readOnly />
                 ) : (
-                  <Select value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {eixosOptions.map((e) => (
-                        <SelectItem key={e} value={e}>{e}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosOptions} placeholder="Selecione" />
                 )}
               </div>
               <div className="space-y-2">
@@ -324,14 +294,7 @@ const AcoesSection = () => {
                 {isReadOnly ? (
                   <Input value={statusLabels[formData.status]} readOnly />
                 ) : (
-                  <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Acao['status'] })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="nao_iniciada">Não iniciada</SelectItem>
-                      <SelectItem value="em_andamento">Em andamento</SelectItem>
-                      <SelectItem value="concluida">Concluída</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as Acao['status'] })} options={['nao_iniciada', 'em_andamento', 'concluida']} />
                 )}
               </div>
               <div className="space-y-2">
