@@ -141,13 +141,13 @@ const AcoesSection = () => {
 
   const renderAcaoCell = (key: string, acao: AcaoLocal) => {
     switch (key) {
-      case 'nome': return <TableCell key={key} className="font-medium max-w-[200px] truncate">{acao.nome}</TableCell>;
-      case 'eixo': return <TableCell key={key} className="text-sm text-muted-foreground">{acao.eixo}</TableCell>;
-      case 'meta': return <TableCell key={key} className="text-sm max-w-[200px] truncate">{acao.meta || '—'}</TableCell>;
-      case 'responsavel': return <TableCell key={key} className="text-sm">{acao.responsavel}</TableCell>;
-      case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-2 min-w-[100px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-xs text-muted-foreground w-8">{acao.percentualProgresso}%</span></div></TableCell>;
-      case 'prazo': return <TableCell key={key} className="text-sm">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
-      case 'status': return <TableCell key={key}><Badge className={statusColors[acao.status]} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
+      case 'nome': return <TableCell key={key} className="font-medium text-xs whitespace-normal break-words">{acao.nome}</TableCell>;
+      case 'eixo': return <TableCell key={key} className="text-xs text-muted-foreground whitespace-normal break-words">{acao.eixo}</TableCell>;
+      case 'meta': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.meta || '—'}</TableCell>;
+      case 'responsavel': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.responsavel}</TableCell>;
+      case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-1.5 min-w-[80px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
+      case 'prazo': return <TableCell key={key} className="text-xs whitespace-nowrap">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
+      case 'status': return <TableCell key={key}><Badge className={`${statusColors[acao.status]} text-[11px] px-1.5 py-0.5`} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
       default: return null;
     }
   };
@@ -290,7 +290,7 @@ const AcoesSection = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-full text-xs">
               <TableHeader>
                 <TableRow>
                   {orderedCols.map((col, idx) => (
