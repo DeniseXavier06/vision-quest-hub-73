@@ -689,17 +689,19 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão</CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[350px]">
               {pieDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value" label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}>
+                    <Pie data={pieDimensao} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
+                      label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
+                      fontSize={fs('dimPie')}>
                       {pieDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
                     </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Legend />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
+                    <Legend wrapperStyle={{ fontSize: `${fs('dimPie')}px` }} />
                   </PieChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
