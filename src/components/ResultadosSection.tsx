@@ -427,6 +427,14 @@ const ResultadosSection = () => {
     if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
   }, []);
 
+  const handleCursoChartDoubleClick = useCallback(() => {
+    setFilterCurso('all'); setPage(0);
+  }, []);
+
+  const handleDimensaoChartDoubleClick = useCallback(() => {
+    setFilterDimensao('all'); setPage(0);
+  }, []);
+
   // === Colaboradores-specific charts ===
   const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
 
@@ -687,7 +695,7 @@ const ResultadosSection = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Registros por Curso<ChartFontControl chartId="cursoBar" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[350px]">
+            <div className="h-[350px]" onDoubleClick={handleCursoChartDoubleClick} title="Duplo clique para resetar filtro">
               {chartByCurso.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={chartByCurso} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
@@ -704,7 +712,7 @@ const ResultadosSection = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Dimensão<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[350px]">
+            <div className="h-[350px]" onDoubleClick={handleDimensaoChartDoubleClick} title="Duplo clique para resetar filtro">
               {pieDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -728,7 +736,7 @@ const ResultadosSection = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Dimensão<ChartFontControl chartId="mediaDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[300px]" onDoubleClick={handleDimensaoChartDoubleClick} title="Duplo clique para resetar filtro">
               {mediaPorDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={mediaPorDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -745,7 +753,7 @@ const ResultadosSection = () => {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Desempenho por Dimensão<ChartFontControl chartId="desempDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[300px]">
+            <div className="h-[300px]" onDoubleClick={handleDimensaoChartDoubleClick} title="Duplo clique para resetar filtro">
               {desempenhoDimensao.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={desempenhoDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
