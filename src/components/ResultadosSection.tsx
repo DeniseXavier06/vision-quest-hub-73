@@ -358,7 +358,7 @@ const ResultadosSection = () => {
         </Card>
 
         {/* Import Dialog */}
-        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
           <DialogContent>
             <DialogHeader><DialogTitle>Configurar Importação</DialogTitle></DialogHeader>
             <div className="space-y-4">
@@ -371,7 +371,7 @@ const ResultadosSection = () => {
               </div>
               <div><Label>Observações</Label><Input value={importObservacoes} onChange={(e) => setImportObservacoes(e.target.value)} placeholder="Opcional" /></div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => { setShowImportDialog(false); setPendingFiles(null); }}>Cancelar</Button>
+                <Button variant="outline" onClick={resetImportState}>Cancelar</Button>
                 <Button onClick={handleImportConfirm} disabled={importing}>{importing ? 'Importando...' : 'Confirmar Importação'}</Button>
               </div>
             </div>
@@ -605,7 +605,7 @@ const ResultadosSection = () => {
       </Card>
 
       {/* Import Dialog */}
-      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+      <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Configurar Importação</DialogTitle></DialogHeader>
           <div className="space-y-4">
@@ -618,7 +618,7 @@ const ResultadosSection = () => {
             </div>
             <div><Label>Observações</Label><Input value={importObservacoes} onChange={(e) => setImportObservacoes(e.target.value)} placeholder="Opcional" /></div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => { setShowImportDialog(false); setPendingFiles(null); }}>Cancelar</Button>
+              <Button variant="outline" onClick={resetImportState}>Cancelar</Button>
               <Button onClick={handleImportConfirm} disabled={importing}>{importing ? 'Importando...' : 'Confirmar Importação'}</Button>
             </div>
           </div>
