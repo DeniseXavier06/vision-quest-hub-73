@@ -688,7 +688,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: '12px' }} />
-                    <Bar dataKey="registros" radius={[4, 4, 0, 0]}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
+                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel}>{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
