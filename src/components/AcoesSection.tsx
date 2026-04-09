@@ -128,6 +128,30 @@ const AcoesSection = () => {
 
   const { sorted: sortedFiltered, sortConfig, requestSort } = useSortable(filtered);
 
+  const acaoColumns: ColumnDef[] = [
+    { key: 'nome', label: 'Ação' },
+    { key: 'eixo', label: 'Eixo' },
+    { key: 'meta', label: 'Meta' },
+    { key: 'responsavel', label: 'Responsável' },
+    { key: 'percentualProgresso', label: 'Progresso' },
+    { key: 'prazo', label: 'Prazo' },
+    { key: 'status', label: 'Status' },
+  ];
+  const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(acaoColumns);
+
+  const renderAcaoCell = (key: string, acao: AcaoLocal) => {
+    switch (key) {
+      case 'nome': return <TableCell key={key} className="font-medium max-w-[200px] truncate">{acao.nome}</TableCell>;
+      case 'eixo': return <TableCell key={key} className="text-sm text-muted-foreground">{acao.eixo}</TableCell>;
+      case 'meta': return <TableCell key={key} className="text-sm max-w-[200px] truncate">{acao.meta || '—'}</TableCell>;
+      case 'responsavel': return <TableCell key={key} className="text-sm">{acao.responsavel}</TableCell>;
+      case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-2 min-w-[100px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-xs text-muted-foreground w-8">{acao.percentualProgresso}%</span></div></TableCell>;
+      case 'prazo': return <TableCell key={key} className="text-sm">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
+      case 'status': return <TableCell key={key}><Badge className={statusColors[acao.status]} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
+      default: return null;
+    }
+  };
+
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
     setFormData({ nome: a.nome, eixo: a.eixo, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
@@ -269,33 +293,19 @@ const AcoesSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="nome" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Ação</SortableTableHead>
-                  <SortableTableHead sortKey="eixo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Eixo</SortableTableHead>
-                  <SortableTableHead sortKey="meta" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Meta</SortableTableHead>
-                  <SortableTableHead sortKey="responsavel" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Responsável</SortableTableHead>
-                  <SortableTableHead sortKey="percentualProgresso" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Progresso</SortableTableHead>
-                  <SortableTableHead sortKey="prazo" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Prazo</SortableTableHead>
-                  <SortableTableHead sortKey="status" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}>Status</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((acao) => (
                   <TableRow key={acao.id}>
-                    <TableCell className="font-medium max-w-[200px] truncate">{acao.nome}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{acao.eixo}</TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{acao.meta || '—'}</TableCell>
-                    <TableCell className="text-sm">{acao.responsavel}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 min-w-[100px]">
-                        <Progress value={acao.percentualProgresso} className="h-1.5 flex-1" />
-                        <span className="text-xs text-muted-foreground w-8">{acao.percentualProgresso}%</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
-                      <Badge className={statusColors[acao.status]} variant="secondary">{statusLabels[acao.status]}</Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderAcaoCell(col.key, acao))}
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
