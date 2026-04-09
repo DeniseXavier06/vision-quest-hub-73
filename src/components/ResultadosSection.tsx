@@ -564,42 +564,19 @@ const ResultadosSection = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <SortableTableHead sortKey="tipoAvaliacao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Tipo</SortableTableHead>
-                  <SortableTableHead sortKey="semestre" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Semestre</SortableTableHead>
-                  <SortableTableHead sortKey="curso" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Curso</SortableTableHead>
-                  <SortableTableHead sortKey="dimensao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Dimensão</SortableTableHead>
-                  <SortableTableHead sortKey="area" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Área</SortableTableHead>
-                  <SortableTableHead sortKey="textoQuestao" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Questão</SortableTableHead>
-                  <SortableTableHead sortKey="excelente" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Excelente</SortableTableHead>
-                  <SortableTableHead sortKey="bom" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Bom</SortableTableHead>
-                  <SortableTableHead sortKey="regular" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Regular</SortableTableHead>
-                  <SortableTableHead sortKey="total" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Total</SortableTableHead>
-                  <SortableTableHead sortKey="media" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background text-right">Média</SortableTableHead>
-                  <SortableTableHead sortKey="conceito" currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort} className="sticky top-0 bg-background">Conceito</SortableTableHead>
+                  {orderedCols.map((col, idx) => (
+                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
+                      className={`sticky top-0 bg-background ${col.className || ''}`}
+                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
+                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                    >{col.label}</SortableTableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paged.map((r, idx) => (
                   <TableRow key={`${page}-${idx}`}>
-                    <TableCell><Badge variant="outline" className="text-xs">{r.tipoAvaliacao}</Badge></TableCell>
-                    <TableCell className="text-sm">{r.semestre}</TableCell>
-                    <TableCell className="text-sm max-w-[150px] truncate">{r.curso}</TableCell>
-                    <TableCell className="text-sm max-w-[150px] truncate">{r.dimensao}</TableCell>
-                    <TableCell className="text-sm max-w-[120px] truncate">{r.area}</TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">{r.textoQuestao}</TableCell>
-                    <TableCell className="text-sm text-right">{r.excelente}</TableCell>
-                    <TableCell className="text-sm text-right">{r.bom}</TableCell>
-                    <TableCell className="text-sm text-right">{r.regular}</TableCell>
-                    <TableCell className="text-sm text-right font-medium">{r.total}</TableCell>
-                    <TableCell className="text-sm text-right font-medium">{r.media.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className={
-                        r.conceito === 'EXCELENTE' ? 'bg-success/10 text-success' :
-                        r.conceito === 'BOM' ? 'bg-primary/10 text-primary' :
-                        r.conceito === 'REGULAR' ? 'bg-warning/10 text-warning' :
-                        'bg-muted text-muted-foreground'
-                      }>{r.conceito}</Badge>
-                    </TableCell>
+                    {orderedCols.map((col) => renderResCell(col.key, r))}
                   </TableRow>
                 ))}
               </TableBody>
