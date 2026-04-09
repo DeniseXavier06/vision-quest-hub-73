@@ -15,7 +15,8 @@ import {
   PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   LineChart, Line, Legend,
 } from 'recharts';
-import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users } from 'lucide-react';
+import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users, Settings2, Minus, Plus } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
