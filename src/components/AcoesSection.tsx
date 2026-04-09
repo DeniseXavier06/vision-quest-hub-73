@@ -290,7 +290,7 @@ const AcoesSection = () => {
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table className="table-fixed w-full">
+            <Table className="min-w-full text-xs">
               <TableHeader>
                 <TableRow>
                   {orderedCols.map((col, idx) => (
