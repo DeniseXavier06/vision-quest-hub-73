@@ -457,6 +457,44 @@ export type Database = {
           },
         ]
       }
+      periodos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          curso_id: string
+          id: string
+          nome: string
+          numero: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          curso_id: string
+          id?: string
+          nome?: string
+          numero?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          curso_id?: string
+          id?: string
+          nome?: string
+          numero?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "periodos_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       questoes_avaliacao: {
         Row: {
           area_id: string | null
@@ -781,27 +819,30 @@ export type Database = {
           ativo: boolean
           codigo: string
           created_at: string
-          curso_id: string
+          curso_id: string | null
           id: string
           nome: string
+          periodo_id: string | null
           updated_at: string
         }
         Insert: {
           ativo?: boolean
           codigo?: string
           created_at?: string
-          curso_id: string
+          curso_id?: string | null
           id?: string
           nome: string
+          periodo_id?: string | null
           updated_at?: string
         }
         Update: {
           ativo?: boolean
           codigo?: string
           created_at?: string
-          curso_id?: string
+          curso_id?: string | null
           id?: string
           nome?: string
+          periodo_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -810,6 +851,13 @@ export type Database = {
             columns: ["curso_id"]
             isOneToOne: false
             referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "turmas_periodo_id_fkey"
+            columns: ["periodo_id"]
+            isOneToOne: false
+            referencedRelation: "periodos"
             referencedColumns: ["id"]
           },
         ]
