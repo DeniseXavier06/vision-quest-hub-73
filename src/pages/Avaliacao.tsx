@@ -14,7 +14,8 @@ type Ambiente = {
   id: string; nome: string; nivel: string; data_inicio: string; data_fim: string; prorrogado_ate: string | null; semestre_id: string;
 };
 type Dimensao = { id: string; nome: string; descricao: string | null; ordem: number };
-type Questao = { id: string; texto: string; ordem: number; dimensao_id: string };
+type AreaAvaliacao = { id: string; nome: string; descricao: string | null; ordem: number; dimensao_id: string };
+type Questao = { id: string; texto: string; ordem: number; dimensao_id: string; area_id: string | null };
 type Sessao = { id: string; token: string };
 
 const scaleLabels = ['', 'Muito Ruim', 'Regular', 'Atende Parcialmente', 'Bom', 'Excelente'];
