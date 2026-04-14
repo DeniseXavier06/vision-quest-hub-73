@@ -727,24 +727,260 @@ const ImportacaoTab = () => {
   );
 };
 
+// ─── Acadêmico Tab (Cursos → Turmas → Disciplinas) ───
+const AcademicoTab = () => {
+  const [semestres, setSemestres] = useState<Semestre[]>([]);
+  const [semestreId, setSemestreId] = useState<string>('');
+  const [cursos, setCursos] = useState<any[]>([]);
+  const [expandedCurso, setExpandedCurso] = useState<string | null>(null);
+  const [expandedTurma, setExpandedTurma] = useState<string | null>(null);
+  const [formCurso, setFormCurso] = useState({ nome: '', sigla: '' });
+  const [formTurma, setFormTurma] = useState({ nome: '', codigo: '' });
+  const [formDisc, setFormDisc] = useState({ nome: '', codigo: '', carga_horaria: 0 });
+  const [editingCurso, setEditingCurso] = useState<string | null>(null);
+  const [editingTurma, setEditingTurma] = useState<string | null>(null);
+  const [editingDisc, setEditingDisc] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState('');
+
+  const fetchSemestres = useCallback(async () => {
+    const { data } = await supabase.from('semestres_letivos').select('*').order('ano', { ascending: false });
+    if (data) { setSemestres(data); if (data.length && !semestreId) setSemestreId(data[0].id); }
+  }, [semestreId]);
+
+  const fetchCursos = useCallback(async () => {
+    if (!semestreId) return;
+    const { data: cs } = await supabase.from('cursos').select('*').eq('semestre_id', semestreId).order('nome');
+    const cursoIds = (cs || []).map(c => c.id);
+    let turmas: any[] = [];
+    let disciplinas: any[] = [];
+    if (cursoIds.length) {
+      const { data: ts } = await supabase.from('turmas').select('*').in('curso_id', cursoIds).order('nome');
+      turmas = ts || [];
+      const turmaIds = turmas.map(t => t.id);
+      if (turmaIds.length) {
+        const { data: ds } = await supabase.from('disciplinas').select('*').in('turma_id', turmaIds).order('nome');
+        disciplinas = ds || [];
+      }
+    }
+    setCursos((cs || []).map(c => ({
+      ...c,
+      turmas: turmas.filter(t => t.curso_id === c.id).map(t => ({
+        ...t,
+        disciplinas: disciplinas.filter(d => d.turma_id === t.id),
+      })),
+    })));
+  }, [semestreId]);
+
+  useEffect(() => { fetchSemestres(); }, [fetchSemestres]);
+  useEffect(() => { fetchCursos(); }, [fetchCursos]);
+
+  const addCurso = async () => {
+    if (!formCurso.nome.trim() || !semestreId) return;
+    await supabase.from('cursos').insert({ nome: formCurso.nome, sigla: formCurso.sigla, semestre_id: semestreId });
+    setFormCurso({ nome: '', sigla: '' });
+    toast.success('Curso criado');
+    fetchCursos();
+  };
+
+  const removeCurso = async (id: string) => {
+    await supabase.from('cursos').delete().eq('id', id);
+    toast.success('Curso removido');
+    fetchCursos();
+  };
+
+  const saveEditCurso = async (id: string) => {
+    await supabase.from('cursos').update({ nome: editVal }).eq('id', id);
+    setEditingCurso(null);
+    fetchCursos();
+  };
+
+  const addTurma = async (cursoId: string) => {
+    if (!formTurma.nome.trim()) return;
+    await supabase.from('turmas').insert({ nome: formTurma.nome, codigo: formTurma.codigo, curso_id: cursoId });
+    setFormTurma({ nome: '', codigo: '' });
+    toast.success('Turma criada');
+    fetchCursos();
+  };
+
+  const removeTurma = async (id: string) => {
+    await supabase.from('turmas').delete().eq('id', id);
+    toast.success('Turma removida');
+    fetchCursos();
+  };
+
+  const saveEditTurma = async (id: string) => {
+    await supabase.from('turmas').update({ nome: editVal }).eq('id', id);
+    setEditingTurma(null);
+    fetchCursos();
+  };
+
+  const addDisc = async (turmaId: string) => {
+    if (!formDisc.nome.trim()) return;
+    await supabase.from('disciplinas').insert({ nome: formDisc.nome, codigo: formDisc.codigo, carga_horaria: formDisc.carga_horaria, turma_id: turmaId });
+    setFormDisc({ nome: '', codigo: '', carga_horaria: 0 });
+    toast.success('Disciplina criada');
+    fetchCursos();
+  };
+
+  const removeDisc = async (id: string) => {
+    await supabase.from('disciplinas').delete().eq('id', id);
+    toast.success('Disciplina removida');
+    fetchCursos();
+  };
+
+  const saveEditDisc = async (id: string) => {
+    await supabase.from('disciplinas').update({ nome: editVal }).eq('id', id);
+    setEditingDisc(null);
+    fetchCursos();
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3"><CardTitle className="text-base">Cadastro Acadêmico</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <Label>Semestre</Label>
+            <Select value={semestreId} onValueChange={setSemestreId}>
+              <SelectTrigger><SelectValue placeholder="Selecione o semestre" /></SelectTrigger>
+              <SelectContent>
+                {semestres.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {semestreId && (
+            <>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1"><Label>Nome do Curso</Label><Input value={formCurso.nome} onChange={e => setFormCurso({ ...formCurso, nome: e.target.value })} placeholder="Ex: Engenharia de Software" /></div>
+                <div className="w-28"><Label>Sigla</Label><Input value={formCurso.sigla} onChange={e => setFormCurso({ ...formCurso, sigla: e.target.value })} placeholder="ES" /></div>
+                <Button onClick={addCurso}><Plus className="w-4 h-4 mr-1" />Curso</Button>
+              </div>
+
+              {cursos.length === 0 ? <p className="text-sm text-muted-foreground">Nenhum curso cadastrado neste semestre.</p> : (
+                <div className="space-y-2">
+                  {cursos.map(c => (
+                    <div key={c.id} className="border rounded-md">
+                      <div className="flex items-center justify-between p-3 bg-muted/30">
+                        <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => setExpandedCurso(expandedCurso === c.id ? null : c.id)}>
+                          {expandedCurso === c.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          {editingCurso === c.id ? (
+                            <Input value={editVal} onChange={e => setEditVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveEditCurso(c.id)} className="h-7 w-48" autoFocus />
+                          ) : (
+                            <span className="font-medium">{c.nome}</span>
+                          )}
+                          {c.sigla && <Badge variant="outline">{c.sigla}</Badge>}
+                          <Badge variant="secondary">{c.turmas?.length || 0} turmas</Badge>
+                        </div>
+                        <div className="flex gap-1">
+                          {editingCurso === c.id ? (
+                            <><Button size="icon" variant="ghost" onClick={() => saveEditCurso(c.id)}><Save className="w-4 h-4" /></Button><Button size="icon" variant="ghost" onClick={() => setEditingCurso(null)}><X className="w-4 h-4" /></Button></>
+                          ) : (
+                            <Button size="icon" variant="ghost" onClick={() => { setEditingCurso(c.id); setEditVal(c.nome); }}><Edit2 className="w-4 h-4" /></Button>
+                          )}
+                          <Button size="icon" variant="ghost" onClick={() => removeCurso(c.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                        </div>
+                      </div>
+
+                      {expandedCurso === c.id && (
+                        <div className="p-3 pl-8 space-y-3 border-t">
+                          <div className="flex gap-2 items-end">
+                            <div className="flex-1"><Label>Turma</Label><Input value={formTurma.nome} onChange={e => setFormTurma({ ...formTurma, nome: e.target.value })} placeholder="Ex: Turma A" /></div>
+                            <div className="w-28"><Label>Código</Label><Input value={formTurma.codigo} onChange={e => setFormTurma({ ...formTurma, codigo: e.target.value })} placeholder="TA" /></div>
+                            <Button size="sm" onClick={() => addTurma(c.id)}><Plus className="w-4 h-4 mr-1" />Turma</Button>
+                          </div>
+
+                          {(c.turmas || []).map((t: any) => (
+                            <div key={t.id} className="border rounded-md">
+                              <div className="flex items-center justify-between p-2 bg-muted/20">
+                                <div className="flex items-center gap-2 cursor-pointer flex-1" onClick={() => setExpandedTurma(expandedTurma === t.id ? null : t.id)}>
+                                  {expandedTurma === t.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                  {editingTurma === t.id ? (
+                                    <Input value={editVal} onChange={e => setEditVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveEditTurma(t.id)} className="h-6 w-40 text-sm" autoFocus />
+                                  ) : (
+                                    <span className="text-sm font-medium">{t.nome}</span>
+                                  )}
+                                  {t.codigo && <Badge variant="outline" className="text-xs">{t.codigo}</Badge>}
+                                  <Badge variant="secondary" className="text-xs">{t.disciplinas?.length || 0} disciplinas</Badge>
+                                </div>
+                                <div className="flex gap-1">
+                                  {editingTurma === t.id ? (
+                                    <><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => saveEditTurma(t.id)}><Save className="w-3 h-3" /></Button><Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => setEditingTurma(null)}><X className="w-3 h-3" /></Button></>
+                                  ) : (
+                                    <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => { setEditingTurma(t.id); setEditVal(t.nome); }}><Edit2 className="w-3 h-3" /></Button>
+                                  )}
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => removeTurma(t.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                                </div>
+                              </div>
+
+                              {expandedTurma === t.id && (
+                                <div className="p-2 pl-6 space-y-2 border-t">
+                                  <div className="flex gap-2 items-end">
+                                    <div className="flex-1"><Label className="text-xs">Disciplina</Label><Input value={formDisc.nome} onChange={e => setFormDisc({ ...formDisc, nome: e.target.value })} placeholder="Ex: Cálculo I" className="h-7 text-sm" /></div>
+                                    <div className="w-24"><Label className="text-xs">Código</Label><Input value={formDisc.codigo} onChange={e => setFormDisc({ ...formDisc, codigo: e.target.value })} placeholder="MAT01" className="h-7 text-sm" /></div>
+                                    <div className="w-20"><Label className="text-xs">CH</Label><Input type="number" value={formDisc.carga_horaria} onChange={e => setFormDisc({ ...formDisc, carga_horaria: +e.target.value })} className="h-7 text-sm" /></div>
+                                    <Button size="sm" className="h-7 text-xs" onClick={() => addDisc(t.id)}><Plus className="w-3 h-3 mr-1" />Disc.</Button>
+                                  </div>
+
+                                  {(t.disciplinas || []).map((d: any) => (
+                                    <div key={d.id} className="flex items-center justify-between p-1.5 rounded bg-muted/30">
+                                      <div className="flex items-center gap-2">
+                                        {editingDisc === d.id ? (
+                                          <Input value={editVal} onChange={e => setEditVal(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveEditDisc(d.id)} className="h-6 w-40 text-xs" autoFocus />
+                                        ) : (
+                                          <span className="text-sm">{d.nome}</span>
+                                        )}
+                                        {d.codigo && <Badge variant="outline" className="text-xs">{d.codigo}</Badge>}
+                                        {d.carga_horaria > 0 && <span className="text-xs text-muted-foreground">{d.carga_horaria}h</span>}
+                                      </div>
+                                      <div className="flex gap-1">
+                                        {editingDisc === d.id ? (
+                                          <><Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => saveEditDisc(d.id)}><Save className="w-3 h-3" /></Button><Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => setEditingDisc(null)}><X className="w-3 h-3" /></Button></>
+                                        ) : (
+                                          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => { setEditingDisc(d.id); setEditVal(d.nome); }}><Edit2 className="w-3 h-3" /></Button>
+                                        )}
+                                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => removeDisc(d.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
 // ─── Main Component ───
 const ConfiguracaoAmbienteSection = () => {
   return (
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-heading font-bold text-foreground">Configuração de Ambiente</h2>
-        <p className="text-sm text-muted-foreground mt-1">Configure semestres, dimensões, ambientes de avaliação e importações</p>
+        <p className="text-sm text-muted-foreground mt-1">Configure semestres, dimensões, ambientes de avaliação, acadêmico e importações</p>
       </div>
 
       <Tabs defaultValue="semestres">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="semestres">Semestres</TabsTrigger>
           <TabsTrigger value="dimensoes">Dimensões</TabsTrigger>
+          <TabsTrigger value="academico">Acadêmico</TabsTrigger>
           <TabsTrigger value="ambientes">Ambientes</TabsTrigger>
           <TabsTrigger value="importacao">Importação</TabsTrigger>
         </TabsList>
         <TabsContent value="semestres"><SemestresTab /></TabsContent>
         <TabsContent value="dimensoes"><DimensoesTab /></TabsContent>
+        <TabsContent value="academico"><AcademicoTab /></TabsContent>
         <TabsContent value="ambientes"><AmbientesTab /></TabsContent>
         <TabsContent value="importacao"><ImportacaoTab /></TabsContent>
       </Tabs>
