@@ -14,7 +14,8 @@ type Ambiente = {
   id: string; nome: string; nivel: string; data_inicio: string; data_fim: string; prorrogado_ate: string | null; semestre_id: string;
 };
 type Dimensao = { id: string; nome: string; descricao: string | null; ordem: number };
-type Questao = { id: string; texto: string; ordem: number; dimensao_id: string };
+type AreaAvaliacao = { id: string; nome: string; descricao: string | null; ordem: number; dimensao_id: string };
+type Questao = { id: string; texto: string; ordem: number; dimensao_id: string; area_id: string | null };
 type Sessao = { id: string; token: string };
 
 const scaleLabels = ['', 'Muito Ruim', 'Regular', 'Atende Parcialmente', 'Bom', 'Excelente'];
@@ -31,6 +32,7 @@ const Avaliacao = () => {
   const [sessao, setSessao] = useState<Sessao | null>(null);
 
   const [dimensoes, setDimensoes] = useState<Dimensao[]>([]);
+  const [areas, setAreas] = useState<AreaAvaliacao[]>([]);
   const [selectedDimensoes, setSelectedDimensoes] = useState<string[]>([]);
 
   const [questoes, setQuestoes] = useState<Questao[]>([]);
@@ -107,8 +109,12 @@ const Avaliacao = () => {
     const { data: ambDims } = await supabase.from('ambiente_dimensoes').select('dimensao_id').eq('ambiente_id', selectedAmbiente);
     if (ambDims && ambDims.length > 0) {
       const dimIds = ambDims.map(d => d.dimensao_id);
-      const { data: dims } = await supabase.from('dimensoes_avaliacao').select('*').in('id', dimIds).eq('ativo', true).order('ordem');
+      const [{ data: dims }, { data: areasData }] = await Promise.all([
+        supabase.from('dimensoes_avaliacao').select('*').in('id', dimIds).eq('ativo', true).order('ordem'),
+        supabase.from('areas_avaliacao').select('*').in('dimensao_id', dimIds).eq('ativo', true).order('ordem'),
+      ]);
       if (dims) setDimensoes(dims);
+      if (areasData) setAreas(areasData);
     }
 
     setStep('dimensoes');
@@ -133,6 +139,7 @@ const Avaliacao = () => {
 
   const currentDimId = selectedDimensoes[currentDimIndex];
   const currentDim = dimensoes.find(d => d.id === currentDimId);
+  const currentAreas = useMemo(() => areas.filter(a => a.dimensao_id === currentDimId), [areas, currentDimId]);
   const currentQuestoes = useMemo(() => questoes.filter(q => q.dimensao_id === currentDimId), [questoes, currentDimId]);
 
   const allCurrentAnswered = currentQuestoes.every(q => respostas[q.id] !== undefined);
@@ -321,7 +328,42 @@ const Avaliacao = () => {
             {currentDim?.descricao && <CardDescription>{currentDim.descricao}</CardDescription>}
           </CardHeader>
           <CardContent className="space-y-6">
-            {currentQuestoes.map((q, qi) => (
+            {currentAreas.length > 0 ? currentAreas.map((area) => {
+              const areaQuestoes = currentQuestoes.filter(q => q.area_id === area.id);
+              if (areaQuestoes.length === 0) return null;
+              return (
+                <div key={area.id} className="space-y-4">
+                  <div className="border-l-4 border-primary pl-3">
+                    <h4 className="text-sm font-semibold text-foreground">{area.nome}</h4>
+                    {area.descricao && <p className="text-xs text-muted-foreground">{area.descricao}</p>}
+                  </div>
+                  {areaQuestoes.map((q, qi) => (
+                    <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
+                      <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(nota => (
+                          <button
+                            key={nota}
+                            onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
+                            className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg border transition-all text-xs ${respostas[q.id] === nota ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border hover:bg-muted'}`}
+                          >
+                            <Star className={`h-4 w-4 ${respostas[q.id] === nota ? 'fill-primary text-primary' : ''}`} />
+                            {scaleLabels[nota]}
+                          </button>
+                        ))}
+                      </div>
+                      <Textarea
+                        placeholder="Observação (opcional)"
+                        value={observacoes[q.id] || ''}
+                        onChange={e => setObservacoes(prev => ({ ...prev, [q.id]: e.target.value }))}
+                        className="mt-1 text-xs"
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            }) : currentQuestoes.map((q, qi) => (
               <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                 <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                 <div className="flex gap-1">

@@ -19,6 +19,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Semestre = Tables<'semestres_letivos'>;
 type Dimensao = Tables<'dimensoes_avaliacao'>;
+type Area = Tables<'areas_avaliacao'>;
 type Questao = Tables<'questoes_avaliacao'>;
 type Ambiente = Tables<'ambientes_avaliacao'>;
 
@@ -110,31 +111,42 @@ const SemestresTab = () => {
   );
 };
 
-// ─── Dimensões Tab ───
+// ─── Dimensões Tab (com Áreas e Questões) ───
 const DimensoesTab = () => {
-  const [dimensoes, setDimensoes] = useState<(Dimensao & { questoes?: Questao[] })[]>([]);
+  const [dimensoes, setDimensoes] = useState<(Dimensao & { areas?: (Area & { questoes?: Questao[] })[] })[]>([]);
   const [formDim, setFormDim] = useState({ nome: '', descricao: '' });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [expandedArea, setExpandedArea] = useState<string | null>(null);
+  const [novaArea, setNovaArea] = useState('');
   const [novaQuestao, setNovaQuestao] = useState('');
   const [editingDim, setEditingDim] = useState<string | null>(null);
   const [editDimForm, setEditDimForm] = useState({ nome: '', descricao: '' });
+  const [editingArea, setEditingArea] = useState<string | null>(null);
+  const [editAreaForm, setEditAreaForm] = useState({ nome: '', descricao: '' });
   const [editingQuestao, setEditingQuestao] = useState<string | null>(null);
   const [editQuestaoTexto, setEditQuestaoTexto] = useState('');
 
   const fetch = useCallback(async () => {
     const { data: dims } = await supabase.from('dimensoes_avaliacao').select('*').order('ordem');
     if (!dims) return;
+    const { data: areas } = await supabase.from('areas_avaliacao').select('*').order('ordem');
     const { data: qs } = await supabase.from('questoes_avaliacao').select('*').order('ordem');
-    const result = dims.map((d) => ({ ...d, questoes: (qs || []).filter((q) => q.dimensao_id === d.id) }));
+    const result = dims.map((d) => ({
+      ...d,
+      areas: (areas || []).filter((a) => a.dimensao_id === d.id).map((a) => ({
+        ...a,
+        questoes: (qs || []).filter((q) => q.area_id === a.id),
+      })),
+    }));
     setDimensoes(result);
   }, []);
 
   useEffect(() => { fetch(); }, [fetch]);
 
+  // Dimensão CRUD
   const addDim = async () => {
     if (!formDim.nome.trim()) return;
-    const ordem = dimensoes.length;
-    await supabase.from('dimensoes_avaliacao').insert({ nome: formDim.nome, descricao: formDim.descricao, ordem });
+    await supabase.from('dimensoes_avaliacao').insert({ nome: formDim.nome, descricao: formDim.descricao, ordem: dimensoes.length });
     setFormDim({ nome: '', descricao: '' });
     toast.success('Dimensão criada');
     fetch();
@@ -159,11 +171,43 @@ const DimensoesTab = () => {
     fetch();
   };
 
-  const addQuestao = async (dimId: string) => {
+  // Área CRUD
+  const addArea = async (dimId: string) => {
+    if (!novaArea.trim()) return;
+    const dim = dimensoes.find((d) => d.id === dimId);
+    const ordem = dim?.areas?.length || 0;
+    await supabase.from('areas_avaliacao').insert({ dimensao_id: dimId, nome: novaArea, ordem });
+    setNovaArea('');
+    toast.success('Área adicionada');
+    fetch();
+  };
+
+  const updateArea = async (id: string) => {
+    await supabase.from('areas_avaliacao').update({ nome: editAreaForm.nome, descricao: editAreaForm.descricao }).eq('id', id);
+    setEditingArea(null);
+    toast.success('Área atualizada');
+    fetch();
+  };
+
+  const toggleAreaAtivo = async (area: Area) => {
+    await supabase.from('areas_avaliacao').update({ ativo: !area.ativo }).eq('id', area.id);
+    toast.success(area.ativo ? 'Área desativada' : 'Área ativada');
+    fetch();
+  };
+
+  const removeArea = async (id: string) => {
+    await supabase.from('areas_avaliacao').delete().eq('id', id);
+    toast.success('Área removida');
+    fetch();
+  };
+
+  // Questão CRUD
+  const addQuestao = async (areaId: string, dimId: string) => {
     if (!novaQuestao.trim()) return;
     const dim = dimensoes.find((d) => d.id === dimId);
-    const ordem = dim?.questoes?.length || 0;
-    await supabase.from('questoes_avaliacao').insert({ dimensao_id: dimId, texto: novaQuestao, ordem });
+    const area = dim?.areas?.find((a) => a.id === areaId);
+    const ordem = area?.questoes?.length || 0;
+    await supabase.from('questoes_avaliacao').insert({ dimensao_id: dimId, area_id: areaId, texto: novaQuestao, ordem });
     setNovaQuestao('');
     toast.success('Questão adicionada');
     fetch();
@@ -183,24 +227,17 @@ const DimensoesTab = () => {
     fetch();
   };
 
-  const moveQuestao = async (dimId: string, index: number, direction: 'up' | 'down') => {
-    const dim = dimensoes.find((d) => d.id === dimId);
-    if (!dim?.questoes) return;
-    const qs = [...dim.questoes];
-    const swapIdx = direction === 'up' ? index - 1 : index + 1;
-    if (swapIdx < 0 || swapIdx >= qs.length) return;
-    await Promise.all([
-      supabase.from('questoes_avaliacao').update({ ordem: swapIdx }).eq('id', qs[index].id),
-      supabase.from('questoes_avaliacao').update({ ordem: index }).eq('id', qs[swapIdx].id),
-    ]);
-    fetch();
-  };
-
   const removeQuestao = async (id: string) => {
     await supabase.from('questoes_avaliacao').delete().eq('id', id);
     toast.success('Questão removida');
     fetch();
   };
+
+  const totalQuestoesDim = (dim: typeof dimensoes[0]) =>
+    dim.areas?.reduce((sum, a) => sum + (a.questoes?.length || 0), 0) || 0;
+
+  const totalQuestoesAtivasDim = (dim: typeof dimensoes[0]) =>
+    dim.areas?.reduce((sum, a) => sum + (a.questoes?.filter(q => q.ativo).length || 0), 0) || 0;
 
   return (
     <div className="space-y-4">
@@ -240,7 +277,7 @@ const DimensoesTab = () => {
               </button>
               <div className="flex items-center gap-2">
                 <Badge variant={dim.ativo ? 'default' : 'secondary'}>{dim.ativo ? 'Ativa' : 'Inativa'}</Badge>
-                <Badge variant="outline">{dim.questoes?.filter(q => q.ativo).length || 0}/{dim.questoes?.length || 0} questões</Badge>
+                <Badge variant="outline">{dim.areas?.length || 0} áreas · {totalQuestoesAtivasDim(dim)}/{totalQuestoesDim(dim)} questões</Badge>
                 <Button size="sm" variant="outline" onClick={() => toggleDimAtivo(dim)}>{dim.ativo ? 'Desativar' : 'Ativar'}</Button>
                 {editingDim !== dim.id && (
                   <Button size="sm" variant="ghost" onClick={() => { setEditingDim(dim.id); setEditDimForm({ nome: dim.nome, descricao: dim.descricao || '' }); }}>
@@ -254,46 +291,82 @@ const DimensoesTab = () => {
           </CardHeader>
           {expanded === dim.id && (
             <CardContent className="pt-0 space-y-3">
-              <p className="text-xs text-muted-foreground">Escala: Muito Ruim → Regular → Atende Parcialmente → Bom → Excelente</p>
-              {dim.questoes?.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhuma questão cadastrada nesta dimensão.</p>}
-              {dim.questoes?.map((q, i) => (
-                <div key={q.id} className={`flex items-center gap-2 p-2 rounded bg-muted/30 ${!q.ativo ? 'opacity-50' : ''}`}>
-                  <div className="flex flex-col gap-0.5">
-                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={i === 0} onClick={() => moveQuestao(dim.id, i, 'up')}>
-                      <ChevronRight className="w-3 h-3 -rotate-90" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={i === (dim.questoes?.length || 0) - 1} onClick={() => moveQuestao(dim.id, i, 'down')}>
-                      <ChevronRight className="w-3 h-3 rotate-90" />
-                    </Button>
-                  </div>
-                  {editingQuestao === q.id ? (
-                    <div className="flex-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                      <Input value={editQuestaoTexto} onChange={(e) => setEditQuestaoTexto(e.target.value)} className="h-8 flex-1" onKeyDown={(e) => e.key === 'Enter' && updateQuestao(q.id)} />
-                      <Button size="sm" variant="ghost" onClick={() => updateQuestao(q.id)}><Save className="w-3 h-3" /></Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingQuestao(null)}><X className="w-3 h-3" /></Button>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-foreground flex-1">{i + 1}. {q.texto}</span>
-                  )}
-                  {editingQuestao !== q.id && (
+              {/* Áreas */}
+              {dim.areas?.map((area) => (
+                <div key={area.id} className={`border rounded-lg p-3 space-y-2 ${!area.ativo ? 'opacity-50' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <button className="flex items-center gap-2 text-left" onClick={() => setExpandedArea(expandedArea === area.id ? null : area.id)}>
+                      {expandedArea === area.id ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                      {editingArea === area.id ? (
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Input value={editAreaForm.nome} onChange={(e) => setEditAreaForm({ ...editAreaForm, nome: e.target.value })} className="h-7 w-40 text-sm" />
+                          <Button size="sm" variant="ghost" className="h-7" onClick={() => updateArea(area.id)}><Save className="w-3 h-3" /></Button>
+                          <Button size="sm" variant="ghost" className="h-7" onClick={() => setEditingArea(null)}><X className="w-3 h-3" /></Button>
+                        </div>
+                      ) : (
+                        <span className="text-sm font-medium">{area.nome}</span>
+                      )}
+                    </button>
                     <div className="flex items-center gap-1">
-                      <Badge variant={q.ativo ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">{q.ativo ? 'Ativa' : 'Inativa'}</Badge>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => toggleQuestaoAtivo(q)}>
-                        {q.ativo ? <X className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                      <Badge variant="outline" className="text-[10px]">{area.questoes?.filter(q => q.ativo).length || 0}/{area.questoes?.length || 0} questões</Badge>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => toggleAreaAtivo(area)}>
+                        {area.ativo ? <X className="w-3 h-3" /> : <Save className="w-3 h-3" />}
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingQuestao(q.id); setEditQuestaoTexto(q.texto); }}>
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => removeQuestao(q.id)}>
+                      {editingArea !== area.id && (
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingArea(area.id); setEditAreaForm({ nome: area.nome, descricao: area.descricao || '' }); }}>
+                          <Edit2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => removeArea(area.id)}>
                         <Trash2 className="w-3 h-3 text-destructive" />
                       </Button>
+                    </div>
+                  </div>
+
+                  {expandedArea === area.id && (
+                    <div className="space-y-2 ml-5">
+                      <p className="text-xs text-muted-foreground">Escala: Muito Ruim → Regular → Atende Parcialmente → Bom → Excelente</p>
+                      {area.questoes?.length === 0 && <p className="text-xs text-muted-foreground italic">Nenhuma questão nesta área.</p>}
+                      {area.questoes?.map((q, i) => (
+                        <div key={q.id} className={`flex items-center gap-2 p-2 rounded bg-muted/30 ${!q.ativo ? 'opacity-50' : ''}`}>
+                          {editingQuestao === q.id ? (
+                            <div className="flex-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                              <Input value={editQuestaoTexto} onChange={(e) => setEditQuestaoTexto(e.target.value)} className="h-8 flex-1" onKeyDown={(e) => e.key === 'Enter' && updateQuestao(q.id)} />
+                              <Button size="sm" variant="ghost" onClick={() => updateQuestao(q.id)}><Save className="w-3 h-3" /></Button>
+                              <Button size="sm" variant="ghost" onClick={() => setEditingQuestao(null)}><X className="w-3 h-3" /></Button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-foreground flex-1">{i + 1}. {q.texto}</span>
+                          )}
+                          {editingQuestao !== q.id && (
+                            <div className="flex items-center gap-1">
+                              <Badge variant={q.ativo ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">{q.ativo ? 'Ativa' : 'Inativa'}</Badge>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => toggleQuestaoAtivo(q)}>
+                                {q.ativo ? <X className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingQuestao(q.id); setEditQuestaoTexto(q.texto); }}>
+                                <Edit2 className="w-3 h-3" />
+                              </Button>
+                              <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => removeQuestao(q.id)}>
+                                <Trash2 className="w-3 h-3 text-destructive" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      <div className="flex gap-2">
+                        <Input value={novaQuestao} onChange={(e) => setNovaQuestao(e.target.value)} placeholder="Texto da questão" className="text-sm" onKeyDown={(e) => e.key === 'Enter' && addQuestao(area.id, dim.id)} />
+                        <Button size="sm" onClick={() => addQuestao(area.id, dim.id)}><Plus className="w-4 h-4" /></Button>
+                      </div>
                     </div>
                   )}
                 </div>
               ))}
-              <div className="flex gap-2">
-                <Input value={novaQuestao} onChange={(e) => setNovaQuestao(e.target.value)} placeholder="Texto da questão" onKeyDown={(e) => e.key === 'Enter' && addQuestao(dim.id)} />
-                <Button size="sm" onClick={() => addQuestao(dim.id)}><Plus className="w-4 h-4" /></Button>
+
+              {/* Nova Área */}
+              <div className="flex gap-2 mt-2">
+                <Input value={novaArea} onChange={(e) => setNovaArea(e.target.value)} placeholder="Nome da nova área" className="text-sm" onKeyDown={(e) => e.key === 'Enter' && addArea(dim.id)} />
+                <Button size="sm" onClick={() => addArea(dim.id)}><Plus className="w-4 h-4 mr-1" />Área</Button>
               </div>
             </CardContent>
           )}

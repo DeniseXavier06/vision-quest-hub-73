@@ -159,6 +159,47 @@ export type Database = {
           },
         ]
       }
+      areas_avaliacao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          dimensao_id: string
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          dimensao_id: string
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          dimensao_id?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "areas_avaliacao_dimensao_id_fkey"
+            columns: ["dimensao_id"]
+            isOneToOne: false
+            referencedRelation: "dimensoes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           created_at: string
@@ -339,6 +380,7 @@ export type Database = {
       }
       questoes_avaliacao: {
         Row: {
+          area_id: string | null
           ativo: boolean
           created_at: string
           dimensao_id: string
@@ -348,6 +390,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area_id?: string | null
           ativo?: boolean
           created_at?: string
           dimensao_id: string
@@ -357,6 +400,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area_id?: string | null
           ativo?: boolean
           created_at?: string
           dimensao_id?: string
@@ -366,6 +410,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "questoes_avaliacao_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas_avaliacao"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "questoes_avaliacao_dimensao_id_fkey"
             columns: ["dimensao_id"]
