@@ -278,8 +278,8 @@ const Avaliacao = () => {
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-md text-center">
           <CardHeader>
-            <div className="mx-auto mb-4 w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-primary" />
             </div>
             <CardTitle>Avaliação Concluída!</CardTitle>
             <CardDescription>Obrigado por participar da avaliação institucional.</CardDescription>
