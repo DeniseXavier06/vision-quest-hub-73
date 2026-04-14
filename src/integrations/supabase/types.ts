@@ -195,6 +195,50 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliadores_sessao: {
+        Row: {
+          ambiente_id: string
+          completado: boolean
+          created_at: string
+          curso: string
+          id: string
+          matricula: string
+          nome: string
+          perfil: string
+          token: string
+        }
+        Insert: {
+          ambiente_id: string
+          completado?: boolean
+          created_at?: string
+          curso?: string
+          id?: string
+          matricula: string
+          nome: string
+          perfil: string
+          token?: string
+        }
+        Update: {
+          ambiente_id?: string
+          completado?: boolean
+          created_at?: string
+          curso?: string
+          id?: string
+          matricula?: string
+          nome?: string
+          perfil?: string
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliadores_sessao_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dimensoes_avaliacao: {
         Row: {
           ativo: boolean
@@ -369,6 +413,68 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      respostas_avaliacao: {
+        Row: {
+          ambiente_id: string
+          created_at: string
+          dimensao_id: string
+          id: string
+          nota: number
+          observacao: string | null
+          questao_id: string
+          sessao_id: string
+        }
+        Insert: {
+          ambiente_id: string
+          created_at?: string
+          dimensao_id: string
+          id?: string
+          nota: number
+          observacao?: string | null
+          questao_id: string
+          sessao_id: string
+        }
+        Update: {
+          ambiente_id?: string
+          created_at?: string
+          dimensao_id?: string
+          id?: string
+          nota?: number
+          observacao?: string | null
+          questao_id?: string
+          sessao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "respostas_avaliacao_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respostas_avaliacao_dimensao_id_fkey"
+            columns: ["dimensao_id"]
+            isOneToOne: false
+            referencedRelation: "dimensoes_avaliacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respostas_avaliacao_questao_id_fkey"
+            columns: ["questao_id"]
+            isOneToOne: false
+            referencedRelation: "questoes_avaliacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "respostas_avaliacao_sessao_id_fkey"
+            columns: ["sessao_id"]
+            isOneToOne: false
+            referencedRelation: "avaliadores_sessao"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resultados: {
         Row: {
