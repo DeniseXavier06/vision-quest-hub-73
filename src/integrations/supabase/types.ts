@@ -53,6 +53,112 @@ export type Database = {
         }
         Relationships: []
       }
+      ambiente_dimensoes: {
+        Row: {
+          ambiente_id: string
+          dimensao_id: string
+          id: string
+        }
+        Insert: {
+          ambiente_id: string
+          dimensao_id: string
+          id?: string
+        }
+        Update: {
+          ambiente_id?: string
+          dimensao_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambiente_dimensoes_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ambiente_dimensoes_dimensao_id_fkey"
+            columns: ["dimensao_id"]
+            isOneToOne: false
+            referencedRelation: "dimensoes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambiente_perfis: {
+        Row: {
+          ambiente_id: string
+          id: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Insert: {
+          ambiente_id: string
+          id?: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Update: {
+          ambiente_id?: string
+          id?: string
+          perfil?: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambiente_perfis_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambientes_avaliacao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_fim: string
+          data_inicio: string
+          id: string
+          nivel: Database["public"]["Enums"]["nivel_avaliacao"]
+          nome: string
+          prorrogado_ate: string | null
+          semestre_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_fim: string
+          data_inicio: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["nivel_avaliacao"]
+          nome: string
+          prorrogado_ate?: string | null
+          semestre_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_fim?: string
+          data_inicio?: string
+          id?: string
+          nivel?: Database["public"]["Enums"]["nivel_avaliacao"]
+          nome?: string
+          prorrogado_ate?: string | null
+          semestre_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambientes_avaliacao_semestre_id_fkey"
+            columns: ["semestre_id"]
+            isOneToOne: false
+            referencedRelation: "semestres_letivos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           created_at: string
@@ -89,6 +195,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dimensoes_avaliacao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          ordem: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          ordem?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          ordem?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       importacoes: {
         Row: {
           created_at: string
@@ -121,6 +257,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      mapeamentos_campos: {
+        Row: {
+          ambiente_id: string
+          campo_arquivo: string
+          campo_sistema: string
+          created_at: string
+          id: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Insert: {
+          ambiente_id: string
+          campo_arquivo: string
+          campo_sistema: string
+          created_at?: string
+          id?: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Update: {
+          ambiente_id?: string
+          campo_arquivo?: string
+          campo_sistema?: string
+          created_at?: string
+          id?: string
+          perfil?: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mapeamentos_campos_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      questoes_avaliacao: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dimensao_id: string
+          id: string
+          ordem: number
+          texto: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dimensao_id: string
+          id?: string
+          ordem?: number
+          texto: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dimensao_id?: string
+          id?: string
+          ordem?: number
+          texto?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questoes_avaliacao_dimensao_id_fkey"
+            columns: ["dimensao_id"]
+            isOneToOne: false
+            referencedRelation: "dimensoes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       relatorios: {
         Row: {
@@ -268,6 +477,36 @@ export type Database = {
         }
         Relationships: []
       }
+      semestres_letivos: {
+        Row: {
+          ano: number
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          periodo: number
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          periodo: number
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          periodo?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       setores: {
         Row: {
           ativo: boolean
@@ -345,6 +584,8 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      nivel_avaliacao: "presencial" | "ead"
+      perfil_avaliacao: "professor" | "aluno" | "colaborador" | "coordenador"
       status_acao: "nao_iniciada" | "em_andamento" | "concluida"
       status_avaliacao: "planejado" | "em_execucao" | "concluido"
       status_reuniao: "agendada" | "realizada" | "cancelada"
@@ -477,6 +718,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      nivel_avaliacao: ["presencial", "ead"],
+      perfil_avaliacao: ["professor", "aluno", "colaborador", "coordenador"],
       status_acao: ["nao_iniciada", "em_andamento", "concluida"],
       status_avaliacao: ["planejado", "em_execucao", "concluido"],
       status_reuniao: ["agendada", "realizada", "cancelada"],
