@@ -328,7 +328,42 @@ const Avaliacao = () => {
             {currentDim?.descricao && <CardDescription>{currentDim.descricao}</CardDescription>}
           </CardHeader>
           <CardContent className="space-y-6">
-            {currentQuestoes.map((q, qi) => (
+            {currentAreas.length > 0 ? currentAreas.map((area) => {
+              const areaQuestoes = currentQuestoes.filter(q => q.area_id === area.id);
+              if (areaQuestoes.length === 0) return null;
+              return (
+                <div key={area.id} className="space-y-4">
+                  <div className="border-l-4 border-primary pl-3">
+                    <h4 className="text-sm font-semibold text-foreground">{area.nome}</h4>
+                    {area.descricao && <p className="text-xs text-muted-foreground">{area.descricao}</p>}
+                  </div>
+                  {areaQuestoes.map((q, qi) => (
+                    <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
+                      <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map(nota => (
+                          <button
+                            key={nota}
+                            onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
+                            className={`flex-1 flex flex-col items-center gap-1 p-2 rounded-lg border transition-all text-xs ${respostas[q.id] === nota ? 'border-primary bg-primary/10 text-primary font-medium' : 'border-border hover:bg-muted'}`}
+                          >
+                            <Star className={`h-4 w-4 ${respostas[q.id] === nota ? 'fill-primary text-primary' : ''}`} />
+                            {scaleLabels[nota]}
+                          </button>
+                        ))}
+                      </div>
+                      <Textarea
+                        placeholder="Observação (opcional)"
+                        value={observacoes[q.id] || ''}
+                        onChange={e => setObservacoes(prev => ({ ...prev, [q.id]: e.target.value }))}
+                        className="mt-1 text-xs"
+                        rows={2}
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            }) : currentQuestoes.map((q, qi) => (
               <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                 <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                 <div className="flex gap-1">
