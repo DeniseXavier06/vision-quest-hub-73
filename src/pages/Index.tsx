@@ -10,6 +10,7 @@ import ReunioesSection from '@/components/ReunioesSection';
 import RelatoriosSection from '@/components/RelatoriosSection';
 import UsuariosSection from '@/components/UsuariosSection';
 import SetoresSection from '@/components/SetoresSection';
+import ConfiguracaoAmbienteSection from '@/components/ConfiguracaoAmbienteSection';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -31,6 +32,7 @@ const Index = () => {
       case 'resultados': return <ResultadosSection />;
       case 'reunioes': return <ReunioesSection />;
       case 'relatorios': return <RelatoriosSection />;
+      case 'configuracao': return <ConfiguracaoAmbienteSection />;
       default: return <DashboardOverview onSectionChange={setActiveSection} />;
     }
   };

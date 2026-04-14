@@ -11,6 +11,7 @@ import {
   GraduationCap,
   UserCog,
   Building2,
+  Settings2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ const menuItems = [
   { id: 'resultados', label: 'Resultados', icon: BarChart3 },
   { id: 'reunioes', label: 'Reuniões', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: FileText },
+  { id: 'configuracao', label: 'Configuração', icon: Settings2 },
 ];
 
 const SidebarCPA = ({ activeSection, onSectionChange }: SidebarCPAProps) => {
