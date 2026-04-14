@@ -139,6 +139,7 @@ const Avaliacao = () => {
 
   const currentDimId = selectedDimensoes[currentDimIndex];
   const currentDim = dimensoes.find(d => d.id === currentDimId);
+  const currentAreas = useMemo(() => areas.filter(a => a.dimensao_id === currentDimId), [areas, currentDimId]);
   const currentQuestoes = useMemo(() => questoes.filter(q => q.dimensao_id === currentDimId), [questoes, currentDimId]);
 
   const allCurrentAnswered = currentQuestoes.every(q => respostas[q.id] !== undefined);
