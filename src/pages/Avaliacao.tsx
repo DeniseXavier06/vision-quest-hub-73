@@ -32,6 +32,7 @@ const Avaliacao = () => {
   const [sessao, setSessao] = useState<Sessao | null>(null);
 
   const [dimensoes, setDimensoes] = useState<Dimensao[]>([]);
+  const [areas, setAreas] = useState<AreaAvaliacao[]>([]);
   const [selectedDimensoes, setSelectedDimensoes] = useState<string[]>([]);
 
   const [questoes, setQuestoes] = useState<Questao[]>([]);
