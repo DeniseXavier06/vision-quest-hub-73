@@ -109,8 +109,12 @@ const Avaliacao = () => {
     const { data: ambDims } = await supabase.from('ambiente_dimensoes').select('dimensao_id').eq('ambiente_id', selectedAmbiente);
     if (ambDims && ambDims.length > 0) {
       const dimIds = ambDims.map(d => d.dimensao_id);
-      const { data: dims } = await supabase.from('dimensoes_avaliacao').select('*').in('id', dimIds).eq('ativo', true).order('ordem');
+      const [{ data: dims }, { data: areasData }] = await Promise.all([
+        supabase.from('dimensoes_avaliacao').select('*').in('id', dimIds).eq('ativo', true).order('ordem'),
+        supabase.from('areas_avaliacao').select('*').in('dimensao_id', dimIds).eq('ativo', true).order('ordem'),
+      ]);
       if (dims) setDimensoes(dims);
+      if (areasData) setAreas(areasData);
     }
 
     setStep('dimensoes');
