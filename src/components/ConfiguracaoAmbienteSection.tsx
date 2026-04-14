@@ -19,6 +19,7 @@ import type { Tables } from '@/integrations/supabase/types';
 
 type Semestre = Tables<'semestres_letivos'>;
 type Dimensao = Tables<'dimensoes_avaliacao'>;
+type Area = Tables<'areas_avaliacao'>;
 type Questao = Tables<'questoes_avaliacao'>;
 type Ambiente = Tables<'ambientes_avaliacao'>;
 
