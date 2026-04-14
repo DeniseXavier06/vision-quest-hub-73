@@ -280,6 +280,44 @@ export type Database = {
           },
         ]
       }
+      cursos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          id: string
+          nome: string
+          semestre_id: string
+          sigla: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome: string
+          semestre_id: string
+          sigla?: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          id?: string
+          nome?: string
+          semestre_id?: string
+          sigla?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cursos_semestre_id_fkey"
+            columns: ["semestre_id"]
+            isOneToOne: false
+            referencedRelation: "semestres_letivos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dimensoes_avaliacao: {
         Row: {
           ativo: boolean
@@ -309,6 +347,47 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      disciplinas: {
+        Row: {
+          ativo: boolean
+          carga_horaria: number
+          codigo: string
+          created_at: string
+          id: string
+          nome: string
+          turma_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          carga_horaria?: number
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome: string
+          turma_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          carga_horaria?: number
+          codigo?: string
+          created_at?: string
+          id?: string
+          nome?: string
+          turma_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disciplinas_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "turmas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       importacoes: {
         Row: {
@@ -696,6 +775,44 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      turmas: {
+        Row: {
+          ativo: boolean
+          codigo: string
+          created_at: string
+          curso_id: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          curso_id: string
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          codigo?: string
+          created_at?: string
+          curso_id?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "turmas_curso_id_fkey"
+            columns: ["curso_id"]
+            isOneToOne: false
+            referencedRelation: "cursos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       usuarios_cpa: {
         Row: {
