@@ -118,6 +118,8 @@ const DimensoesTab = () => {
   const [novaQuestao, setNovaQuestao] = useState('');
   const [editingDim, setEditingDim] = useState<string | null>(null);
   const [editDimForm, setEditDimForm] = useState({ nome: '', descricao: '' });
+  const [editingQuestao, setEditingQuestao] = useState<string | null>(null);
+  const [editQuestaoTexto, setEditQuestaoTexto] = useState('');
 
   const fetch = useCallback(async () => {
     const { data: dims } = await supabase.from('dimensoes_avaliacao').select('*').order('ordem');
@@ -145,6 +147,12 @@ const DimensoesTab = () => {
     fetch();
   };
 
+  const toggleDimAtivo = async (dim: Dimensao) => {
+    await supabase.from('dimensoes_avaliacao').update({ ativo: !dim.ativo }).eq('id', dim.id);
+    toast.success(dim.ativo ? 'Dimensão desativada' : 'Dimensão ativada');
+    fetch();
+  };
+
   const removeDim = async (id: string) => {
     await supabase.from('dimensoes_avaliacao').delete().eq('id', id);
     toast.success('Dimensão removida');
@@ -158,6 +166,33 @@ const DimensoesTab = () => {
     await supabase.from('questoes_avaliacao').insert({ dimensao_id: dimId, texto: novaQuestao, ordem });
     setNovaQuestao('');
     toast.success('Questão adicionada');
+    fetch();
+  };
+
+  const updateQuestao = async (id: string) => {
+    if (!editQuestaoTexto.trim()) return;
+    await supabase.from('questoes_avaliacao').update({ texto: editQuestaoTexto }).eq('id', id);
+    setEditingQuestao(null);
+    toast.success('Questão atualizada');
+    fetch();
+  };
+
+  const toggleQuestaoAtivo = async (q: Questao) => {
+    await supabase.from('questoes_avaliacao').update({ ativo: !q.ativo }).eq('id', q.id);
+    toast.success(q.ativo ? 'Questão desativada' : 'Questão ativada');
+    fetch();
+  };
+
+  const moveQuestao = async (dimId: string, index: number, direction: 'up' | 'down') => {
+    const dim = dimensoes.find((d) => d.id === dimId);
+    if (!dim?.questoes) return;
+    const qs = [...dim.questoes];
+    const swapIdx = direction === 'up' ? index - 1 : index + 1;
+    if (swapIdx < 0 || swapIdx >= qs.length) return;
+    await Promise.all([
+      supabase.from('questoes_avaliacao').update({ ordem: swapIdx }).eq('id', qs[index].id),
+      supabase.from('questoes_avaliacao').update({ ordem: index }).eq('id', qs[swapIdx].id),
+    ]);
     fetch();
   };
 
@@ -187,7 +222,7 @@ const DimensoesTab = () => {
       </Card>
 
       {dimensoes.map((dim) => (
-        <Card key={dim.id}>
+        <Card key={dim.id} className={!dim.ativo ? 'opacity-60' : ''}>
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
               <button className="flex items-center gap-2 text-left" onClick={() => setExpanded(expanded === dim.id ? null : dim.id)}>
@@ -204,7 +239,9 @@ const DimensoesTab = () => {
                 )}
               </button>
               <div className="flex items-center gap-2">
-                <Badge variant="outline">{dim.questoes?.length || 0} questões</Badge>
+                <Badge variant={dim.ativo ? 'default' : 'secondary'}>{dim.ativo ? 'Ativa' : 'Inativa'}</Badge>
+                <Badge variant="outline">{dim.questoes?.filter(q => q.ativo).length || 0}/{dim.questoes?.length || 0} questões</Badge>
+                <Button size="sm" variant="outline" onClick={() => toggleDimAtivo(dim)}>{dim.ativo ? 'Desativar' : 'Ativar'}</Button>
                 {editingDim !== dim.id && (
                   <Button size="sm" variant="ghost" onClick={() => { setEditingDim(dim.id); setEditDimForm({ nome: dim.nome, descricao: dim.descricao || '' }); }}>
                     <Edit2 className="w-4 h-4" />
@@ -213,16 +250,45 @@ const DimensoesTab = () => {
                 <Button size="sm" variant="ghost" onClick={() => removeDim(dim.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
               </div>
             </div>
-            {dim.descricao && !editingDim && <p className="text-xs text-muted-foreground ml-6">{dim.descricao}</p>}
+            {dim.descricao && editingDim !== dim.id && <p className="text-xs text-muted-foreground ml-6">{dim.descricao}</p>}
           </CardHeader>
           {expanded === dim.id && (
             <CardContent className="pt-0 space-y-3">
               <p className="text-xs text-muted-foreground">Escala: Muito Ruim → Regular → Atende Parcialmente → Bom → Excelente</p>
+              {dim.questoes?.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhuma questão cadastrada nesta dimensão.</p>}
               {dim.questoes?.map((q, i) => (
-                <div key={q.id} className="flex items-center gap-2 p-2 rounded bg-muted/30">
-                  <GripVertical className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-foreground flex-1">{i + 1}. {q.texto}</span>
-                  <Button size="sm" variant="ghost" onClick={() => removeQuestao(q.id)}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                <div key={q.id} className={`flex items-center gap-2 p-2 rounded bg-muted/30 ${!q.ativo ? 'opacity-50' : ''}`}>
+                  <div className="flex flex-col gap-0.5">
+                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={i === 0} onClick={() => moveQuestao(dim.id, i, 'up')}>
+                      <ChevronRight className="w-3 h-3 -rotate-90" />
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-5 w-5 p-0" disabled={i === (dim.questoes?.length || 0) - 1} onClick={() => moveQuestao(dim.id, i, 'down')}>
+                      <ChevronRight className="w-3 h-3 rotate-90" />
+                    </Button>
+                  </div>
+                  {editingQuestao === q.id ? (
+                    <div className="flex-1 flex gap-2" onClick={(e) => e.stopPropagation()}>
+                      <Input value={editQuestaoTexto} onChange={(e) => setEditQuestaoTexto(e.target.value)} className="h-8 flex-1" onKeyDown={(e) => e.key === 'Enter' && updateQuestao(q.id)} />
+                      <Button size="sm" variant="ghost" onClick={() => updateQuestao(q.id)}><Save className="w-3 h-3" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditingQuestao(null)}><X className="w-3 h-3" /></Button>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-foreground flex-1">{i + 1}. {q.texto}</span>
+                  )}
+                  {editingQuestao !== q.id && (
+                    <div className="flex items-center gap-1">
+                      <Badge variant={q.ativo ? 'default' : 'secondary'} className="text-[10px] px-1.5 py-0">{q.ativo ? 'Ativa' : 'Inativa'}</Badge>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => toggleQuestaoAtivo(q)}>
+                        {q.ativo ? <X className="w-3 h-3" /> : <Save className="w-3 h-3" />}
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { setEditingQuestao(q.id); setEditQuestaoTexto(q.texto); }}>
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => removeQuestao(q.id)}>
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
               <div className="flex gap-2">
