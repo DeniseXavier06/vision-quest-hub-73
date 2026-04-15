@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import {
   Plus, Trash2, Edit2, Save, X, GripVertical, ChevronDown, ChevronRight,
-  Calendar, Upload, FileSpreadsheet, ArrowRight,
+  Calendar, Upload, FileSpreadsheet, ArrowRight, Loader2,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Semestre = Tables<'semestres_letivos'>;
@@ -586,8 +587,10 @@ const ImportacaoTab = () => {
   const [file, setFile] = useState<File | null>(null);
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
-  const [step, setStep] = useState<'upload' | 'map'>('upload');
+  const [step, setStep] = useState<'upload' | 'map' | 'ready'>('upload');
   const [savedMappings, setSavedMappings] = useState<{ campo_sistema: string; campo_arquivo: string }[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [parsedRows, setParsedRows] = useState<any[]>([]);
 
   useEffect(() => {
     supabase.from('ambientes_avaliacao').select('*').eq('ativo', true).order('created_at', { ascending: false }).then(({ data }) => {
@@ -612,35 +615,86 @@ const ImportacaoTab = () => {
     }
   }, [selectedAmbiente, selectedPerfil]);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const parseFile = (f: File): Promise<any[]> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const data = ev.target?.result;
+        if (f.name.endsWith('.csv') || f.name.endsWith('.txt')) {
+          const text = data as string;
+          const lines = text.split('\n').filter(l => l.trim());
+          if (lines.length < 2) { resolve([]); return; }
+          const headers = lines[0].split(/[,;\t]/).map(c => c.trim().replace(/"/g, ''));
+          const rows = lines.slice(1).map(line => {
+            const vals = line.split(/[,;\t]/).map(c => c.trim().replace(/"/g, ''));
+            const row: Record<string, string> = {};
+            headers.forEach((h, i) => { row[h] = vals[i] || ''; });
+            return row;
+          });
+          resolve(rows);
+        } else {
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+          if (jsonData.length < 2) { resolve([]); return; }
+          // Map by column letter (Coluna A = index 0, etc.)
+          const rows = jsonData.slice(1).map(rowArr => {
+            const row: Record<string, string> = {};
+            rowArr.forEach((val, i) => {
+              const colLetter = String.fromCharCode(65 + i);
+              row[`Coluna ${colLetter}`] = String(val ?? '');
+            });
+            return row;
+          });
+          resolve(rows);
+        }
+      };
+      if (f.name.endsWith('.csv') || f.name.endsWith('.txt')) {
+        reader.readAsText(f);
+      } else {
+        reader.readAsArrayBuffer(f);
+      }
+    });
+  };
+
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
     setFile(f);
-    // Read Excel headers using FileReader + simple CSV/XLSX parse
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const text = ev.target?.result as string;
-      if (text) {
-        // Try to get first line as headers (works for CSV)
-        const firstLine = text.split('\n')[0];
-        const cols = firstLine.split(/[,;\t]/).map((c) => c.trim().replace(/"/g, ''));
-        setColumns(cols.filter(Boolean));
-        setStep('map');
-      }
-    };
     if (f.name.endsWith('.csv') || f.name.endsWith('.txt')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const text = ev.target?.result as string;
+        if (text) {
+          const firstLine = text.split('\n')[0];
+          const cols = firstLine.split(/[,;\t]/).map((c) => c.trim().replace(/"/g, ''));
+          setColumns(cols.filter(Boolean));
+          setStep('map');
+        }
+      };
       reader.readAsText(f);
     } else {
-      // For xlsx, just show placeholder columns
-      toast.info('Para melhor mapeamento, use arquivos CSV. Colunas detectadas podem ser limitadas para XLSX.');
-      setColumns(['Coluna A', 'Coluna B', 'Coluna C', 'Coluna D', 'Coluna E', 'Coluna F', 'Coluna G', 'Coluna H', 'Coluna I', 'Coluna J']);
-      setStep('map');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const data = ev.target?.result;
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 }) as any[][];
+        if (jsonData.length > 0) {
+          const maxCols = Math.max(...jsonData.map(r => r.length), 0);
+          const cols = Array.from({ length: Math.max(maxCols, 10) }, (_, i) => `Coluna ${String.fromCharCode(65 + i)}`);
+          setColumns(cols);
+        }
+        setStep('map');
+      };
+      reader.readAsArrayBuffer(f);
     }
   };
 
   const saveMapping = async () => {
     if (!selectedAmbiente || !selectedPerfil) { toast.error('Selecione ambiente e perfil'); return; }
-    // Remove existing mappings
     await supabase.from('mapeamentos_campos').delete().eq('ambiente_id', selectedAmbiente).eq('perfil', selectedPerfil as any);
     const entries = Object.entries(mapping).filter(([, v]) => v);
     if (entries.length > 0) {
@@ -653,7 +707,81 @@ const ImportacaoTab = () => {
         }))
       );
     }
-    toast.success('Mapeamento salvo');
+    setSavedMappings(entries.map(([campo_sistema, campo_arquivo]) => ({ campo_sistema, campo_arquivo })));
+    setStep('ready');
+    toast.success('Mapeamento salvo! Agora clique em Importar Dados.');
+  };
+
+  const importData = async () => {
+    if (!file || !selectedAmbiente || !selectedPerfil) {
+      toast.error('Selecione ambiente, perfil e arquivo');
+      return;
+    }
+    const entries = Object.entries(mapping).filter(([, v]) => v);
+    if (entries.length === 0) {
+      toast.error('Configure o mapeamento primeiro');
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const rows = await parseFile(file);
+      if (rows.length === 0) {
+        toast.error('Arquivo vazio ou sem dados');
+        setImporting(false);
+        return;
+      }
+
+      const mappingObj: Record<string, string> = {};
+      entries.forEach(([campo_sistema, campo_arquivo]) => { mappingObj[campo_sistema] = campo_arquivo; });
+
+      const records = rows.map(row => {
+        const record: Record<string, any> = {
+          ambiente_id: selectedAmbiente,
+          perfil: selectedPerfil,
+          completado: false,
+        };
+        Object.entries(mappingObj).forEach(([campo_sistema, campo_arquivo]) => {
+          const val = row[campo_arquivo] || '';
+          record[campo_sistema] = String(val).trim();
+        });
+        // Ensure required fields
+        if (!record.matricula) record.matricula = '';
+        if (!record.nome) record.nome = 'Sem nome';
+        return record;
+      }).filter(r => r.matricula || r.nome !== 'Sem nome');
+
+      // Insert in batches of 100
+      let inserted = 0;
+      for (let i = 0; i < records.length; i += 100) {
+        const batch = records.slice(i, i + 100);
+        const { error } = await supabase.from('avaliadores_sessao').insert(batch as any);
+        if (error) {
+          console.error('Erro ao importar batch:', error);
+          toast.error(`Erro na importação: ${error.message}`);
+          setImporting(false);
+          return;
+        }
+        inserted += batch.length;
+      }
+
+      // Register import
+      await supabase.from('importacoes').insert({
+        nome_arquivo: file.name,
+        perfil: selectedPerfil,
+        periodo: ambientes.find(a => a.id === selectedAmbiente)?.nome || '',
+        total_registros: inserted,
+      });
+
+      toast.success(`${inserted} registros importados com sucesso!`);
+      setFile(null);
+      setStep('upload');
+      setParsedRows([]);
+    } catch (err) {
+      console.error('Erro na importação:', err);
+      toast.error('Erro ao processar arquivo');
+    }
+    setImporting(false);
   };
 
   return (
@@ -687,7 +815,7 @@ const ImportacaoTab = () => {
         </CardContent>
       </Card>
 
-      {step === 'map' && columns.length > 0 && (
+      {(step === 'map' || step === 'ready') && columns.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2">
@@ -709,7 +837,14 @@ const ImportacaoTab = () => {
                 </Select>
               </div>
             ))}
-            <Button onClick={saveMapping}><Save className="w-4 h-4 mr-1" />Salvar Mapeamento</Button>
+            <div className="flex gap-2 pt-2">
+              <Button onClick={saveMapping}><Save className="w-4 h-4 mr-1" />Salvar Mapeamento</Button>
+              {step === 'ready' && file && (
+                <Button onClick={importData} disabled={importing} variant="default">
+                  {importing ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Importando...</> : <><Upload className="w-4 h-4 mr-1" />Importar Dados</>}
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}
