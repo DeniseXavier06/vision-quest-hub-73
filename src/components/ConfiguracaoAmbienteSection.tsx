@@ -28,7 +28,7 @@ const PERFIS = ['professor', 'aluno', 'colaborador', 'coordenador'] as const;
 const PERFIL_LABELS: Record<string, string> = { professor: 'Professor', aluno: 'Aluno', colaborador: 'Colaborador', coordenador: 'Coordenador' };
 const NIVEL_LABELS: Record<string, string> = { presencial: 'Presencial', ead: 'EAD' };
 const CAMPOS_SISTEMA_POR_PERFIL: Record<string, string[]> = {
-  aluno: ['matricula', 'nome', 'semestre', 'curso', 'periodo', 'codigo_turma', 'nivel', 'email'],
+  aluno: ['matricula', 'nome', 'cpf', 'nivel', 'semestre', 'curso', 'periodo', 'codigo_turma', 'email'],
   professor: ['matricula', 'nome', 'curso', 'periodo', 'disciplinas', 'setor', 'email', 'cpf'],
   colaborador: ['matricula', 'nome', 'setor', 'email', 'cpf', 'centro'],
   coordenador: ['matricula', 'nome', 'curso', 'email', 'cpf'],
