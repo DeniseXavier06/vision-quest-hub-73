@@ -12,6 +12,7 @@ import {
   UserCog,
   Building2,
   Settings2,
+  FileUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ const menuItems = [
   { id: 'resultados', label: 'Resultados', icon: BarChart3 },
   { id: 'reunioes', label: 'Reuniões', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: FileText },
+  { id: 'importacoes', label: 'Importações', icon: FileUp },
   { id: 'configuracao', label: 'Configuração', icon: Settings2 },
 ];
 
