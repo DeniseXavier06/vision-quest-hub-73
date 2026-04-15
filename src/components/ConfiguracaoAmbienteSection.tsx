@@ -697,7 +697,7 @@ const ImportacaoTab = () => {
                 <Select value={mapping[campo] || ''} onValueChange={(v) => setMapping({ ...mapping, [campo]: v })}>
                   <SelectTrigger className="w-48"><SelectValue placeholder="Selecione coluna" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Nenhum —</SelectItem>
+                    <SelectItem value="__none__">— Nenhum —</SelectItem>
                     {columns.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
