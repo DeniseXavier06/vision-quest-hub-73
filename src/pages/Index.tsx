@@ -11,6 +11,7 @@ import RelatoriosSection from '@/components/RelatoriosSection';
 import UsuariosSection from '@/components/UsuariosSection';
 import SetoresSection from '@/components/SetoresSection';
 import ConfiguracaoAmbienteSection from '@/components/ConfiguracaoAmbienteSection';
+import ImportacoesSection from '@/components/ImportacoesSection';
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
