@@ -840,7 +840,7 @@ const ImportacaoTab = () => {
             <div className="flex gap-2 pt-2">
               <Button onClick={saveMapping}><Save className="w-4 h-4 mr-1" />Salvar Mapeamento</Button>
               {step === 'ready' && file && (
-                <Button onClick={importData} disabled={importing} variant="default" className="bg-green-600 hover:bg-green-700">
+                <Button onClick={importData} disabled={importing} variant="default">
                   {importing ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Importando...</> : <><Upload className="w-4 h-4 mr-1" />Importar Dados</>}
                 </Button>
               )}
