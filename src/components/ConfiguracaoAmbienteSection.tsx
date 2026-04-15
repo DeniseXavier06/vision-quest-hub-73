@@ -633,7 +633,7 @@ const ImportacaoTab = () => {
     } else {
       // For xlsx, just show placeholder columns
       toast.info('Para melhor mapeamento, use arquivos CSV. Colunas detectadas podem ser limitadas para XLSX.');
-      setColumns(['Coluna A', 'Coluna B', 'Coluna C', 'Coluna D', 'Coluna E', 'Coluna F', 'Coluna G', 'Coluna H']);
+      setColumns(['Coluna A', 'Coluna B', 'Coluna C', 'Coluna D', 'Coluna E', 'Coluna F', 'Coluna G', 'Coluna H', 'Coluna I', 'Coluna J']);
       setStep('map');
     }
   };
