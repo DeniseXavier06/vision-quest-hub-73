@@ -5,7 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Users, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Users, Search, Eye, Pencil, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const AvaliadoresSection = () => {
   const [avaliadores, setAvaliadores] = useState<any[]>([]);
@@ -14,6 +18,11 @@ const AvaliadoresSection = () => {
   const [filtroNivel, setFiltroNivel] = useState('__all__');
   const [busca, setBusca] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [viewItem, setViewItem] = useState<any | null>(null);
+  const [editItem, setEditItem] = useState<any | null>(null);
+  const [deleteItem, setDeleteItem] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     supabase.from('semestres_letivos').select('*').order('ano', { ascending: false }).order('periodo', { ascending: false })
@@ -32,6 +41,48 @@ const AvaliadoresSection = () => {
   }, [filtroSemestre, filtroNivel, busca]);
 
   useEffect(() => { fetchAvaliadores(); }, [fetchAvaliadores]);
+
+  const handleSaveEdit = async () => {
+    if (!editItem) return;
+    setSaving(true);
+    const { id, created_at, token, completado, ambiente_id, ...updateData } = editItem;
+    const { error } = await supabase.from('avaliadores_sessao').update(updateData).eq('id', id);
+    if (error) {
+      toast({ title: 'Erro ao salvar', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Avaliador atualizado com sucesso' });
+      setEditItem(null);
+      fetchAvaliadores();
+    }
+    setSaving(false);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteItem) return;
+    setSaving(true);
+    const { error } = await supabase.from('avaliadores_sessao').delete().eq('id', deleteItem.id);
+    if (error) {
+      toast({ title: 'Erro ao excluir', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: 'Avaliador excluído com sucesso' });
+      setDeleteItem(null);
+      fetchAvaliadores();
+    }
+    setSaving(false);
+  };
+
+  const fields = [
+    { key: 'matricula', label: 'Matrícula' },
+    { key: 'nome', label: 'Nome' },
+    { key: 'cpf', label: 'CPF' },
+    { key: 'nivel', label: 'Nível' },
+    { key: 'semestre', label: 'Semestre' },
+    { key: 'curso', label: 'Curso' },
+    { key: 'periodo', label: 'Período' },
+    { key: 'codigo_turma', label: 'Cód. Turma' },
+    { key: 'email', label: 'Email' },
+    { key: 'perfil', label: 'Perfil' },
+  ];
 
   return (
     <div className="space-y-6">
@@ -98,13 +149,14 @@ const AvaliadoresSection = () => {
                   <TableHead>Período</TableHead>
                   <TableHead>Cód. Turma</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
                 ) : avaliadores.length === 0 ? (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">Nenhum avaliador encontrado</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum avaliador encontrado</TableCell></TableRow>
                 ) : (
                   avaliadores.map((a) => (
                     <TableRow key={a.id}>
@@ -117,6 +169,19 @@ const AvaliadoresSection = () => {
                       <TableCell className="text-xs">{a.periodo || '—'}</TableCell>
                       <TableCell className="font-mono text-xs">{a.codigo_turma || '—'}</TableCell>
                       <TableCell className="text-xs">{a.email || '—'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewItem(a)} title="Visualizar">
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditItem({ ...a })} title="Editar">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteItem(a)} title="Excluir">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -125,6 +190,65 @@ const AvaliadoresSection = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialog Visualizar */}
+      <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Detalhes do Avaliador</DialogTitle></DialogHeader>
+          {viewItem && (
+            <div className="space-y-3">
+              {fields.map(f => (
+                <div key={f.key} className="flex justify-between text-sm">
+                  <span className="font-medium text-muted-foreground">{f.label}</span>
+                  <span>{viewItem[f.key] || '—'}</span>
+                </div>
+              ))}
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-muted-foreground">Status</span>
+                <Badge variant={viewItem.completado ? 'default' : 'outline'}>{viewItem.completado ? 'Completado' : 'Pendente'}</Badge>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar */}
+      <Dialog open={!!editItem} onOpenChange={() => setEditItem(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Editar Avaliador</DialogTitle></DialogHeader>
+          {editItem && (
+            <div className="grid grid-cols-2 gap-4">
+              {fields.map(f => (
+                <div key={f.key} className={f.key === 'email' ? 'col-span-2' : ''}>
+                  <Label className="text-xs">{f.label}</Label>
+                  <Input
+                    value={editItem[f.key] || ''}
+                    onChange={(e) => setEditItem({ ...editItem, [f.key]: e.target.value })}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditItem(null)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Excluir */}
+      <Dialog open={!!deleteItem} onOpenChange={() => setDeleteItem(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Confirmar Exclusão</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Deseja excluir o avaliador <strong>{deleteItem?.nome}</strong> (matrícula: {deleteItem?.matricula})?
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteItem(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={saving}>{saving ? 'Excluindo...' : 'Excluir'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
