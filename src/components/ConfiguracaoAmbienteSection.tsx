@@ -27,7 +27,13 @@ type Ambiente = Tables<'ambientes_avaliacao'>;
 const PERFIS = ['professor', 'aluno', 'colaborador', 'coordenador'] as const;
 const PERFIL_LABELS: Record<string, string> = { professor: 'Professor', aluno: 'Aluno', colaborador: 'Colaborador', coordenador: 'Coordenador' };
 const NIVEL_LABELS: Record<string, string> = { presencial: 'Presencial', ead: 'EAD' };
-const CAMPOS_SISTEMA = ['matricula', 'nome', 'curso', 'periodo', 'disciplinas', 'setor', 'email', 'cpf', 'turma', 'centro'];
+const CAMPOS_SISTEMA_POR_PERFIL: Record<string, string[]> = {
+  aluno: ['matricula', 'nome', 'semestre', 'curso', 'periodo', 'codigo_turma', 'email'],
+  professor: ['matricula', 'nome', 'curso', 'periodo', 'disciplinas', 'setor', 'email', 'cpf'],
+  colaborador: ['matricula', 'nome', 'setor', 'email', 'cpf', 'centro'],
+  coordenador: ['matricula', 'nome', 'curso', 'email', 'cpf'],
+};
+const CAMPOS_SISTEMA_DEFAULT = ['matricula', 'nome', 'curso', 'periodo', 'email'];
 
 // ─── Semestres Tab ───
 const SemestresTab = () => {
@@ -690,7 +696,7 @@ const ImportacaoTab = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">Associe cada campo do sistema à coluna correspondente do arquivo importado.</p>
-            {CAMPOS_SISTEMA.map((campo) => (
+            {(CAMPOS_SISTEMA_POR_PERFIL[selectedPerfil || ''] || CAMPOS_SISTEMA_DEFAULT).map((campo) => (
               <div key={campo} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-28 capitalize text-foreground">{campo}</span>
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
