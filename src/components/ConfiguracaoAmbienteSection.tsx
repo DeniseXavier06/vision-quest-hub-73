@@ -694,10 +694,10 @@ const ImportacaoTab = () => {
               <div key={campo} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-28 capitalize text-foreground">{campo}</span>
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                <Select value={mapping[campo] || ''} onValueChange={(v) => setMapping({ ...mapping, [campo]: v })}>
+                <Select value={mapping[campo] || '__none__'} onValueChange={(v) => setMapping({ ...mapping, [campo]: v === '__none__' ? '' : v })}>
                   <SelectTrigger className="w-48"><SelectValue placeholder="Selecione coluna" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">— Nenhum —</SelectItem>
+                    <SelectItem value="__none__">— Nenhum —</SelectItem>
                     {columns.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
                   </SelectContent>
                 </Select>
