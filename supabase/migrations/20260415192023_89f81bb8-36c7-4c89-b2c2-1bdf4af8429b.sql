@@ -1,0 +1,2 @@
+CREATE POLICY "anon_delete_sessao" ON public.avaliadores_sessao FOR DELETE TO anon USING (true);
+CREATE POLICY "auth_delete_sessao" ON public.avaliadores_sessao FOR DELETE TO authenticated USING (true);
