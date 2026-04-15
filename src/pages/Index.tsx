@@ -36,6 +36,7 @@ const Index = () => {
       case 'relatorios': return <RelatoriosSection />;
       case 'configuracao': return <ConfiguracaoAmbienteSection />;
       case 'importacoes': return <ImportacoesSection />;
+      case 'avaliadores': return <AvaliadoresSection />;
       default: return <DashboardOverview onSectionChange={setActiveSection} />;
     }
   };
