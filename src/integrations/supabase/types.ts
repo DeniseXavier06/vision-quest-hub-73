@@ -239,35 +239,53 @@ export type Database = {
       avaliadores_sessao: {
         Row: {
           ambiente_id: string
+          codigo_turma: string
           completado: boolean
+          cpf: string
           created_at: string
           curso: string
+          email: string
           id: string
           matricula: string
+          nivel: string
           nome: string
           perfil: string
+          periodo: string
+          semestre: string
           token: string
         }
         Insert: {
           ambiente_id: string
+          codigo_turma?: string
           completado?: boolean
+          cpf?: string
           created_at?: string
           curso?: string
+          email?: string
           id?: string
           matricula: string
+          nivel?: string
           nome: string
           perfil: string
+          periodo?: string
+          semestre?: string
           token?: string
         }
         Update: {
           ambiente_id?: string
+          codigo_turma?: string
           completado?: boolean
+          cpf?: string
           created_at?: string
           curso?: string
+          email?: string
           id?: string
           matricula?: string
+          nivel?: string
           nome?: string
           perfil?: string
+          periodo?: string
+          semestre?: string
           token?: string
         }
         Relationships: [

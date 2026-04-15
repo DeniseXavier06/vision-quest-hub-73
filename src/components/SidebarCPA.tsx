@@ -13,6 +13,7 @@ import {
   Building2,
   Settings2,
   FileUp,
+  ClipboardList,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +32,7 @@ const menuItems = [
   { id: 'reunioes', label: 'Reuniões', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: FileText },
   { id: 'importacoes', label: 'Importações', icon: FileUp },
+  { id: 'avaliadores', label: 'Avaliadores', icon: ClipboardList },
   { id: 'configuracao', label: 'Configuração', icon: Settings2 },
 ];
 
