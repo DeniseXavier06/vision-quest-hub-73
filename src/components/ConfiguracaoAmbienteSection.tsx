@@ -696,7 +696,7 @@ const ImportacaoTab = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-xs text-muted-foreground">Associe cada campo do sistema à coluna correspondente do arquivo importado.</p>
-            {CAMPOS_SISTEMA.map((campo) => (
+            {(CAMPOS_SISTEMA_POR_PERFIL[selectedPerfil || ''] || CAMPOS_SISTEMA_DEFAULT).map((campo) => (
               <div key={campo} className="flex items-center gap-3">
                 <span className="text-sm font-medium w-28 capitalize text-foreground">{campo}</span>
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
