@@ -34,6 +34,7 @@ const Index = () => {
       case 'reunioes': return <ReunioesSection />;
       case 'relatorios': return <RelatoriosSection />;
       case 'configuracao': return <ConfiguracaoAmbienteSection />;
+      case 'importacoes': return <ImportacoesSection />;
       default: return <DashboardOverview onSectionChange={setActiveSection} />;
     }
   };
