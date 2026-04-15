@@ -14,8 +14,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import {
   Plus, Trash2, Edit2, Save, X, GripVertical, ChevronDown, ChevronRight,
-  Calendar, Upload, FileSpreadsheet, ArrowRight,
+  Calendar, Upload, FileSpreadsheet, ArrowRight, Loader2,
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Semestre = Tables<'semestres_letivos'>;
