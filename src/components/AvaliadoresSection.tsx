@@ -16,6 +16,9 @@ const AvaliadoresSection = () => {
   const [semestres, setSemestres] = useState<any[]>([]);
   const [filtroSemestre, setFiltroSemestre] = useState('__all__');
   const [filtroNivel, setFiltroNivel] = useState('__all__');
+  const [filtroCurso, setFiltroCurso] = useState('__all__');
+  const [filtroPeriodo, setFiltroPeriodo] = useState('__all__');
+  const [filtroTurma, setFiltroTurma] = useState('__all__');
   const [busca, setBusca] = useState('');
   const [loading, setLoading] = useState(false);
 
