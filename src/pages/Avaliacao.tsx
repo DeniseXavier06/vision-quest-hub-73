@@ -25,11 +25,11 @@ const Avaliacao = () => {
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [selectedAmbiente, setSelectedAmbiente] = useState('');
   const [matricula, setMatricula] = useState('');
+  const [senha, setSenha] = useState('');
+  const [sessao, setSessao] = useState<Sessao | null>(null);
   const [nome, setNome] = useState('');
   const [curso, setCurso] = useState('');
   const [perfil, setPerfil] = useState('');
-  const [perfisDisponiveis, setPerfisDisponiveis] = useState<string[]>([]);
-  const [sessao, setSessao] = useState<Sessao | null>(null);
 
   const [dimensoes, setDimensoes] = useState<Dimensao[]>([]);
   const [areas, setAreas] = useState<AreaAvaliacao[]>([]);
@@ -62,48 +62,41 @@ const Avaliacao = () => {
     load();
   }, []);
 
-  // Load perfis when ambiente changes
-  useEffect(() => {
-    if (!selectedAmbiente) return;
-    const load = async () => {
-      const { data } = await supabase.from('ambiente_perfis').select('perfil').eq('ambiente_id', selectedAmbiente);
-      if (data) setPerfisDisponiveis(data.map(d => d.perfil));
-    };
-    load();
-  }, [selectedAmbiente]);
-
   const handleLogin = async () => {
-    if (!selectedAmbiente || !matricula.trim() || !nome.trim() || !perfil) {
-      toast({ title: 'Preencha todos os campos obrigatórios', variant: 'destructive' });
+    if (!selectedAmbiente || !matricula.trim() || !senha.trim()) {
+      toast({ title: 'Preencha todos os campos', variant: 'destructive' });
       return;
     }
-    // Check if already completed
-    const { data: existing } = await supabase
+
+    // Buscar avaliador pela matrícula e ambiente
+    const { data: avaliador } = await supabase
       .from('avaliadores_sessao')
       .select('*')
       .eq('ambiente_id', selectedAmbiente)
       .eq('matricula', matricula.trim())
       .maybeSingle();
 
-    if (existing?.completado) {
+    if (!avaliador) {
+      toast({ title: 'Matrícula não encontrada neste ambiente', variant: 'destructive' });
+      return;
+    }
+
+    // Senha = CPF + Semestre (concatenados, sem espaços)
+    const senhaEsperada = (avaliador.cpf + avaliador.semestre).replace(/\s/g, '');
+    if (senha.replace(/\s/g, '') !== senhaEsperada) {
+      toast({ title: 'Senha incorreta', description: 'A senha é composta pelo seu CPF + Semestre.', variant: 'destructive' });
+      return;
+    }
+
+    if (avaliador.completado) {
       toast({ title: 'Você já respondeu esta avaliação', variant: 'destructive' });
       return;
     }
 
-    let sessaoData = existing;
-    if (!sessaoData) {
-      const { data, error } = await supabase.from('avaliadores_sessao').insert({
-        ambiente_id: selectedAmbiente,
-        matricula: matricula.trim(),
-        nome: nome.trim(),
-        curso: curso.trim(),
-        perfil,
-      }).select().single();
-      if (error) { toast({ title: 'Erro ao iniciar sessão', variant: 'destructive' }); return; }
-      sessaoData = data;
-    }
-
-    setSessao({ id: sessaoData.id, token: sessaoData.token });
+    setSessao({ id: avaliador.id, token: avaliador.token });
+    setNome(avaliador.nome);
+    setCurso(avaliador.curso);
+    setPerfil(avaliador.perfil);
 
     // Load dimensões linked to this ambiente
     const { data: ambDims } = await supabase.from('ambiente_dimensoes').select('dimensao_id').eq('ambiente_id', selectedAmbiente);
