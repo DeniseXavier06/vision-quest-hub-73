@@ -196,7 +196,7 @@ const AvaliadoresSection = () => {
                   <TableHead>Curso</TableHead>
                   <TableHead>Período</TableHead>
                   <TableHead>Cód. Turma</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
