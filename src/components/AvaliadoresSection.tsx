@@ -39,7 +39,10 @@ const AvaliadoresSection = () => {
     setLoading(true);
     let query = supabase.from('avaliadores_sessao').select('*').order('nome');
     if (filtroSemestre !== '__all__') query = query.eq('semestre', filtroSemestre);
-    if (filtroNivel !== '__all__') query = query.eq('nivel', filtroNivel);
+    if (filtroNivel !== '__all__') query = query.ilike('nivel', filtroNivel);
+    if (filtroCurso !== '__all__') query = query.eq('curso', filtroCurso);
+    if (filtroPeriodo !== '__all__') query = query.eq('periodo', filtroPeriodo);
+    if (filtroTurma !== '__all__') query = query.eq('codigo_turma', filtroTurma);
     if (busca.trim()) query = query.or(`nome.ilike.%${busca.trim()}%,matricula.ilike.%${busca.trim()}%,email.ilike.%${busca.trim()}%`);
     const { data } = await query;
     if (data) {
