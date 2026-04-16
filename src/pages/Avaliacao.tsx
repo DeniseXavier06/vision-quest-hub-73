@@ -81,10 +81,10 @@ const Avaliacao = () => {
       return;
     }
 
-    // Senha = CPF + Semestre (concatenados, sem espaços)
-    const senhaEsperada = (avaliador.cpf + avaliador.semestre).replace(/\s/g, '');
-    if (senha.replace(/\s/g, '') !== senhaEsperada) {
-      toast({ title: 'Senha incorreta', description: 'A senha é composta pelo seu CPF + Semestre.', variant: 'destructive' });
+    // Senha = CPF
+    const senhaEsperada = (avaliador.cpf || '').replace(/\s/g, '');
+    if (senha.replace(/[\s.\-]/g, '') !== senhaEsperada.replace(/[\s.\-]/g, '')) {
+      toast({ title: 'Senha incorreta', description: 'A senha é o seu CPF.', variant: 'destructive' });
       return;
     }
 
@@ -205,8 +205,8 @@ const Avaliacao = () => {
             </div>
             <div>
               <Label>Senha *</Label>
-              <Input type="password" placeholder="CPF + Semestre" value={senha} onChange={e => setSenha(e.target.value)} />
-              <p className="text-xs text-muted-foreground mt-1">A senha é composta pelo seu CPF seguido do Semestre (ex: 12345678901 2025.1)</p>
+              <Input type="password" placeholder="Digite seu CPF" value={senha} onChange={e => setSenha(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">A senha é o seu CPF (com ou sem pontuação)</p>
             </div>
             <Button className="w-full" onClick={handleLogin}>
               <LogIn className="mr-2 h-4 w-4" /> Entrar
