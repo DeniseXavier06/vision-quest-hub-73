@@ -30,7 +30,21 @@ const AvaliadoresSection = () => {
   useEffect(() => {
     supabase.from('semestres_letivos').select('*').order('ano', { ascending: false }).order('periodo', { ascending: false })
       .then(({ data }) => { if (data) setSemestres(data); });
+    // Load distinct values for filters
+    supabase.from('avaliadores_sessao').select('curso, periodo, codigo_turma, nivel').then(({ data }) => {
+      if (data) {
+        setDistinctCursos([...new Set(data.map(d => d.curso).filter(Boolean))].sort());
+        setDistinctPeriodos([...new Set(data.map(d => d.periodo).filter(Boolean))].sort());
+        setDistinctTurmas([...new Set(data.map(d => d.codigo_turma).filter(Boolean))].sort());
+        setDistinctNiveis([...new Set(data.map(d => d.nivel).filter(Boolean))].sort());
+      }
+    });
   }, []);
+
+  const [distinctCursos, setDistinctCursos] = useState<string[]>([]);
+  const [distinctPeriodos, setDistinctPeriodos] = useState<string[]>([]);
+  const [distinctTurmas, setDistinctTurmas] = useState<string[]>([]);
+  const [distinctNiveis, setDistinctNiveis] = useState<string[]>([]);
 
   const [respostasPorSessao, setRespostasPorSessao] = useState<Record<string, Set<string>>>({});
   const [dimensoesPorAmbiente, setDimensoesPorAmbiente] = useState<Record<string, number>>({});
