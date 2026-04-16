@@ -424,12 +424,20 @@ const Avaliacao = () => {
             <ChevronLeft className="mr-2 h-4 w-4" /> Anterior
           </Button>
           {currentDimIndex < selectedDimensoes.length - 1 ? (
-            <Button onClick={() => setCurrentDimIndex(i => i + 1)} disabled={!allCurrentAnswered}>
+            <Button onClick={() => {
+              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
+              setCurrentDimIndex(i => i + 1);
+            }} disabled={!allCurrentAnswered}>
               Próxima <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={totalRespondidas < totalQuestoes || saving}>
-              {saving ? 'Enviando...' : 'Enviar Avaliação'} <CheckCircle className="ml-2 h-4 w-4" />
+            <Button onClick={() => {
+              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
+              setSelectedDimensoes([]);
+              setStep('dimensoes');
+              toast({ title: 'Dimensão concluída!', description: 'Selecione outra dimensão para continuar ou envie a avaliação.' });
+            }} disabled={!allCurrentAnswered}>
+              Concluir Dimensão <CheckCircle className="ml-2 h-4 w-4" />
             </Button>
           )}
         </div>
