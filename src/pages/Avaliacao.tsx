@@ -40,6 +40,7 @@ const Avaliacao = () => {
   const [respostas, setRespostas] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [completedDimensoes, setCompletedDimensoes] = useState<string[]>([]);
 
   // Load active ambientes
   useEffect(() => {
@@ -219,38 +220,61 @@ const Avaliacao = () => {
 
   // SELEÇÃO DE DIMENSÕES
   if (step === 'dimensoes') {
+    const allCompleted = dimensoes.length > 0 && dimensoes.every(d => completedDimensoes.includes(d.id));
+    const pendingDimensoes = dimensoes.filter(d => !completedDimensoes.includes(d.id));
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
           <CardHeader>
-            <CardTitle>Selecione as Dimensões</CardTitle>
-            <CardDescription>Escolha as dimensões que deseja avaliar</CardDescription>
+            <CardTitle>Dimensões da Avaliação</CardTitle>
+            <CardDescription>
+              {completedDimensoes.length > 0
+                ? `${completedDimensoes.length} de ${dimensoes.length} dimensão(ões) concluída(s)`
+                : 'Selecione as dimensões que deseja avaliar'}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {dimensoes.map(d => (
-              <label key={d.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedDimensoes.includes(d.id) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`}>
-                <input
-                  type="checkbox"
-                  checked={selectedDimensoes.includes(d.id)}
-                  onChange={e => {
-                    setSelectedDimensoes(prev => e.target.checked ? [...prev, d.id] : prev.filter(id => id !== d.id));
-                  }}
-                  className="h-4 w-4"
-                />
-                <div>
-                  <div className="font-medium text-sm">{d.nome}</div>
-                  {d.descricao && <div className="text-xs text-muted-foreground">{d.descricao}</div>}
-                </div>
-              </label>
-            ))}
+            {dimensoes.map(d => {
+              const done = completedDimensoes.includes(d.id);
+              return (
+                <label key={d.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${done ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : selectedDimensoes.includes(d.id) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`}>
+                  {done ? (
+                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      checked={selectedDimensoes.includes(d.id)}
+                      onChange={e => {
+                        setSelectedDimensoes(prev => e.target.checked ? [...prev, d.id] : prev.filter(id => id !== d.id));
+                      }}
+                      className="h-4 w-4"
+                    />
+                  )}
+                  <div className="flex-1">
+                    <div className="font-medium text-sm">{d.nome}</div>
+                    {d.descricao && <div className="text-xs text-muted-foreground">{d.descricao}</div>}
+                  </div>
+                  {done && <Badge variant="secondary" className="text-green-700">Concluída</Badge>}
+                </label>
+              );
+            })}
             {dimensoes.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma dimensão configurada para este ambiente.</p>}
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" onClick={() => setSelectedDimensoes(dimensoes.map(d => d.id))} size="sm">Selecionar Todas</Button>
-              <Button variant="outline" onClick={() => setSelectedDimensoes([])} size="sm">Limpar</Button>
-            </div>
-            <Button className="w-full mt-4" onClick={handleSelectDimensoes} disabled={selectedDimensoes.length === 0}>
-              Iniciar Avaliação <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
+            {!allCompleted && (
+              <>
+                <div className="flex gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setSelectedDimensoes(pendingDimensoes.map(d => d.id))} size="sm">Selecionar Pendentes</Button>
+                  <Button variant="outline" onClick={() => setSelectedDimensoes([])} size="sm">Limpar</Button>
+                </div>
+                <Button className="w-full mt-4" onClick={handleSelectDimensoes} disabled={selectedDimensoes.length === 0}>
+                  {completedDimensoes.length > 0 ? 'Continuar Avaliação' : 'Iniciar Avaliação'} <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </>
+            )}
+            {allCompleted && (
+              <Button className="w-full mt-4" onClick={handleSubmit} disabled={saving}>
+                {saving ? 'Enviando...' : 'Enviar Avaliação'} <CheckCircle className="ml-2 h-4 w-4" />
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -400,12 +424,20 @@ const Avaliacao = () => {
             <ChevronLeft className="mr-2 h-4 w-4" /> Anterior
           </Button>
           {currentDimIndex < selectedDimensoes.length - 1 ? (
-            <Button onClick={() => setCurrentDimIndex(i => i + 1)} disabled={!allCurrentAnswered}>
+            <Button onClick={() => {
+              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
+              setCurrentDimIndex(i => i + 1);
+            }} disabled={!allCurrentAnswered}>
               Próxima <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} disabled={totalRespondidas < totalQuestoes || saving}>
-              {saving ? 'Enviando...' : 'Enviar Avaliação'} <CheckCircle className="ml-2 h-4 w-4" />
+            <Button onClick={() => {
+              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
+              setSelectedDimensoes([]);
+              setStep('dimensoes');
+              toast({ title: 'Dimensão concluída!', description: 'Selecione outra dimensão para continuar ou envie a avaliação.' });
+            }} disabled={!allCurrentAnswered}>
+              Concluir Dimensão <CheckCircle className="ml-2 h-4 w-4" />
             </Button>
           )}
         </div>
