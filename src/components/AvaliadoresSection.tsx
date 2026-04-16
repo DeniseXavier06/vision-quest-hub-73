@@ -260,7 +260,10 @@ const AvaliadoresSection = () => {
               ))}
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-muted-foreground">Status</span>
-                <Badge variant={viewItem.completado ? 'default' : 'outline'}>{viewItem.completado ? 'Completado' : 'Pendente'}</Badge>
+                {(() => {
+                  const status = getStatus(viewItem);
+                  return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+                })()}
               </div>
             </div>
           )}
