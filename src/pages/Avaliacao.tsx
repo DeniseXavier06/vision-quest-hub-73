@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle, Star, ChevronRight, ChevronLeft, LogIn, ClipboardList } from 'lucide-react';
+import { CheckCircle, Star, ChevronRight, ChevronLeft, LogIn, ClipboardList, BarChart3 } from 'lucide-react';
 
 type Ambiente = {
   id: string; nome: string; nivel: string; data_inicio: string; data_fim: string; prorrogado_ate: string | null; semestre_id: string;
@@ -34,14 +34,14 @@ const Avaliacao = () => {
 
   const [dimensoes, setDimensoes] = useState<Dimensao[]>([]);
   const [areas, setAreas] = useState<AreaAvaliacao[]>([]);
-  const [selectedDimensoes, setSelectedDimensoes] = useState<string[]>([]);
+  const [allQuestoes, setAllQuestoes] = useState<Questao[]>([]);
 
-  const [questoes, setQuestoes] = useState<Questao[]>([]);
   const [currentDimIndex, setCurrentDimIndex] = useState(0);
   const [respostas, setRespostas] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [completedDimensoes, setCompletedDimensoes] = useState<string[]>([]);
+  const [activeDimId, setActiveDimId] = useState<string | null>(null);
 
   // Load active ambientes
   useEffect(() => {
@@ -70,7 +70,6 @@ const Avaliacao = () => {
       return;
     }
 
-    // Buscar avaliador pela matrícula e ambiente
     const { data: avaliador } = await supabase
       .from('avaliadores_sessao')
       .select('*')
@@ -83,7 +82,6 @@ const Avaliacao = () => {
       return;
     }
 
-    // Senha = CPF
     const senhaEsperada = (avaliador.cpf || '').replace(/\s/g, '');
     if (senha.replace(/[\s.\-]/g, '') !== senhaEsperada.replace(/[\s.\-]/g, '')) {
       toast({ title: 'Senha incorreta', description: 'A senha é o seu CPF.', variant: 'destructive' });
@@ -104,50 +102,57 @@ const Avaliacao = () => {
     const { data: ambDims } = await supabase.from('ambiente_dimensoes').select('dimensao_id').eq('ambiente_id', selectedAmbiente);
     if (ambDims && ambDims.length > 0) {
       const dimIds = ambDims.map(d => d.dimensao_id);
-      const [{ data: dims }, { data: areasData }] = await Promise.all([
+      const [{ data: dims }, { data: areasData }, { data: questoesData }] = await Promise.all([
         supabase.from('dimensoes_avaliacao').select('*').in('id', dimIds).eq('ativo', true).order('ordem'),
         supabase.from('areas_avaliacao').select('*').in('dimensao_id', dimIds).eq('ativo', true).order('ordem'),
+        supabase.from('questoes_avaliacao').select('*').in('dimensao_id', dimIds).eq('ativo', true).order('ordem'),
       ]);
       if (dims) setDimensoes(dims);
       if (areasData) setAreas(areasData);
+      if (questoesData) setAllQuestoes(questoesData);
     }
 
     setStep('dimensoes');
   };
 
-  const handleSelectDimensoes = async () => {
-    if (selectedDimensoes.length === 0) {
-      toast({ title: 'Selecione pelo menos uma dimensão', variant: 'destructive' });
-      return;
-    }
-    // Load questões for selected dimensões
-    const { data } = await supabase
-      .from('questoes_avaliacao')
-      .select('*')
-      .in('dimensao_id', selectedDimensoes)
-      .eq('ativo', true)
-      .order('ordem');
-    if (data) setQuestoes(data);
+  const handleStartDimensao = (dimId: string) => {
+    setActiveDimId(dimId);
     setCurrentDimIndex(0);
     setStep('avaliando');
   };
 
-  const currentDimId = selectedDimensoes[currentDimIndex];
-  const currentDim = dimensoes.find(d => d.id === currentDimId);
-  const currentAreas = useMemo(() => areas.filter(a => a.dimensao_id === currentDimId), [areas, currentDimId]);
-  const currentQuestoes = useMemo(() => questoes.filter(q => q.dimensao_id === currentDimId), [questoes, currentDimId]);
+  const calcMedia = (notas: number[]) => notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
+  const getConceito = (media: number) => {
+    if (media >= 4.5) return 'Excelente';
+    if (media >= 3.5) return 'Bom';
+    if (media >= 2.5) return 'Atende Parcialmente';
+    if (media >= 1.5) return 'Regular';
+    return 'Muito Ruim';
+  };
 
-  const allCurrentAnswered = currentQuestoes.every(q => respostas[q.id] !== undefined);
-  const totalQuestoes = questoes.length;
-  const totalRespondidas = Object.keys(respostas).length;
-  const progressPercent = totalQuestoes > 0 ? (totalRespondidas / totalQuestoes) * 100 : 0;
+  // Status helpers per dimension
+  const getDimStatus = (dimId: string) => {
+    const dimQuestoes = allQuestoes.filter(q => q.dimensao_id === dimId);
+    if (dimQuestoes.length === 0) return 'sem_questoes';
+    const respondidas = dimQuestoes.filter(q => respostas[q.id] !== undefined).length;
+    if (respondidas === dimQuestoes.length) return 'avaliado';
+    return 'nao_avaliado';
+  };
+
+  const getDimMedia = (dimId: string) => {
+    const dimQuestoes = allQuestoes.filter(q => q.dimensao_id === dimId);
+    const notas = dimQuestoes.map(q => respostas[q.id]).filter(n => n !== undefined) as number[];
+    return notas.length > 0 ? calcMedia(notas) : null;
+  };
+
+  const allDimensoesAvaliadas = dimensoes.length > 0 && dimensoes.every(d => getDimStatus(d.id) === 'avaliado');
 
   const handleSubmit = async () => {
     if (!sessao) return;
     setSaving(true);
     try {
       const rows = Object.entries(respostas).map(([questao_id, nota]) => {
-        const q = questoes.find(qq => qq.id === questao_id)!;
+        const q = allQuestoes.find(qq => qq.id === questao_id)!;
         return {
           sessao_id: sessao.id,
           ambiente_id: selectedAmbiente,
@@ -171,15 +176,15 @@ const Avaliacao = () => {
     }
   };
 
-  // Cálculo de média e conceito
-  const calcMedia = (notas: number[]) => notas.length ? notas.reduce((a, b) => a + b, 0) / notas.length : 0;
-  const getConceito = (media: number) => {
-    if (media >= 4.5) return 'Excelente';
-    if (media >= 3.5) return 'Bom';
-    if (media >= 2.5) return 'Atende Parcialmente';
-    if (media >= 1.5) return 'Regular';
-    return 'Muito Ruim';
-  };
+  // Current dimension data for avaliando step
+  const currentDimId = activeDimId;
+  const currentDim = dimensoes.find(d => d.id === currentDimId);
+  const currentAreas = useMemo(() => areas.filter(a => a.dimensao_id === currentDimId), [areas, currentDimId]);
+  const currentQuestoes = useMemo(() => allQuestoes.filter(q => q.dimensao_id === currentDimId), [allQuestoes, currentDimId]);
+  const allCurrentAnswered = currentQuestoes.every(q => respostas[q.id] !== undefined);
+  const totalQuestoesAll = allQuestoes.length;
+  const totalRespondidas = Object.keys(respostas).length;
+  const progressPercent = totalQuestoesAll > 0 ? (totalRespondidas / totalQuestoesAll) * 100 : 0;
 
   // LOGIN
   if (step === 'login') {
@@ -219,62 +224,82 @@ const Avaliacao = () => {
     );
   }
 
-  // SELEÇÃO DE DIMENSÕES
+  // DIMENSÕES - todas obrigatórias, com status e média
   if (step === 'dimensoes') {
-    const allCompleted = dimensoes.length > 0 && dimensoes.every(d => completedDimensoes.includes(d.id));
-    const pendingDimensoes = dimensoes.filter(d => !completedDimensoes.includes(d.id));
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle>Dimensões da Avaliação</CardTitle>
             <CardDescription>
-              {completedDimensoes.length > 0
-                ? `${completedDimensoes.length} de ${dimensoes.length} dimensão(ões) concluída(s)`
-                : 'Selecione as dimensões que deseja avaliar'}
+              Olá, {nome}! Você deve avaliar todas as dimensões abaixo.
             </CardDescription>
+            <div className="mt-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                <span>Progresso geral</span>
+                <span>{totalRespondidas}/{totalQuestoesAll} questões</span>
+              </div>
+              <Progress value={progressPercent} className="h-2" />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             {dimensoes.map(d => {
-              const done = completedDimensoes.includes(d.id);
+              const status = getDimStatus(d.id);
+              const media = getDimMedia(d.id);
+              const dimQuestoes = allQuestoes.filter(q => q.dimensao_id === d.id);
+              const respondidas = dimQuestoes.filter(q => respostas[q.id] !== undefined).length;
+              const isAvaliado = status === 'avaliado';
+
               return (
-                <label key={d.id} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${done ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : selectedDimensoes.includes(d.id) ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted'}`}>
-                  {done ? (
-                    <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
-                  ) : (
-                    <input
-                      type="checkbox"
-                      checked={selectedDimensoes.includes(d.id)}
-                      onChange={e => {
-                        setSelectedDimensoes(prev => e.target.checked ? [...prev, d.id] : prev.filter(id => id !== d.id));
-                      }}
-                      className="h-4 w-4"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="font-medium text-sm">{d.nome}</div>
-                    {d.descricao && <div className="text-xs text-muted-foreground">{d.descricao}</div>}
+                <div
+                  key={d.id}
+                  className={`p-4 rounded-lg border cursor-pointer transition-colors ${isAvaliado ? 'border-green-500 bg-green-50 dark:bg-green-950/20' : 'border-border hover:bg-muted hover:border-primary/50'}`}
+                  onClick={() => handleStartDimensao(d.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="font-medium text-sm flex items-center gap-2">
+                        {d.nome}
+                        {isAvaliado ? (
+                          <Badge className="bg-green-600 text-white text-[10px] px-1.5 py-0">Avaliado</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">Não Avaliado</Badge>
+                        )}
+                      </div>
+                      {d.descricao && <div className="text-xs text-muted-foreground mt-0.5">{d.descricao}</div>}
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {respondidas}/{dimQuestoes.length} questões respondidas
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {media !== null && (
+                        <div className="text-right">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <BarChart3 className="h-3 w-3" /> Média
+                          </div>
+                          <div className="text-lg font-bold text-primary">{media.toFixed(2)}</div>
+                          <div className="text-[10px] text-muted-foreground">{getConceito(media)}</div>
+                        </div>
+                      )}
+                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                    </div>
                   </div>
-                  {done && <Badge variant="secondary" className="text-green-700">Concluída</Badge>}
-                </label>
+                </div>
               );
             })}
+
             {dimensoes.length === 0 && <p className="text-muted-foreground text-sm">Nenhuma dimensão configurada para este ambiente.</p>}
-            {!allCompleted && (
-              <>
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" onClick={() => setSelectedDimensoes(pendingDimensoes.map(d => d.id))} size="sm">Selecionar Pendentes</Button>
-                  <Button variant="outline" onClick={() => setSelectedDimensoes([])} size="sm">Limpar</Button>
-                </div>
-                <Button className="w-full mt-4" onClick={handleSelectDimensoes} disabled={selectedDimensoes.length === 0}>
-                  {completedDimensoes.length > 0 ? 'Continuar Avaliação' : 'Iniciar Avaliação'} <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </>
-            )}
-            {allCompleted && (
+
+            {allDimensoesAvaliadas && (
               <Button className="w-full mt-4" onClick={handleSubmit} disabled={saving}>
                 {saving ? 'Enviando...' : 'Enviar Avaliação'} <CheckCircle className="ml-2 h-4 w-4" />
               </Button>
+            )}
+
+            {!allDimensoesAvaliadas && (
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Avalie todas as dimensões para poder enviar a avaliação.
+              </p>
             )}
           </CardContent>
         </Card>
@@ -303,8 +328,19 @@ const Avaliacao = () => {
               <div className="text-3xl font-bold text-primary">{media.toFixed(2)}</div>
               <Badge variant="secondary" className="mt-1">{conceito}</Badge>
             </div>
+            <div className="space-y-2">
+              {dimensoes.map(d => {
+                const dimMedia = getDimMedia(d.id);
+                return (
+                  <div key={d.id} className="flex items-center justify-between text-sm">
+                    <span>{d.nome}</span>
+                    <span className="font-medium text-primary">{dimMedia?.toFixed(2) ?? '-'}</span>
+                  </div>
+                );
+              })}
+            </div>
             <div className="text-sm text-muted-foreground">
-              {totalRespondidas} questões respondidas em {selectedDimensoes.length} dimensão(ões)
+              {totalRespondidas} questões respondidas em {dimensoes.length} dimensão(ões)
             </div>
           </CardContent>
         </Card>
@@ -320,8 +356,8 @@ const Avaliacao = () => {
         <Card>
           <CardContent className="py-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">Progresso: {totalRespondidas}/{totalQuestoes}</span>
-              <span className="text-sm text-muted-foreground">Dimensão {currentDimIndex + 1} de {selectedDimensoes.length}</span>
+              <span className="text-sm font-medium">Progresso: {totalRespondidas}/{totalQuestoesAll}</span>
+              <span className="text-sm text-muted-foreground">{currentDim?.nome}</span>
             </div>
             <Progress value={progressPercent} className="h-2" />
           </CardContent>
@@ -419,28 +455,23 @@ const Avaliacao = () => {
         <div className="flex justify-between">
           <Button
             variant="outline"
-            onClick={() => setCurrentDimIndex(i => i - 1)}
-            disabled={currentDimIndex === 0}
-          >
-            <ChevronLeft className="mr-2 h-4 w-4" /> Anterior
-          </Button>
-          {currentDimIndex < selectedDimensoes.length - 1 ? (
-            <Button onClick={() => {
-              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
-              setCurrentDimIndex(i => i + 1);
-            }} disabled={!allCurrentAnswered}>
-              Próxima <ChevronRight className="ml-2 h-4 w-4" />
-            </Button>
-          ) : (
-            <Button onClick={() => {
-              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
-              setSelectedDimensoes([]);
+            onClick={() => {
               setStep('dimensoes');
-              toast({ title: 'Dimensão concluída!', description: 'Selecione outra dimensão para continuar ou envie a avaliação.' });
-            }} disabled={!allCurrentAnswered}>
-              Concluir Dimensão <CheckCircle className="ml-2 h-4 w-4" />
-            </Button>
-          )}
+            }}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" /> Voltar às Dimensões
+          </Button>
+          <Button onClick={() => {
+            if (allCurrentAnswered && currentDimId) {
+              setCompletedDimensoes(prev => prev.includes(currentDimId) ? prev : [...prev, currentDimId]);
+            }
+            setStep('dimensoes');
+            if (allCurrentAnswered) {
+              toast({ title: 'Dimensão concluída!', description: 'Selecione outra dimensão para continuar.' });
+            }
+          }} disabled={!allCurrentAnswered}>
+            Concluir Dimensão <CheckCircle className="ml-2 h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>
