@@ -199,26 +199,14 @@ const Avaliacao = () => {
                 {ambientes.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
               </select>
             </div>
-            {perfisDisponiveis.length > 0 && (
-              <div>
-                <Label>Perfil *</Label>
-                <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={perfil} onChange={e => setPerfil(e.target.value)}>
-                  <option value="">Selecione...</option>
-                  {perfisDisponiveis.map(p => <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>)}
-                </select>
-              </div>
-            )}
             <div>
               <Label>Matrícula *</Label>
               <Input placeholder="Digite sua matrícula" value={matricula} onChange={e => setMatricula(e.target.value)} />
             </div>
             <div>
-              <Label>Nome Completo *</Label>
-              <Input placeholder="Digite seu nome" value={nome} onChange={e => setNome(e.target.value)} />
-            </div>
-            <div>
-              <Label>Curso</Label>
-              <Input placeholder="Digite seu curso (se aplicável)" value={curso} onChange={e => setCurso(e.target.value)} />
+              <Label>Senha *</Label>
+              <Input type="password" placeholder="CPF + Semestre" value={senha} onChange={e => setSenha(e.target.value)} />
+              <p className="text-xs text-muted-foreground mt-1">A senha é composta pelo seu CPF seguido do Semestre (ex: 12345678901 2025.1)</p>
             </div>
             <Button className="w-full" onClick={handleLogin}>
               <LogIn className="mr-2 h-4 w-4" /> Entrar
