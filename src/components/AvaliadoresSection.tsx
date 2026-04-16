@@ -218,6 +218,12 @@ const AvaliadoresSection = () => {
                       <TableCell className="font-mono text-xs">{a.codigo_turma || '—'}</TableCell>
                       <TableCell className="text-xs">{a.email || '—'}</TableCell>
                       <TableCell>
+                        {(() => {
+                          const status = getStatus(a);
+                          return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+                        })()}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex items-center justify-center gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewItem(a)} title="Visualizar">
                             <Eye className="w-4 h-4" />
