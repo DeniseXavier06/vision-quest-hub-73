@@ -29,6 +29,9 @@ const AvaliadoresSection = () => {
       .then(({ data }) => { if (data) setSemestres(data); });
   }, []);
 
+  const [respostasPorSessao, setRespostasPorSessao] = useState<Record<string, Set<string>>>({});
+  const [dimensoesPorAmbiente, setDimensoesPorAmbiente] = useState<Record<string, number>>({});
+
   const fetchAvaliadores = useCallback(async () => {
     setLoading(true);
     let query = supabase.from('avaliadores_sessao').select('*').order('nome');
@@ -36,9 +39,54 @@ const AvaliadoresSection = () => {
     if (filtroNivel !== '__all__') query = query.eq('nivel', filtroNivel);
     if (busca.trim()) query = query.or(`nome.ilike.%${busca.trim()}%,matricula.ilike.%${busca.trim()}%,email.ilike.%${busca.trim()}%`);
     const { data } = await query;
-    if (data) setAvaliadores(data);
+    if (data) {
+      setAvaliadores(data);
+
+      // Fetch respostas for these avaliadores (distinct dimensoes per sessao)
+      const sessaoIds = data.map(a => a.id);
+      if (sessaoIds.length > 0) {
+        const { data: respostas } = await supabase
+          .from('respostas_avaliacao')
+          .select('sessao_id, dimensao_id')
+          .in('sessao_id', sessaoIds);
+        const map: Record<string, Set<string>> = {};
+        respostas?.forEach(r => {
+          if (!map[r.sessao_id]) map[r.sessao_id] = new Set();
+          map[r.sessao_id].add(r.dimensao_id);
+        });
+        setRespostasPorSessao(map);
+      }
+
+      // Fetch dimensoes count per ambiente
+      const ambienteIds = [...new Set(data.map(a => a.ambiente_id))];
+      if (ambienteIds.length > 0) {
+        const { data: ambDims } = await supabase
+          .from('ambiente_dimensoes')
+          .select('ambiente_id, dimensao_id')
+          .in('ambiente_id', ambienteIds);
+        const dimMap: Record<string, number> = {};
+        ambDims?.forEach(ad => {
+          dimMap[ad.ambiente_id] = (dimMap[ad.ambiente_id] || 0) + 1;
+        });
+        setDimensoesPorAmbiente(dimMap);
+      }
+    }
     setLoading(false);
   }, [filtroSemestre, filtroNivel, busca]);
+
+  const getStatus = (avaliador: any) => {
+    const totalDims = dimensoesPorAmbiente[avaliador.ambiente_id] || 0;
+    const respondidas = respostasPorSessao[avaliador.id]?.size || 0;
+    if (avaliador.completado || (totalDims > 0 && respondidas >= totalDims)) return 'Realizado';
+    if (respondidas > 0) return 'Em Progresso';
+    return 'Não Realizado';
+  };
+
+  const getStatusVariant = (status: string) => {
+    if (status === 'Realizado') return 'default' as const;
+    if (status === 'Em Progresso') return 'secondary' as const;
+    return 'outline' as const;
+  };
 
   useEffect(() => { fetchAvaliadores(); }, [fetchAvaliadores]);
 
@@ -149,14 +197,15 @@ const AvaliadoresSection = () => {
                   <TableHead>Período</TableHead>
                   <TableHead>Cód. Turma</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead className="text-center">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Carregando...</TableCell></TableRow>
                 ) : avaliadores.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum avaliador encontrado</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={11} className="text-center text-muted-foreground py-8">Nenhum avaliador encontrado</TableCell></TableRow>
                 ) : (
                   avaliadores.map((a) => (
                     <TableRow key={a.id}>
@@ -169,6 +218,12 @@ const AvaliadoresSection = () => {
                       <TableCell className="text-xs">{a.periodo || '—'}</TableCell>
                       <TableCell className="font-mono text-xs">{a.codigo_turma || '—'}</TableCell>
                       <TableCell className="text-xs">{a.email || '—'}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const status = getStatus(a);
+                          return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center justify-center gap-1">
                           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setViewItem(a)} title="Visualizar">
@@ -205,7 +260,10 @@ const AvaliadoresSection = () => {
               ))}
               <div className="flex justify-between text-sm">
                 <span className="font-medium text-muted-foreground">Status</span>
-                <Badge variant={viewItem.completado ? 'default' : 'outline'}>{viewItem.completado ? 'Completado' : 'Pendente'}</Badge>
+                {(() => {
+                  const status = getStatus(viewItem);
+                  return <Badge variant={getStatusVariant(status)}>{status}</Badge>;
+                })()}
               </div>
             </div>
           )}
