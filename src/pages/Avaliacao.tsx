@@ -19,6 +19,7 @@ type Questao = { id: string; texto: string; ordem: number; dimensao_id: string; 
 type Sessao = { id: string; token: string };
 
 const scaleLabels = ['', 'Muito Ruim', 'Regular', 'Atende Parcialmente', 'Bom', 'Excelente'];
+const scaleOrder = [5, 4, 3, 2, 1];
 
 const Avaliacao = () => {
   const [step, setStep] = useState<'login' | 'dimensoes' | 'avaliando' | 'concluido'>('login');
