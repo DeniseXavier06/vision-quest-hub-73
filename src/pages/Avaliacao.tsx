@@ -307,41 +307,89 @@ const Avaliacao = () => {
     );
   }
 
-  // CONCLUÍDO
+  // CONCLUÍDO - Ranking por dimensão
   if (step === 'concluido') {
     const allNotas = Object.values(respostas);
     const media = calcMedia(allNotas);
     const conceito = getConceito(media);
+
+    const ranking = dimensoes
+      .map(d => ({ id: d.id, nome: d.nome, media: getDimMedia(d.id) ?? 0 }))
+      .sort((a, b) => b.media - a.media);
+
+    const handleSair = () => {
+      setStep('login');
+      setSessao(null);
+      setMatricula(''); setSenha(''); setSelectedAmbiente('');
+      setNome(''); setCurso(''); setPerfil('');
+      setDimensoes([]); setAreas([]); setAllQuestoes([]);
+      setRespostas({}); setObservacoes({});
+      setActiveDimId(null); setCurrentDimIndex(0);
+      setCompletedDimensoes([]);
+    };
+
+    const getRankIcon = (i: number) => {
+      if (i === 0) return <Trophy className="h-5 w-5 text-yellow-500" />;
+      if (i === 1) return <Medal className="h-5 w-5 text-muted-foreground" />;
+      if (i === 2) return <Award className="h-5 w-5 text-amber-700" />;
+      return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{i + 1}</span>;
+    };
+
     return (
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
-          <CardHeader>
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center">
             <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
               <CheckCircle className="h-8 w-8 text-primary" />
             </div>
             <CardTitle>Avaliação Concluída!</CardTitle>
-            <CardDescription>Obrigado por participar da avaliação institucional.</CardDescription>
+            <CardDescription>Obrigado, {nome}. Confira o ranking das dimensões avaliadas.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-muted rounded-lg p-4">
+          <CardContent className="space-y-6">
+            <div className="bg-primary/5 rounded-lg p-4 text-center border border-primary/20">
               <div className="text-sm text-muted-foreground">Sua média geral</div>
-              <div className="text-3xl font-bold text-primary">{media.toFixed(2)}</div>
+              <div className="text-4xl font-bold text-primary">{media.toFixed(2)}</div>
               <Badge variant="secondary" className="mt-1">{conceito}</Badge>
+              <div className="text-xs text-muted-foreground mt-2">
+                {totalRespondidas} questões em {dimensoes.length} dimensão(ões)
+              </div>
             </div>
-            <div className="space-y-2">
-              {dimensoes.map(d => {
-                const dimMedia = getDimMedia(d.id);
-                return (
-                  <div key={d.id} className="flex items-center justify-between text-sm">
-                    <span>{d.nome}</span>
-                    <span className="font-medium text-primary">{dimMedia?.toFixed(2) ?? '-'}</span>
-                  </div>
-                );
-              })}
+
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">Ranking por Dimensão</h3>
+              </div>
+              <div className="space-y-2">
+                {ranking.map((r, i) => {
+                  const c = getConceito(r.media);
+                  const pct = (r.media / 5) * 100;
+                  return (
+                    <div key={r.id} className="p-3 rounded-lg border bg-card">
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-muted shrink-0">
+                            {getRankIcon(i)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="font-medium text-sm truncate">{r.nome}</div>
+                            <div className="text-xs text-muted-foreground">{c}</div>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <div className="text-xl font-bold text-primary">{r.media.toFixed(2)}</div>
+                        </div>
+                      </div>
+                      <Progress value={pct} className="h-2" />
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <div className="text-sm text-muted-foreground">
-              {totalRespondidas} questões respondidas em {dimensoes.length} dimensão(ões)
-            </div>
+
+            <Button className="w-full" variant="outline" onClick={handleSair}>
+              <LogOut className="mr-2 h-4 w-4" /> Sair
+            </Button>
           </CardContent>
         </Card>
       </div>
