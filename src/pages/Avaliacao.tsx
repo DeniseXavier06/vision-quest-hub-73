@@ -40,6 +40,7 @@ const Avaliacao = () => {
   const [respostas, setRespostas] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [completedDimensoes, setCompletedDimensoes] = useState<string[]>([]);
 
   // Load active ambientes
   useEffect(() => {
