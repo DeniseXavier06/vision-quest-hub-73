@@ -78,7 +78,7 @@ const AvaliadoresSection = () => {
       }
     }
     setLoading(false);
-  }, [filtroSemestre, filtroNivel, busca]);
+  }, [filtroSemestre, filtroNivel, filtroCurso, filtroPeriodo, filtroTurma, busca]);
 
   const getStatus = (avaliador: any) => {
     const totalDims = dimensoesPorAmbiente[avaliador.ambiente_id] || 0;
