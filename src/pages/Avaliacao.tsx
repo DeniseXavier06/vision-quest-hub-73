@@ -347,7 +347,7 @@ const Avaliacao = () => {
                     <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                       <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                       <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map(nota => (
+                       {scaleOrder.map(nota => (
                           <button
                             key={nota}
                             onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
@@ -373,7 +373,7 @@ const Avaliacao = () => {
               <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                 <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                 <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(nota => (
+                  {scaleOrder.map(nota => (
                     <button
                       key={nota}
                       onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
