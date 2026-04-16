@@ -169,7 +169,7 @@ const AvaliadoresSection = () => {
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Buscar</label>
               <Input placeholder="Nome, matrícula ou email..." value={busca} onChange={(e) => setBusca(e.target.value)} />
             </div>
-            <div className="w-48">
+            <div className="w-40">
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Semestre</label>
               <Select value={filtroSemestre} onValueChange={setFiltroSemestre}>
                 <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
@@ -181,14 +181,51 @@ const AvaliadoresSection = () => {
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-48">
+            <div className="w-40">
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Nível</label>
               <Select value={filtroNivel} onValueChange={setFiltroNivel}>
                 <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__all__">Todos</SelectItem>
-                  <SelectItem value="presencial">Presencial</SelectItem>
-                  <SelectItem value="ead">EAD</SelectItem>
+                  {distinctNiveis.map((n) => (
+                    <SelectItem key={n} value={n}>{n}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-48">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Curso</label>
+              <Select value={filtroCurso} onValueChange={setFiltroCurso}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  {distinctCursos.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-36">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Período</label>
+              <Select value={filtroPeriodo} onValueChange={setFiltroPeriodo}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  {distinctPeriodos.map((p) => (
+                    <SelectItem key={p} value={p}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="w-40">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Turma</label>
+              <Select value={filtroTurma} onValueChange={setFiltroTurma}>
+                <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">Todos</SelectItem>
+                  {distinctTurmas.map((t) => (
+                    <SelectItem key={t} value={t}>{t}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
