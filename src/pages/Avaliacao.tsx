@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
-import { CheckCircle, Star, ChevronRight, ChevronLeft, LogIn, ClipboardList, BarChart3 } from 'lucide-react';
+import { CheckCircle, Star, ChevronRight, ChevronLeft, LogIn, ClipboardList, BarChart3, Trophy, Medal, Award, LogOut } from 'lucide-react';
 
 type Ambiente = {
   id: string; nome: string; nivel: string; data_inicio: string; data_fim: string; prorrogado_ate: string | null; semestre_id: string;
