@@ -19,6 +19,7 @@ type Questao = { id: string; texto: string; ordem: number; dimensao_id: string; 
 type Sessao = { id: string; token: string };
 
 const scaleLabels = ['', 'Muito Ruim', 'Regular', 'Atende Parcialmente', 'Bom', 'Excelente'];
+const scaleOrder = [5, 4, 3, 2, 1];
 
 const Avaliacao = () => {
   const [step, setStep] = useState<'login' | 'dimensoes' | 'avaliando' | 'concluido'>('login');
@@ -346,7 +347,7 @@ const Avaliacao = () => {
                     <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                       <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                       <div className="flex gap-1">
-                        {[1, 2, 3, 4, 5].map(nota => (
+                       {scaleOrder.map(nota => (
                           <button
                             key={nota}
                             onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
@@ -372,7 +373,7 @@ const Avaliacao = () => {
               <div key={q.id} className="space-y-2 pb-4 border-b last:border-0">
                 <div className="text-sm font-medium">{qi + 1}. {q.texto}</div>
                 <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map(nota => (
+                  {scaleOrder.map(nota => (
                     <button
                       key={nota}
                       onClick={() => setRespostas(prev => ({ ...prev, [q.id]: nota }))}
