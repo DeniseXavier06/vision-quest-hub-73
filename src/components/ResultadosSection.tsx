@@ -13,7 +13,7 @@ import {
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   PieChart, Pie, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  LineChart, Line, Legend,
+  LineChart, Line, Legend, ComposedChart,
 } from 'recharts';
 import { Upload, FileSpreadsheet, BarChart3, PieChartIcon, Search, ChevronLeft, ChevronRight, Database, BookOpen, Layers, Calendar, History, Trash2, Eye, Users, Settings2, Minus, Plus } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -384,10 +384,20 @@ const ResultadosSection = () => {
   }), [filtered]);
 
   const chartByCurso = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach((r) => { if (r.curso) map.set(r.curso, (map.get(r.curso) || 0) + 1); });
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, count]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count,
+    const map = new Map<string, { count: number; somaMedia: number; nMedia: number }>();
+    filtered.forEach((r) => {
+      if (!r.curso) return;
+      const cur = map.get(r.curso) || { count: 0, somaMedia: 0, nMedia: 0 };
+      cur.count += 1;
+      const m = Number(r.media);
+      if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
+      map.set(r.curso, cur);
+    });
+    return [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20).map(([name, v]) => ({
+      name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+      fullName: name,
+      registros: v.count,
+      media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
     }));
   }, [filtered]);
 
@@ -693,12 +703,15 @@ const ResultadosSection = () => {
             <div className="h-[350px]" onDoubleClick={handleCursoChartDoubleClick} title="Duplo clique para resetar filtro">
               {chartByCurso.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartByCurso} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                    <XAxis type="number" tick={{ fontSize: fs('cursoBar') }} />
+                  <ComposedChart data={chartByCurso} layout="vertical" margin={{ top: 5, right: 40, left: 10, bottom: 5 }}>
+                    <XAxis xAxisId="reg" type="number" tick={{ fontSize: fs('cursoBar') }} />
+                    <XAxis xAxisId="media" type="number" orientation="top" domain={[0, 5]} tick={{ fontSize: fs('cursoBar') - 1 }} stroke="hsl(var(--primary))" />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: fs('cursoBar') - 1 }} width={150} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('cursoBar')}px` }} />
-                    <Bar dataKey="registros" radius={[0, 4, 4, 0]} label={renderHBarLabel} onClick={handleCursoBarClick} cursor="pointer">{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
-                  </BarChart>
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('cursoBar')}px` }} formatter={(value: number, name: string) => name === 'Média' ? [Number(value).toFixed(2), 'Média'] : [value, 'Registros']} />
+                    <Legend wrapperStyle={{ fontSize: `${fs('cursoBar')}px` }} />
+                    <Bar xAxisId="reg" dataKey="registros" name="Registros" radius={[0, 4, 4, 0]} label={renderHBarLabel} onClick={handleCursoBarClick} cursor="pointer">{chartByCurso.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                    <Line xAxisId="media" dataKey="media" name="Média" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} label={{ position: 'right', fontSize: fs('cursoBar') - 1, fill: 'hsl(var(--primary))', formatter: (v: number) => v ? v.toFixed(2) : '' }} />
+                  </ComposedChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
             </div>
