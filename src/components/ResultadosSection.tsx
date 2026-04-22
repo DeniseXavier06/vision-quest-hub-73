@@ -384,10 +384,20 @@ const ResultadosSection = () => {
   }), [filtered]);
 
   const chartByCurso = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach((r) => { if (r.curso) map.set(r.curso, (map.get(r.curso) || 0) + 1); });
-    return [...map.entries()].sort((a, b) => b[1] - a[1]).slice(0, 20).map(([name, count]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count,
+    const map = new Map<string, { count: number; somaMedia: number; nMedia: number }>();
+    filtered.forEach((r) => {
+      if (!r.curso) return;
+      const cur = map.get(r.curso) || { count: 0, somaMedia: 0, nMedia: 0 };
+      cur.count += 1;
+      const m = Number(r.media);
+      if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
+      map.set(r.curso, cur);
+    });
+    return [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20).map(([name, v]) => ({
+      name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+      fullName: name,
+      registros: v.count,
+      media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
     }));
   }, [filtered]);
 
