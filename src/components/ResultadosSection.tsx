@@ -759,7 +759,8 @@ const ResultadosSection = () => {
         <Button variant="ghost" size="sm" onClick={clearFilters}>Limpar filtros</Button>
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1 - hidden when viewing Colaboradores */}
+      {filterNivel !== 'Colaboradores' && (<>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Registros por Curso<ChartFontControl chartId="cursoBar" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
