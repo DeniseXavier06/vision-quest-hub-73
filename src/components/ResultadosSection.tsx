@@ -465,8 +465,24 @@ const ResultadosSection = () => {
     return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
   }, [filtered]);
 
+  const desempenhoArea = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach((r) => { if (r.area) map.set(r.area, (map.get(r.area) || 0) + 1); });
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+      .map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
+  }, [filtered]);
+
   const handleDimensaoBarClick = useCallback((data: any) => {
     if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
+  }, []);
+
+  const handleAreaBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterArea(data.fullName); setPage(0); }
+  }, []);
+
+  const handleAreaChartDoubleClick = useCallback(() => {
+    setFilterArea('all'); setPage(0);
   }, []);
 
   const handleCursoChartDoubleClick = useCallback(() => {
@@ -799,16 +815,16 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Desempenho por Dimensão<ChartFontControl chartId="desempDim" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><Layers className="w-4 h-4 text-primary" />Desempenho por Área<ChartFontControl chartId="desempArea" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
-            <div className="h-[300px]" onDoubleClick={handleDimensaoChartDoubleClick} title="Duplo clique para resetar filtro">
-              {desempenhoDimensao.length > 0 ? (
+            <div className="h-[300px]" onDoubleClick={handleAreaChartDoubleClick} title="Duplo clique para resetar filtro">
+              {desempenhoArea.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={desempenhoDimensao} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: fs('desempDim') - 1 }} angle={-30} textAnchor="end" height={80} />
-                    <YAxis tick={{ fontSize: fs('desempDim') }} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('desempDim')}px` }} />
-                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{desempenhoDimensao.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
+                  <BarChart data={desempenhoArea} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <XAxis dataKey="name" tick={{ fontSize: fs('desempArea') - 1 }} angle={-30} textAnchor="end" height={80} />
+                    <YAxis tick={{ fontSize: fs('desempArea') }} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('desempArea')}px` }} />
+                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleAreaBarClick} cursor="pointer">{desempenhoArea.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
