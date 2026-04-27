@@ -726,20 +726,25 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><PieChartIcon className="w-4 h-4 text-primary" />Distribuição por Conceito<ChartFontControl chartId="dimPie" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
+          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Curso<ChartFontControl chartId="mediaCurso" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
           <CardContent>
             <div className="h-[350px]">
-              {pieConceito.length > 0 ? (
+              {chartByCurso.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={pieConceito} cx="50%" cy="50%" labelLine={true} outerRadius={110} dataKey="value"
-                      label={({ name, percent, value }) => `${name} ${(percent * 100).toFixed(0)}% (${value})`}
-                      fontSize={fs('dimPie')} cursor="pointer">
-                      {pieConceito.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}
-                    </Pie>
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('dimPie')}px` }} />
-                    <Legend wrapperStyle={{ fontSize: `${fs('dimPie')}px` }} />
-                  </PieChart>
+                  <BarChart data={chartByCurso} margin={{ top: 20, right: 20, left: 0, bottom: 80 }}>
+                    <XAxis dataKey="name" tick={{ fontSize: fs('mediaCurso') - 1 }} angle={-35} textAnchor="end" interval={0} height={90} />
+                    <YAxis tick={{ fontSize: fs('mediaCurso') }} domain={[0, 5]} />
+                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaCurso')}px` }}
+                      formatter={(value: any) => [Number(value).toFixed(2), 'Média']}
+                      labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label} />
+                    <Bar dataKey="media" cursor="pointer" onClick={handleCursoBarClick} label={renderBarLabel}>
+                      {chartByCurso.map((entry, idx) => {
+                        const m = entry.media;
+                        const conceito = m >= 4.5 ? 'EXCELENTE' : m >= 3.5 ? 'BOM' : m >= 2.5 ? 'ATENDE PARCIALMENTE' : m >= 1.5 ? 'REGULAR' : m > 0 ? 'MUITO RUIM' : '--';
+                        return <Cell key={idx} fill={CONCEITO_COLORS[conceito] || pieColors[0]} />;
+                      })}
+                    </Bar>
+                  </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
             </div>
