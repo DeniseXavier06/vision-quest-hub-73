@@ -844,9 +844,10 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
       </div>
+      </>)}
 
-      {/* === Colaboradores Section === */}
-      {colabData.length > 0 && (
+      {/* === Colaboradores Section - only when nivel = Colaboradores === */}
+      {filterNivel === 'Colaboradores' && colabData.length > 0 && (
         <>
           <div className="pt-4">
             <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
