@@ -87,6 +87,17 @@ function getConceptColor(name: string): string {
   return CONCEITO_COLORS[name] || CONCEITO_COLORS[name.toUpperCase()] || pieColors[0];
 }
 
+// Cor da média conforme legenda CPA:
+// Excelente 4.7-5.0 | Bom 4.1-4.6 | Atende Parcialmente 3.1-4.0 | Regular 2.2-3.0 | Muito Ruim <2.2
+function getMediaColor(media: number): string {
+  if (!media || media <= 0) return CONCEITO_COLORS['--'];
+  if (media >= 4.7) return CONCEITO_COLORS['EXCELENTE'];
+  if (media >= 4.1) return CONCEITO_COLORS['BOM'];
+  if (media >= 3.1) return CONCEITO_COLORS['ATENDE PARCIALMENTE'];
+  if (media >= 2.2) return CONCEITO_COLORS['REGULAR'];
+  return CONCEITO_COLORS['MUITO RUIM'];
+}
+
 // Custom label renderer for bars showing value
 const renderBarLabel = (props: any) => {
   const { x, y, width, height, value } = props;
