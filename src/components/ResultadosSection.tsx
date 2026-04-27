@@ -466,11 +466,22 @@ const ResultadosSection = () => {
   }, [filtered]);
 
   const desempenhoArea = useMemo(() => {
-    const map = new Map<string, number>();
-    filtered.forEach((r) => { if (r.area) map.set(r.area, (map.get(r.area) || 0) + 1); });
+    // Média da Área = AVG(media das questões da área), incluindo médias 0
+    const map = new Map<string, { sum: number; count: number }>();
+    filtered.forEach((r) => {
+      if (!r.area) return;
+      const m = Number(r.media);
+      if (isNaN(m)) return;
+      const e = map.get(r.area) || { sum: 0, count: 0 };
+      e.sum += m; e.count += 1; map.set(r.area, e);
+    });
     return [...map.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
-      .map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
+      .map(([name, { sum, count }]) => ({
+        name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+        fullName: name,
+        media: count > 0 ? Number((sum / count).toFixed(2)) : 0,
+      }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
   const handleDimensaoBarClick = useCallback((data: any) => {
