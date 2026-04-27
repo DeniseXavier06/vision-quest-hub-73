@@ -87,6 +87,17 @@ function getConceptColor(name: string): string {
   return CONCEITO_COLORS[name] || CONCEITO_COLORS[name.toUpperCase()] || pieColors[0];
 }
 
+// Cor da média conforme legenda CPA:
+// Excelente 4.7-5.0 | Bom 4.1-4.6 | Atende Parcialmente 3.1-4.0 | Regular 2.2-3.0 | Muito Ruim <2.2
+function getMediaColor(media: number): string {
+  if (!media || media <= 0) return CONCEITO_COLORS['--'];
+  if (media >= 4.7) return CONCEITO_COLORS['EXCELENTE'];
+  if (media >= 4.1) return CONCEITO_COLORS['BOM'];
+  if (media >= 3.1) return CONCEITO_COLORS['ATENDE PARCIALMENTE'];
+  if (media >= 2.2) return CONCEITO_COLORS['REGULAR'];
+  return CONCEITO_COLORS['MUITO RUIM'];
+}
+
 // Custom label renderer for bars showing value
 const renderBarLabel = (props: any) => {
   const { x, y, width, height, value } = props;
@@ -395,12 +406,14 @@ const ResultadosSection = () => {
       if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
       map.set(r.curso, cur);
     });
-    return [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20).map(([name, v]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name,
-      fullName: name,
-      registros: v.count,
-      media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
-    }));
+    return [...map.entries()]
+      .map(([name, v]) => ({
+        name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+        fullName: name,
+        registros: v.count,
+        media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
+      }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
   const pieConceito = useMemo(() => {
@@ -421,7 +434,9 @@ const ResultadosSection = () => {
         e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
       }
     });
-    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }));
+    return [...map.entries()]
+      .map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
   const desempenhoDimensao = useMemo(() => {
@@ -732,11 +747,9 @@ const ResultadosSection = () => {
                       formatter={(value: any) => [Number(value).toFixed(2), 'Média']}
                       labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label} />
                     <Bar dataKey="media" cursor="pointer" onClick={handleCursoBarClick} label={renderBarLabel}>
-                      {chartByCurso.map((entry, idx) => {
-                        const m = entry.media;
-                        const conceito = m >= 4.5 ? 'EXCELENTE' : m >= 3.5 ? 'BOM' : m >= 2.5 ? 'ATENDE PARCIALMENTE' : m >= 1.5 ? 'REGULAR' : m > 0 ? 'MUITO RUIM' : '--';
-                        return <Cell key={idx} fill={CONCEITO_COLORS[conceito] || pieColors[0]} />;
-                      })}
+                      {chartByCurso.map((entry, idx) => (
+                        <Cell key={idx} fill={getMediaColor(entry.media)} />
+                      ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -758,7 +771,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: fs('mediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: fs('mediaDim') }} domain={[0, 'auto']} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{mediaPorDimensao.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -852,7 +865,7 @@ const ResultadosSection = () => {
                         <XAxis type="number" tick={{ fontSize: fs('mediaArea') }} domain={[0, 'auto']} />
                         <YAxis dataKey="name" type="category" tick={{ fontSize: fs('mediaArea') - 1 }} width={180} />
                         <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaArea')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                        <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 3) % chartColors.length]} />))}</Bar>
+                        <Bar dataKey="media" radius={[0, 4, 4, 0]} label={renderHBarLabel}>{colabMediaArea.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
@@ -893,7 +906,7 @@ const ResultadosSection = () => {
                       <XAxis dataKey="name" tick={{ fontSize: fs('colabMediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                       <YAxis tick={{ fontSize: fs('colabMediaDim') }} domain={[0, 5]} />
                       <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('colabMediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
