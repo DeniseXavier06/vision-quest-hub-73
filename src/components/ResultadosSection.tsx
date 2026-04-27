@@ -465,8 +465,24 @@ const ResultadosSection = () => {
     return [...map.entries()].map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
   }, [filtered]);
 
+  const desempenhoArea = useMemo(() => {
+    const map = new Map<string, number>();
+    filtered.forEach((r) => { if (r.area) map.set(r.area, (map.get(r.area) || 0) + 1); });
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], 'pt-BR'))
+      .map(([name, count]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, registros: count }));
+  }, [filtered]);
+
   const handleDimensaoBarClick = useCallback((data: any) => {
     if (data?.fullName) { setFilterDimensao(data.fullName); setPage(0); }
+  }, []);
+
+  const handleAreaBarClick = useCallback((data: any) => {
+    if (data?.fullName) { setFilterArea(data.fullName); setPage(0); }
+  }, []);
+
+  const handleAreaChartDoubleClick = useCallback(() => {
+    setFilterArea('all'); setPage(0);
   }, []);
 
   const handleCursoChartDoubleClick = useCallback(() => {
