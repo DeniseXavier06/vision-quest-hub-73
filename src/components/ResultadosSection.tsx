@@ -397,8 +397,7 @@ const ResultadosSection = () => {
   const chartByCurso = useMemo(() => {
     // Cálculo hierárquico (Power BI):
     // 1) Média da Área = AVG(media das questões da área)
-    // 2) Média da Dimensão = SOMA(médias das áreas) / CONTAGEM(áreas)
-    // 3) Média do Curso = AVG(médias das dimensões)
+    // 2) Média do Curso = SOMA(médias das áreas) / CONTAGEM(áreas)
     type AreaAcc = { soma: number; n: number };
     const cursoMap = new Map<string, {
       count: number;
@@ -423,17 +422,14 @@ const ResultadosSection = () => {
 
     return [...cursoMap.entries()]
       .map(([name, v]) => {
-        let somaDim = 0;
-        let nDim = 0;
+        let somaAreas = 0;
+        let nAreas = 0;
         v.dims.forEach((areas) => {
-          let somaAreas = 0;
-          let nAreas = 0;
           areas.forEach((a) => {
             if (a.n > 0) { somaAreas += a.soma / a.n; nAreas += 1; }
           });
-          if (nAreas > 0) { somaDim += somaAreas / nAreas; nDim += 1; }
         });
-        const media = nDim > 0 ? Number((somaDim / nDim).toFixed(2)) : 0;
+        const media = nAreas > 0 ? Number((somaAreas / nAreas).toFixed(2)) : 0;
         return {
           name: name.length > 20 ? name.substring(0, 20) + '…' : name,
           fullName: name,
