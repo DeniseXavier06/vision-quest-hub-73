@@ -904,7 +904,7 @@ const ResultadosSection = () => {
                       <XAxis dataKey="name" tick={{ fontSize: fs('colabMediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                       <YAxis tick={{ fontSize: fs('colabMediaDim') }} domain={[0, 5]} />
                       <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('colabMediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[idx % chartColors.length]} />))}</Bar>
+                      <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel}>{colabMediaDimensao.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
