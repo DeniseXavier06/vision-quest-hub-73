@@ -395,24 +395,52 @@ const ResultadosSection = () => {
   }), [filtered]);
 
   const chartByCurso = useMemo(() => {
-    // Média simples da coluna `media` (mesmo cálculo do Power BI por curso/semestre/nível):
-    // soma(media das questões) / quantidade de questões.
-    const map = new Map<string, { count: number; somaMedia: number; nMedia: number }>();
+    // Cálculo hierárquico (Power BI):
+    // 1) Média da Área = AVG(media das questões da área)
+    // 2) Média da Dimensão = SOMA(médias das áreas) / CONTAGEM(áreas)
+    // 3) Média do Curso = AVG(médias das dimensões)
+    type AreaAcc = { soma: number; n: number };
+    const cursoMap = new Map<string, {
+      count: number;
+      dims: Map<string, Map<string, AreaAcc>>; // dim -> area -> {soma, n}
+    }>();
+
     filtered.forEach((r) => {
       if (!r.curso) return;
-      const cur = map.get(r.curso) || { count: 0, somaMedia: 0, nMedia: 0 };
-      cur.count += 1;
+      const c = cursoMap.get(r.curso) || { count: 0, dims: new Map() };
+      c.count += 1;
       const m = Number(r.media);
-      if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
-      map.set(r.curso, cur);
+      if (!isNaN(m) && m > 0 && r.dimensao && r.area) {
+        const dimMap = c.dims.get(r.dimensao) || new Map<string, AreaAcc>();
+        const areaAcc = dimMap.get(r.area) || { soma: 0, n: 0 };
+        areaAcc.soma += m;
+        areaAcc.n += 1;
+        dimMap.set(r.area, areaAcc);
+        c.dims.set(r.dimensao, dimMap);
+      }
+      cursoMap.set(r.curso, c);
     });
-    return [...map.entries()]
-      .map(([name, v]) => ({
-        name: name.length > 20 ? name.substring(0, 20) + '…' : name,
-        fullName: name,
-        registros: v.count,
-        media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
-      }))
+
+    return [...cursoMap.entries()]
+      .map(([name, v]) => {
+        let somaDim = 0;
+        let nDim = 0;
+        v.dims.forEach((areas) => {
+          let somaAreas = 0;
+          let nAreas = 0;
+          areas.forEach((a) => {
+            if (a.n > 0) { somaAreas += a.soma / a.n; nAreas += 1; }
+          });
+          if (nAreas > 0) { somaDim += somaAreas / nAreas; nDim += 1; }
+        });
+        const media = nDim > 0 ? Number((somaDim / nDim).toFixed(2)) : 0;
+        return {
+          name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+          fullName: name,
+          registros: v.count,
+          media,
+        };
+      })
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
