@@ -406,12 +406,14 @@ const ResultadosSection = () => {
       if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
       map.set(r.curso, cur);
     });
-    return [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20).map(([name, v]) => ({
-      name: name.length > 20 ? name.substring(0, 20) + '…' : name,
-      fullName: name,
-      registros: v.count,
-      media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
-    }));
+    return [...map.entries()]
+      .map(([name, v]) => ({
+        name: name.length > 20 ? name.substring(0, 20) + '…' : name,
+        fullName: name,
+        registros: v.count,
+        media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
+      }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
   const pieConceito = useMemo(() => {
