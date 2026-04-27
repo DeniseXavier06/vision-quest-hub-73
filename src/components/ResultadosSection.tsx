@@ -769,7 +769,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: fs('mediaDim') - 1 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: fs('mediaDim') }} domain={[0, 'auto']} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaDim')}px` }} formatter={(value: number) => [value.toFixed(2), 'Média']} />
-                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{mediaPorDimensao.map((_, idx) => (<Cell key={idx} fill={chartColors[(idx + 2) % chartColors.length]} />))}</Bar>
+                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleDimensaoBarClick} cursor="pointer">{mediaPorDimensao.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
