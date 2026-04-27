@@ -965,45 +965,7 @@ const ResultadosSection = () => {
         </>
       )}
 
-      {/* Data Table */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-heading flex items-center justify-between">
-            <span className="flex items-center gap-2"><Database className="w-4 h-4 text-primary" />{sortedFiltered.length.toLocaleString('pt-BR')} registros</span>
-            {totalPages > 1 && (
-              <div className="flex items-center gap-2 text-sm font-normal text-muted-foreground">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPage(Math.max(0, page - 1))} disabled={page === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                <span>{page + 1} / {totalPages}</span>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPage(Math.min(totalPages - 1, page + 1))} disabled={page >= totalPages - 1}><ChevronRight className="w-4 h-4" /></Button>
-              </div>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {orderedCols.map((col, idx) => (
-                    <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
-                      className={`sticky top-0 bg-background ${col.className || ''}`}
-                      draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
-                      onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
-                    >{col.label}</SortableTableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paged.map((r, idx) => (
-                  <TableRow key={`${page}-${idx}`}>
-                    {orderedCols.map((col) => renderResCell(col.key, r))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Data Table removed */}
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
