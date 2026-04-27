@@ -835,7 +835,7 @@ const ResultadosSection = () => {
                     <XAxis dataKey="name" tick={{ fontSize: fs('desempArea') - 1 }} angle={-30} textAnchor="end" height={80} />
                     <YAxis tick={{ fontSize: fs('desempArea') }} />
                     <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('desempArea')}px` }} />
-                    <Bar dataKey="registros" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleAreaBarClick} cursor="pointer">{desempenhoArea.map((_, idx) => (<Cell key={idx} fill={pieColors[idx % pieColors.length]} />))}</Bar>
+                    <Bar dataKey="media" radius={[4, 4, 0, 0]} label={renderBarLabel} onClick={handleAreaBarClick} cursor="pointer">{desempenhoArea.map((entry, idx) => (<Cell key={idx} fill={getMediaColor(entry.media)} />))}</Bar>
                   </BarChart>
                 </ResponsiveContainer>
               ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
