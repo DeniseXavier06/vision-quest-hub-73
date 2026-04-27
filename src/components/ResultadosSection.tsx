@@ -745,11 +745,9 @@ const ResultadosSection = () => {
                       formatter={(value: any) => [Number(value).toFixed(2), 'Média']}
                       labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label} />
                     <Bar dataKey="media" cursor="pointer" onClick={handleCursoBarClick} label={renderBarLabel}>
-                      {chartByCurso.map((entry, idx) => {
-                        const m = entry.media;
-                        const conceito = m >= 4.5 ? 'EXCELENTE' : m >= 3.5 ? 'BOM' : m >= 2.5 ? 'ATENDE PARCIALMENTE' : m >= 1.5 ? 'REGULAR' : m > 0 ? 'MUITO RUIM' : '--';
-                        return <Cell key={idx} fill={CONCEITO_COLORS[conceito] || pieColors[0]} />;
-                      })}
+                      {chartByCurso.map((entry, idx) => (
+                        <Cell key={idx} fill={getMediaColor(entry.media)} />
+                      ))}
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
