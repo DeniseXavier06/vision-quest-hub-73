@@ -434,7 +434,9 @@ const ResultadosSection = () => {
         e.sum += r.media; e.count += 1; map.set(r.dimensao, e);
       }
     });
-    return [...map.entries()].map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }));
+    return [...map.entries()]
+      .map(([name, { sum, count }]) => ({ name: name.length > 20 ? name.substring(0, 20) + '…' : name, fullName: name, media: Number((sum / count).toFixed(2)) }))
+      .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
   const desempenhoDimensao = useMemo(() => {
