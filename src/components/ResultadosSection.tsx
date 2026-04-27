@@ -384,28 +384,22 @@ const ResultadosSection = () => {
   }), [filtered]);
 
   const chartByCurso = useMemo(() => {
-    // Média ponderada por respondentes (mesmo cálculo do Power BI):
-    // soma(nota * respondentes) / soma(respondentes), considerando as 5 categorias da escala.
-    const map = new Map<string, { count: number; somaNotas: number; somaResp: number }>();
+    // Média simples da coluna `media` (mesmo cálculo do Power BI por curso/semestre/nível):
+    // soma(media das questões) / quantidade de questões.
+    const map = new Map<string, { count: number; somaMedia: number; nMedia: number }>();
     filtered.forEach((r) => {
       if (!r.curso) return;
-      const cur = map.get(r.curso) || { count: 0, somaNotas: 0, somaResp: 0 };
+      const cur = map.get(r.curso) || { count: 0, somaMedia: 0, nMedia: 0 };
       cur.count += 1;
-      const respondentes =
-        (r.excelente || 0) + (r.bom || 0) + (r.regular || 0) +
-        (r.atendeParcialmente || 0) + (r.muitoRuim || 0);
-      const notas =
-        (r.excelente || 0) * 5 + (r.bom || 0) * 4 + (r.regular || 0) * 3 +
-        (r.atendeParcialmente || 0) * 2 + (r.muitoRuim || 0) * 1;
-      cur.somaNotas += notas;
-      cur.somaResp += respondentes;
+      const m = Number(r.media);
+      if (!isNaN(m) && m > 0) { cur.somaMedia += m; cur.nMedia += 1; }
       map.set(r.curso, cur);
     });
     return [...map.entries()].sort((a, b) => b[1].count - a[1].count).slice(0, 20).map(([name, v]) => ({
       name: name.length > 20 ? name.substring(0, 20) + '…' : name,
       fullName: name,
       registros: v.count,
-      media: v.somaResp > 0 ? Number((v.somaNotas / v.somaResp).toFixed(2)) : 0,
+      media: v.nMedia > 0 ? Number((v.somaMedia / v.nMedia).toFixed(2)) : 0,
     }));
   }, [filtered]);
 
