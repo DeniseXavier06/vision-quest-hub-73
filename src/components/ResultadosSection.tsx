@@ -987,6 +987,112 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Análise por Dimensão e por Área */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-heading flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-primary" />Análise por Dimensão
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px] overflow-y-auto pr-2 space-y-3">
+              {analiseDimensoes.length > 0 ? analiseDimensoes.map((d) => (
+                <div key={d.dimensao} className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-sm">{d.dimensao}</h4>
+                    <Badge style={{ backgroundColor: getMediaColor(d.mediaGeral), color: 'white' }} className="text-xs">
+                      Média {d.mediaGeral.toFixed(2)}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      {d.fortes.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {d.fortes.map((a) => (
+                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Nenhuma área com desempenho destacado (≥ 4,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      {d.atencao.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {d.atencao.map((a) => (
+                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Sem áreas críticas (todas ≥ 3,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-primary mb-1">→ Ações propostas</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                        {d.acoes.map((a, i) => (<li key={i}>{a}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-heading flex items-center gap-2">
+              <Layers className="w-4 h-4 text-primary" />Análise por Área
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[350px] overflow-y-auto pr-2 space-y-3">
+              {analiseAreas.length > 0 ? analiseAreas.map((a) => (
+                <div key={a.area} className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-sm">{a.area}</h4>
+                    <Badge style={{ backgroundColor: getMediaColor(a.mediaGeral), color: 'white' }} className="text-xs">
+                      Média {a.mediaGeral.toFixed(2)}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      {a.fortes.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {a.fortes.map((q) => (
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Nenhum item com desempenho destacado (≥ 4,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      {a.atencao.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {a.atencao.map((q) => (
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Sem itens críticos (todos ≥ 3,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-primary mb-1">→ Ações propostas</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                        {a.acoes.map((ac, i) => (<li key={i}>{ac}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
       </>)}
 
       {/* === Colaboradores Section - only when nivel = Colaboradores === */}
