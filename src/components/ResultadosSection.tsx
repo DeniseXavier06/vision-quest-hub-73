@@ -474,6 +474,83 @@ const ResultadosSection = () => {
       .sort((a, b) => a.curso.localeCompare(b.curso, 'pt-BR'));
   }, [filtered]);
 
+  // Análise por Dimensão: agrupa por dimensão e dentro dela analisa as áreas
+  const analiseDimensoes = useMemo(() => {
+    type AreaAcc = { soma: number; n: number };
+    const dimMap = new Map<string, Map<string, AreaAcc>>();
+    filtered.forEach((r) => {
+      if (!r.dimensao || !r.area) return;
+      const m = Number(r.media);
+      if (isNaN(m) || m <= 0) return;
+      const areas = dimMap.get(r.dimensao) || new Map<string, AreaAcc>();
+      const acc = areas.get(r.area) || { soma: 0, n: 0 };
+      acc.soma += m; acc.n += 1;
+      areas.set(r.area, acc);
+      dimMap.set(r.dimensao, areas);
+    });
+    return [...dimMap.entries()]
+      .map(([dimensao, areas]) => {
+        const areaList = [...areas.entries()]
+          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
+          .sort((a, b) => b.media - a.media);
+        const mediaGeral = areaList.length > 0
+          ? areaList.reduce((s, a) => s + a.media, 0) / areaList.length
+          : 0;
+        const fortes = areaList.filter((a) => a.media >= 4).slice(0, 3);
+        const atencao = [...areaList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
+        const acoes: string[] = [];
+        if (atencao.length > 0) {
+          atencao.forEach((a) => acoes.push(`Elaborar plano de ação para a área "${a.nome}" (média ${a.media.toFixed(2)})`));
+        }
+        if (mediaGeral < 3.5) acoes.push(`Revisar estratégias da dimensão "${dimensao}" com a coordenação`);
+        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas da dimensão');
+        if (fortes.length > 0 && acoes.length < 4) acoes.push('Disseminar boas práticas das áreas de destaque desta dimensão');
+        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
+        return { dimensao, mediaGeral, fortes, atencao, acoes };
+      })
+      .sort((a, b) => a.dimensao.localeCompare(b.dimensao, 'pt-BR'));
+  }, [filtered]);
+
+  // Análise por Área: agrupa por área e analisa as questões
+  const analiseAreas = useMemo(() => {
+    type QAcc = { soma: number; n: number };
+    const areaMap = new Map<string, Map<string, QAcc>>();
+    filtered.forEach((r) => {
+      if (!r.area || !r.textoQuestao) return;
+      const m = Number(r.media);
+      if (isNaN(m) || m <= 0) return;
+      const qs = areaMap.get(r.area) || new Map<string, QAcc>();
+      const acc = qs.get(r.textoQuestao) || { soma: 0, n: 0 };
+      acc.soma += m; acc.n += 1;
+      qs.set(r.textoQuestao, acc);
+      areaMap.set(r.area, qs);
+    });
+    return [...areaMap.entries()]
+      .map(([area, qs]) => {
+        const qList = [...qs.entries()]
+          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
+          .sort((a, b) => b.media - a.media);
+        const mediaGeral = qList.length > 0
+          ? qList.reduce((s, a) => s + a.media, 0) / qList.length
+          : 0;
+        const fortes = qList.filter((a) => a.media >= 4).slice(0, 3);
+        const atencao = [...qList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
+        const acoes: string[] = [];
+        if (atencao.length > 0) {
+          atencao.forEach((a) => {
+            const trecho = a.nome.length > 80 ? a.nome.substring(0, 80) + '…' : a.nome;
+            acoes.push(`Elaborar plano de ação para o item "${trecho}" (média ${a.media.toFixed(2)})`);
+          });
+        }
+        if (mediaGeral < 3.5) acoes.push(`Revisar processos e práticas da área "${area}"`);
+        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas da área');
+        if (fortes.length > 0 && acoes.length < 4) acoes.push('Disseminar boas práticas dos itens de destaque desta área');
+        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
+        return { area, mediaGeral, fortes, atencao, acoes };
+      })
+      .sort((a, b) => a.area.localeCompare(b.area, 'pt-BR'));
+  }, [filtered]);
+
   const pieConceito = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
