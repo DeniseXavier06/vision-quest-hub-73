@@ -278,19 +278,35 @@ const AcoesSection = () => {
   ];
   const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(acaoColumns, 'acoes');
 
-  const renderAcaoCell = (key: string, acao: AcaoLocal) => {
+  const widthFor = (key: string) => {
     switch (key) {
-      case 'nome': return <TableCell key={key} className="font-medium text-xs whitespace-normal break-words">{acao.nome}</TableCell>;
-      case 'eixo': return <TableCell key={key} className="text-xs text-muted-foreground whitespace-normal break-words">{acao.eixo}</TableCell>;
-      case 'setores': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.setores || '—'}</TableCell>;
-      case 'meta': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.meta || '—'}</TableCell>;
-      case 'responsavel': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.responsavel}</TableCell>;
-      case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-1.5 min-w-[80px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
-      case 'prazo': return <TableCell key={key} className="text-xs whitespace-nowrap">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
-      case 'status': return <TableCell key={key}><Badge className={`${statusColors[acao.status]} text-[11px] px-1.5 py-0.5`} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
+      case 'nome': return 'w-[22%]';
+      case 'eixo': return 'w-[12%]';
+      case 'setores': return 'w-[12%]';
+      case 'meta': return 'w-[14%]';
+      case 'responsavel': return 'w-[14%]';
+      case 'percentualProgresso': return 'w-[10%]';
+      case 'prazo': return 'w-[8%]';
+      case 'status': return 'w-[8%]';
+      default: return '';
+    }
+  };
+
+  const renderAcaoCell = (key: string, acao: AcaoLocal) => {
+    const truncCls = 'text-xs align-top py-2 px-2 truncate max-w-0';
+    switch (key) {
+      case 'nome': return <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>{acao.nome}</TableCell>;
+      case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
+      case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
+      case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
+      case 'responsavel': return <TableCell key={key} className={truncCls} title={acao.responsavel}>{acao.responsavel}</TableCell>;
+      case 'percentualProgresso': return <TableCell key={key} className="py-2 px-2 align-middle"><div className="flex items-center gap-1.5"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
+      case 'prazo': return <TableCell key={key} className="text-xs whitespace-nowrap py-2 px-2 align-middle">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
+      case 'status': return <TableCell key={key} className="py-2 px-2 align-middle"><Badge className={`${statusColors[acao.status]} text-[11px] px-1.5 py-0.5`} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
       default: return null;
     }
   };
+
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
