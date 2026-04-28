@@ -18,7 +18,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload } from 'lucide-react';
+import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
@@ -82,6 +82,55 @@ function parseProgress(val: unknown): number {
 
 function calcDias(prazo: string) {
   return Math.ceil((new Date(prazo).getTime() - Date.now()) / 86400000);
+}
+
+function ResponsaveisInput({ value, onChange, readOnly }: { value: string; onChange: (v: string) => void; readOnly?: boolean }) {
+  const [input, setInput] = useState('');
+  const list = value.split(',').map((r) => r.trim()).filter(Boolean);
+  const add = (raw: string) => {
+    const parts = raw.split(',').map((r) => r.trim()).filter(Boolean);
+    const next = [...list];
+    for (const p of parts) if (!next.includes(p)) next.push(p);
+    onChange(next.join(', '));
+    setInput('');
+  };
+  const remove = (name: string) => onChange(list.filter((r) => r !== name).join(', '));
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      if (input.trim()) add(input);
+    } else if (e.key === 'Backspace' && !input && list.length > 0) {
+      remove(list[list.length - 1]);
+    }
+  };
+  if (readOnly) {
+    return (
+      <div className="flex flex-wrap gap-1.5 min-h-9 px-3 py-2 border rounded-md bg-muted/30">
+        {list.length === 0 ? <span className="text-xs text-muted-foreground">—</span> :
+          list.map((r) => <Badge key={r} variant="secondary" className="text-xs">{r}</Badge>)}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-1.5 min-h-9 px-2 py-1.5 border rounded-md focus-within:ring-2 focus-within:ring-ring">
+      {list.map((r) => (
+        <Badge key={r} variant="secondary" className="text-xs gap-1 pr-1">
+          {r}
+          <button type="button" onClick={() => remove(r)} className="hover:bg-muted-foreground/20 rounded-sm">
+            <X className="w-3 h-3" />
+          </button>
+        </Badge>
+      ))}
+      <input
+        className="flex-1 min-w-[120px] bg-transparent outline-none text-sm"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={onKeyDown}
+        onBlur={() => input.trim() && add(input)}
+        placeholder={list.length === 0 ? 'Digite um nome e pressione Enter' : ''}
+      />
+    </div>
+  );
 }
 
 const AcoesSection = () => {
@@ -353,8 +402,12 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Responsável *</Label>
-                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} readOnly={isReadOnly} placeholder="Nome do responsável" />
+                <Label>Responsáveis *</Label>
+                <ResponsaveisInput
+                  value={formData.responsavel}
+                  onChange={(v) => setFormData({ ...formData, responsavel: v })}
+                  readOnly={isReadOnly}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Prazo *</Label>
