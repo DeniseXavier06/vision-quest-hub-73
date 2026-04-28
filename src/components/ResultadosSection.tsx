@@ -1103,24 +1103,24 @@ const ResultadosSection = () => {
                   </div>
                   <div className="space-y-2 text-xs">
                     <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados (Excelente / Bom)</p>
                       {a.fortes.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {a.fortes.map((q) => (
-                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.pctPositivo.toFixed(0)}% Exc+Bom</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Nenhum item com desempenho destacado (≥ 4,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Nenhum item com ≥ 60% de avaliações Excelente/Bom.</p>}
                     </div>
                     <div>
-                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção (Atende Parcialmente)</p>
                       {a.atencao.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {a.atencao.map((q) => (
-                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.pctAp.toFixed(0)}% AP{q.pctCritico >= 10 ? ` · ${q.pctCritico.toFixed(0)}% crítico` : ''}</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Sem itens críticos (todos ≥ 3,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Sem itens com concentração relevante em "Atende Parcialmente".</p>}
                     </div>
                     <div>
                       <p className="font-medium text-primary mb-1">→ Ações propostas</p>
