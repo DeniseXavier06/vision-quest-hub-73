@@ -282,6 +282,7 @@ const AcoesSection = () => {
     switch (key) {
       case 'nome': return <TableCell key={key} className="font-medium text-xs whitespace-normal break-words">{acao.nome}</TableCell>;
       case 'eixo': return <TableCell key={key} className="text-xs text-muted-foreground whitespace-normal break-words">{acao.eixo}</TableCell>;
+      case 'setores': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.setores || '—'}</TableCell>;
       case 'meta': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.meta || '—'}</TableCell>;
       case 'responsavel': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.responsavel}</TableCell>;
       case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-1.5 min-w-[80px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
