@@ -252,12 +252,17 @@ const AcoesSection = () => {
   const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
+  const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
 
   const filtered = acoes.filter((a) => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
+    if (filterSetores.length > 0) {
+      const acaoSetores = a.setores.split(',').map((s) => s.trim()).filter(Boolean);
+      if (!filterSetores.some((s) => acaoSetores.includes(s))) return false;
+    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!a.nome.toLowerCase().includes(term) && !a.responsavel.toLowerCase().includes(term) && !a.eixo.toLowerCase().includes(term) && !a.meta.toLowerCase().includes(term)) return false;
