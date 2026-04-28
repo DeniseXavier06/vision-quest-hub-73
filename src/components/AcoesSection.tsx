@@ -160,7 +160,7 @@ const AcoesSection = () => {
   useEffect(() => { fetchAcoes(); }, [fetchAcoes]);
 
   const eixos = [...new Set(acoes.map((a) => a.eixo))];
-  const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const filterEixoOptions = [{ value: 'all', label: 'Todas as dimensões' }, ...eixos.map((e) => ({ value: e, label: e }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
   const responsaveis = [...new Set(acoes.flatMap((a) => a.responsavel.split(',').map(r => r.trim())).filter(Boolean))].sort();
   const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
@@ -183,7 +183,7 @@ const AcoesSection = () => {
 
   const acaoColumns: ColumnDef[] = [
     { key: 'nome', label: 'Ação' },
-    { key: 'eixo', label: 'Eixo' },
+    { key: 'eixo', label: 'Dimensão' },
     { key: 'meta', label: 'Meta' },
     { key: 'responsavel', label: 'Responsável' },
     { key: 'percentualProgresso', label: 'Progresso' },
@@ -329,7 +329,7 @@ const AcoesSection = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Pesquisar ações..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
-        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[220px]" />
+        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por dimensão" className="w-[220px]" />
         <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
         <SearchableSelect value={filterResponsavel} onValueChange={setFilterResponsavel} options={filterResponsavelOptions} placeholder="Filtrar por responsável" className="w-[220px]" />
@@ -390,7 +390,7 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Eixo *</Label>
+                <Label>Dimensão *</Label>
                 {isReadOnly ? <Input value={formData.eixo} readOnly /> : (
                   <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosSelectOptions} placeholder="Selecione" />
                 )}
