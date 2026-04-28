@@ -32,6 +32,8 @@ interface AcaoLocal {
   id: string;
   nome: string;
   eixo: string;
+  area: string;
+  setores: string;
   meta: string;
   responsavel: string;
   status: 'nao_iniciada' | 'em_andamento' | 'concluida';
@@ -47,7 +49,7 @@ const statusColors: Record<string, string> = {
 };
 
 type StatusAcao = 'nao_iniciada' | 'em_andamento' | 'concluida';
-const emptyForm: { nome: string; eixo: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
+const emptyForm: { nome: string; eixo: string; area: string; setores: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', area: '', setores: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
@@ -56,6 +58,23 @@ const eixosOptions = [
   'Avaliando a Comunicação', 'Avaliando os Serviços', 'Avaliando a Gestão',
 ];
 const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
+
+const areasOptions = [
+  'Ambiente Virtual de Aprendizagem',
+  'Biblioteca',
+  'Laboratórios',
+  'Sala de Aula',
+  'Atendimentos aos Alunos',
+  'Imagem da Instituição',
+  'Atendimento do Coordenador aos Alunos',
+  'Avaliação de Aprendizagem',
+  'Imagem do curso',
+  'Organização didático-pedagógica',
+  'Estratégias de Ensino',
+  'O envolvimento do Aluno',
+];
+const areasSelectOptions = areasOptions.map((a) => ({ value: a, label: a }));
+
 const statusSelectOptions = [
   { value: 'nao_iniciada', label: 'Não iniciada' },
   { value: 'em_andamento', label: 'Em andamento' },
