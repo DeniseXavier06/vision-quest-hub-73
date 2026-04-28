@@ -292,18 +292,19 @@ const AcoesSection = () => {
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('edit'); setDialogOpen(true);
   };
   const openView = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('view'); setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     const payload = {
-      nome: formData.nome, eixo: formData.eixo, meta: formData.meta, responsavel: formData.responsavel,
+      nome: formData.nome, eixo: formData.eixo, area: formData.area, setores: formData.setores,
+      meta: formData.meta, responsavel: formData.responsavel,
       status: formData.status as 'nao_iniciada' | 'em_andamento' | 'concluida',
       percentual_progresso: formData.percentualProgresso, prazo: formData.prazo,
     };
