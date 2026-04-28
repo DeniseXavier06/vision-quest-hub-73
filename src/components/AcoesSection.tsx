@@ -447,28 +447,29 @@ const AcoesSection = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table className="min-w-full text-xs">
+          <div className="w-full">
+            <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
                   {orderedCols.map((col, idx) => (
                     <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
                       draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
                       onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                      className={`${widthFor(col.key)} px-2`}
                     >{col.label}</SortableTableHead>
                   ))}
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right px-2 w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((acao) => (
                   <TableRow key={acao.id}>
                     {orderedCols.map((col) => renderAcaoCell(col.key, acao))}
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(acao)} title="Editar"><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>
+                    <TableCell className="py-2 px-2 align-middle">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(acao)} title="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
