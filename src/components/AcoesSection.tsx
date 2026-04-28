@@ -269,6 +269,7 @@ const AcoesSection = () => {
   const acaoColumns: ColumnDef[] = [
     { key: 'nome', label: 'Ação' },
     { key: 'eixo', label: 'Dimensão' },
+    { key: 'setores', label: 'Setor/Coordenação' },
     { key: 'meta', label: 'Meta' },
     { key: 'responsavel', label: 'Responsável' },
     { key: 'percentualProgresso', label: 'Progresso' },
