@@ -353,8 +353,12 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Responsável *</Label>
-                <Input value={formData.responsavel} onChange={(e) => setFormData({ ...formData, responsavel: e.target.value })} readOnly={isReadOnly} placeholder="Nome do responsável" />
+                <Label>Responsáveis *</Label>
+                <ResponsaveisInput
+                  value={formData.responsavel}
+                  onChange={(v) => setFormData({ ...formData, responsavel: v })}
+                  readOnly={isReadOnly}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Prazo *</Label>
