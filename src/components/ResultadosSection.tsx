@@ -436,6 +436,44 @@ const ResultadosSection = () => {
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
+  const analiseCursos = useMemo(() => {
+    // Para cada curso, calcula média por área e gera feedback
+    type AreaAcc = { soma: number; n: number };
+    const cursoMap = new Map<string, Map<string, AreaAcc>>();
+    filtered.forEach((r) => {
+      if (!r.curso || !r.area) return;
+      const m = Number(r.media);
+      if (isNaN(m)) return;
+      const areas = cursoMap.get(r.curso) || new Map<string, AreaAcc>();
+      const acc = areas.get(r.area) || { soma: 0, n: 0 };
+      acc.soma += m; acc.n += 1;
+      areas.set(r.area, acc);
+      cursoMap.set(r.curso, areas);
+    });
+
+    return [...cursoMap.entries()]
+      .map(([curso, areas]) => {
+        const areaList = [...areas.entries()]
+          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
+          .sort((a, b) => b.media - a.media);
+        const mediaGeral = areaList.length > 0
+          ? areaList.reduce((s, a) => s + a.media, 0) / areaList.length
+          : 0;
+        const fortes = areaList.filter((a) => a.media >= 4).slice(0, 3);
+        const atencao = [...areaList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
+        const acoes: string[] = [];
+        if (atencao.length > 0) {
+          atencao.forEach((a) => acoes.push(`Elaborar plano de ação para "${a.nome}" (média ${a.media.toFixed(2)})`));
+        }
+        if (mediaGeral < 3.5) acoes.push('Realizar reunião com coordenação para revisão geral do curso');
+        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas');
+        if (fortes.length > 0 && acoes.length < 4) acoes.push(`Disseminar boas práticas das áreas de destaque`);
+        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
+        return { curso, mediaGeral, fortes, atencao, acoes };
+      })
+      .sort((a, b) => a.curso.localeCompare(b.curso, 'pt-BR'));
+  }, [filtered]);
+
   const pieConceito = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
@@ -783,25 +821,53 @@ const ResultadosSection = () => {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Média por Curso<ChartFontControl chartId="mediaCurso" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-heading flex items-center gap-2">
+              <BookOpen className="w-4 h-4 text-primary" />Análise por Curso
+            </CardTitle>
+          </CardHeader>
           <CardContent>
-            <div className="h-[350px]">
-              {chartByCurso.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartByCurso} margin={{ top: 20, right: 20, left: 0, bottom: 80 }}>
-                    <XAxis dataKey="name" tick={{ fontSize: fs('mediaCurso') - 1 }} angle={-35} textAnchor="end" interval={0} height={90} />
-                    <YAxis tick={{ fontSize: fs('mediaCurso') }} domain={[0, 5]} />
-                    <Tooltip contentStyle={{ borderRadius: '8px', fontSize: `${fs('mediaCurso')}px` }}
-                      formatter={(value: any) => [Number(value).toFixed(2), 'Média']}
-                      labelFormatter={(label: string, payload: any[]) => payload?.[0]?.payload?.fullName || label} />
-                    <Bar dataKey="media" cursor="pointer" onClick={handleCursoBarClick} label={renderBarLabel}>
-                      {chartByCurso.map((entry, idx) => (
-                        <Cell key={idx} fill={getMediaColor(entry.media)} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>}
+            <div className="h-[350px] overflow-y-auto pr-2 space-y-3">
+              {analiseCursos.length > 0 ? analiseCursos.map((c) => (
+                <div key={c.curso} className="border rounded-lg p-3 bg-muted/30">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="font-semibold text-sm">{c.curso}</h4>
+                    <Badge style={{ backgroundColor: getMediaColor(c.mediaGeral), color: 'white' }} className="text-xs">
+                      Média {c.mediaGeral.toFixed(2)}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      {c.fortes.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {c.fortes.map((a) => (
+                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Nenhuma área com desempenho destacado (≥ 4,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      {c.atencao.length > 0 ? (
+                        <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                          {c.atencao.map((a) => (
+                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                          ))}
+                        </ul>
+                      ) : <p className="text-muted-foreground italic">Sem áreas críticas (todas ≥ 3,00).</p>}
+                    </div>
+                    <div>
+                      <p className="font-medium text-primary mb-1">→ Ações propostas</p>
+                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
+                        {c.acoes.map((a, i) => (<li key={i}>{a}</li>))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              )) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">Sem dados</div>
+              )}
             </div>
           </CardContent>
         </Card>
