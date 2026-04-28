@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       acoes: {
         Row: {
+          area: string
           created_at: string
           eixo: string
           id: string
@@ -24,10 +25,12 @@ export type Database = {
           percentual_progresso: number
           prazo: string
           responsavel: string
+          setores: string
           status: Database["public"]["Enums"]["status_acao"]
           updated_at: string
         }
         Insert: {
+          area?: string
           created_at?: string
           eixo: string
           id?: string
@@ -36,10 +39,12 @@ export type Database = {
           percentual_progresso?: number
           prazo: string
           responsavel: string
+          setores?: string
           status?: Database["public"]["Enums"]["status_acao"]
           updated_at?: string
         }
         Update: {
+          area?: string
           created_at?: string
           eixo?: string
           id?: string
@@ -48,6 +53,7 @@ export type Database = {
           percentual_progresso?: number
           prazo?: string
           responsavel?: string
+          setores?: string
           status?: Database["public"]["Enums"]["status_acao"]
           updated_at?: string
         }
