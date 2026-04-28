@@ -1052,24 +1052,24 @@ const ResultadosSection = () => {
                   </div>
                   <div className="space-y-2 text-xs">
                     <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados (Excelente / Bom)</p>
                       {d.fortes.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {d.fortes.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctPositivo.toFixed(0)}% Exc+Bom</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Nenhuma área com desempenho destacado (≥ 4,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Nenhum item com ≥ 60% de avaliações Excelente/Bom.</p>}
                     </div>
                     <div>
-                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção (Atende Parcialmente)</p>
                       {d.atencao.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {d.atencao.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctAp.toFixed(0)}% AP{a.pctCritico >= 10 ? ` · ${a.pctCritico.toFixed(0)}% crítico` : ''}</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Sem áreas críticas (todas ≥ 3,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Sem itens com concentração relevante em "Atende Parcialmente".</p>}
                     </div>
                     <div>
                       <p className="font-medium text-primary mb-1">→ Ações propostas</p>
