@@ -436,119 +436,163 @@ const ResultadosSection = () => {
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
+  // ---- Análise baseada em CONCEITOS (Excelente, Bom, Atende Parcialmente) por questão ----
+  // Acumulador de conceitos por questão
+  type ConcAcc = {
+    exc: number; bom: number; ap: number; reg: number; mr: number;
+    somaMedia: number; nMedia: number;
+  };
+  const newConcAcc = (): ConcAcc => ({ exc: 0, bom: 0, ap: 0, reg: 0, mr: 0, somaMedia: 0, nMedia: 0 });
+  const addRowToAcc = (acc: ConcAcc, r: ResultadoRow) => {
+    acc.exc += Number(r.excelente) || 0;
+    acc.bom += Number(r.bom) || 0;
+    acc.ap += Number(r.atendeParcialmente) || 0;
+    acc.reg += Number(r.regular) || 0;
+    acc.mr += Number(r.muitoRuim) || 0;
+    const m = Number(r.media);
+    if (!isNaN(m) && m > 0) { acc.somaMedia += m; acc.nMedia += 1; }
+  };
+  const summarize = (acc: ConcAcc) => {
+    const total = acc.exc + acc.bom + acc.ap + acc.reg + acc.mr;
+    const pct = (n: number) => (total > 0 ? (n / total) * 100 : 0);
+    return {
+      total,
+      media: acc.nMedia > 0 ? acc.somaMedia / acc.nMedia : 0,
+      pctExc: pct(acc.exc), pctBom: pct(acc.bom), pctAp: pct(acc.ap),
+      pctReg: pct(acc.reg), pctMr: pct(acc.mr),
+      pctPositivo: pct(acc.exc + acc.bom),
+      pctCritico: pct(acc.reg + acc.mr),
+    };
+  };
+
+  // Para cada grupo (curso/dimensão/área), guardamos lista de questões com seus conceitos
+  type ItemQ = { nome: string } & ReturnType<typeof summarize>;
+
+  const buildAnalise = <K extends string>(
+    groupKey: (r: ResultadoRow) => string | null,
+    itemKey: (r: ResultadoRow) => string | null,
+    groupLabel: K,
+  ) => {
+    const map = new Map<string, Map<string, ConcAcc>>();
+    filtered.forEach((r) => {
+      const g = groupKey(r); const i = itemKey(r);
+      if (!g || !i) return;
+      const items = map.get(g) || new Map<string, ConcAcc>();
+      const acc = items.get(i) || newConcAcc();
+      addRowToAcc(acc, r);
+      items.set(i, acc);
+      map.set(g, items);
+    });
+
+    return [...map.entries()].map(([grupo, items]) => {
+      const list: ItemQ[] = [...items.entries()]
+        .map(([nome, acc]) => ({ nome, ...summarize(acc) }))
+        .filter((q) => q.total > 0);
+
+      // Agregado do grupo (soma todos os conceitos)
+      const groupAcc = newConcAcc();
+      [...items.values()].forEach((a) => {
+        groupAcc.exc += a.exc; groupAcc.bom += a.bom; groupAcc.ap += a.ap;
+        groupAcc.reg += a.reg; groupAcc.mr += a.mr;
+        groupAcc.somaMedia += a.somaMedia; groupAcc.nMedia += a.nMedia;
+      });
+      const resumo = summarize(groupAcc);
+
+      // Pontos de destaque: questões com alto % de Excelente+Bom (≥ 60%)
+      const fortes = [...list]
+        .filter((q) => q.pctPositivo >= 60)
+        .sort((a, b) => b.pctPositivo - a.pctPositivo)
+        .slice(0, 3);
+
+      // Pontos de atenção: questões com % significativo de Atende Parcialmente (≥ 25%)
+      // ou com % crítico (Reg+MR) ≥ 15%. Ordena pelas mais problemáticas.
+      const atencao = [...list]
+        .filter((q) => q.pctAp >= 25 || q.pctCritico >= 15)
+        .sort((a, b) => (b.pctAp + b.pctCritico) - (a.pctAp + a.pctCritico))
+        .slice(0, 3);
+
+      return { grupo, groupLabel, resumo, list, fortes, atencao };
+    });
+  };
+
+  const buildAcoes = (
+    fortes: ItemQ[],
+    atencao: ItemQ[],
+    resumo: ReturnType<typeof summarize>,
+    contexto: string,
+    truncar = 80,
+  ) => {
+    const acoes: string[] = [];
+    const trunc = (s: string) => (s.length > truncar ? s.substring(0, truncar) + '…' : s);
+    // Propostas para itens em "Atende Parcialmente"
+    atencao.forEach((q) => {
+      if (q.pctAp >= 25) {
+        acoes.push(
+          `Propor melhorias para "${trunc(q.nome)}" — ${q.pctAp.toFixed(0)}% atende parcialmente; revisar processos e capacitar equipe`,
+        );
+      } else if (q.pctCritico >= 15) {
+        acoes.push(
+          `Plano de ação imediato para "${trunc(q.nome)}" — ${q.pctCritico.toFixed(0)}% avaliações negativas (Regular/Muito Ruim)`,
+        );
+      }
+    });
+    // Manutenção / disseminação para itens fortes
+    if (fortes.length > 0) {
+      const nomes = fortes.map((f) => `"${trunc(f.nome)}"`).slice(0, 2).join(', ');
+      acoes.push(`Manter e disseminar boas práticas dos destaques (Excelente/Bom): ${nomes}`);
+    }
+    // Recomendação geral pelo perfil de conceitos
+    if (resumo.pctPositivo >= 70) {
+      acoes.push(`Reforçar a cultura de excelência em ${contexto} (${resumo.pctPositivo.toFixed(0)}% Excelente+Bom)`);
+    } else if (resumo.pctAp >= 30) {
+      acoes.push(`Estabelecer plano de evolução em ${contexto} — ${resumo.pctAp.toFixed(0)}% das respostas estão em "Atende Parcialmente"`);
+    } else if (resumo.pctCritico >= 20) {
+      acoes.push(`Revisão estratégica em ${contexto} — ${resumo.pctCritico.toFixed(0)}% de avaliações críticas`);
+    }
+    if (acoes.length === 0) acoes.push('Manter o padrão atual e monitorar indicadores periodicamente');
+    return acoes;
+  };
+
   const analiseCursos = useMemo(() => {
-    // Para cada curso, calcula média por área e gera feedback
-    type AreaAcc = { soma: number; n: number };
-    const cursoMap = new Map<string, Map<string, AreaAcc>>();
-    filtered.forEach((r) => {
-      if (!r.curso || !r.area) return;
-      const m = Number(r.media);
-      if (isNaN(m)) return;
-      const areas = cursoMap.get(r.curso) || new Map<string, AreaAcc>();
-      const acc = areas.get(r.area) || { soma: 0, n: 0 };
-      acc.soma += m; acc.n += 1;
-      areas.set(r.area, acc);
-      cursoMap.set(r.curso, areas);
-    });
-
-    return [...cursoMap.entries()]
-      .map(([curso, areas]) => {
-        const areaList = [...areas.entries()]
-          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
-          .sort((a, b) => b.media - a.media);
-        const mediaGeral = areaList.length > 0
-          ? areaList.reduce((s, a) => s + a.media, 0) / areaList.length
-          : 0;
-        const fortes = areaList.filter((a) => a.media >= 4).slice(0, 3);
-        const atencao = [...areaList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
-        const acoes: string[] = [];
-        if (atencao.length > 0) {
-          atencao.forEach((a) => acoes.push(`Elaborar plano de ação para "${a.nome}" (média ${a.media.toFixed(2)})`));
-        }
-        if (mediaGeral < 3.5) acoes.push('Realizar reunião com coordenação para revisão geral do curso');
-        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas');
-        if (fortes.length > 0 && acoes.length < 4) acoes.push(`Disseminar boas práticas das áreas de destaque`);
-        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
-        return { curso, mediaGeral, fortes, atencao, acoes };
-      })
+    return buildAnalise((r) => r.curso, (r) => r.textoQuestao, 'curso')
+      .map(({ grupo, resumo, fortes, atencao }) => ({
+        curso: grupo,
+        mediaGeral: resumo.media,
+        resumo,
+        fortes,
+        atencao,
+        acoes: buildAcoes(fortes, atencao, resumo, `no curso "${grupo}"`),
+      }))
       .sort((a, b) => a.curso.localeCompare(b.curso, 'pt-BR'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered]);
 
-  // Análise por Dimensão: agrupa por dimensão e dentro dela analisa as áreas
   const analiseDimensoes = useMemo(() => {
-    type AreaAcc = { soma: number; n: number };
-    const dimMap = new Map<string, Map<string, AreaAcc>>();
-    filtered.forEach((r) => {
-      if (!r.dimensao || !r.area) return;
-      const m = Number(r.media);
-      if (isNaN(m) || m <= 0) return;
-      const areas = dimMap.get(r.dimensao) || new Map<string, AreaAcc>();
-      const acc = areas.get(r.area) || { soma: 0, n: 0 };
-      acc.soma += m; acc.n += 1;
-      areas.set(r.area, acc);
-      dimMap.set(r.dimensao, areas);
-    });
-    return [...dimMap.entries()]
-      .map(([dimensao, areas]) => {
-        const areaList = [...areas.entries()]
-          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
-          .sort((a, b) => b.media - a.media);
-        const mediaGeral = areaList.length > 0
-          ? areaList.reduce((s, a) => s + a.media, 0) / areaList.length
-          : 0;
-        const fortes = areaList.filter((a) => a.media >= 4).slice(0, 3);
-        const atencao = [...areaList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
-        const acoes: string[] = [];
-        if (atencao.length > 0) {
-          atencao.forEach((a) => acoes.push(`Elaborar plano de ação para a área "${a.nome}" (média ${a.media.toFixed(2)})`));
-        }
-        if (mediaGeral < 3.5) acoes.push(`Revisar estratégias da dimensão "${dimensao}" com a coordenação`);
-        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas da dimensão');
-        if (fortes.length > 0 && acoes.length < 4) acoes.push('Disseminar boas práticas das áreas de destaque desta dimensão');
-        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
-        return { dimensao, mediaGeral, fortes, atencao, acoes };
-      })
+    return buildAnalise((r) => r.dimensao, (r) => r.textoQuestao, 'dimensao')
+      .map(({ grupo, resumo, fortes, atencao }) => ({
+        dimensao: grupo,
+        mediaGeral: resumo.media,
+        resumo,
+        fortes,
+        atencao,
+        acoes: buildAcoes(fortes, atencao, resumo, `na dimensão "${grupo}"`),
+      }))
       .sort((a, b) => a.dimensao.localeCompare(b.dimensao, 'pt-BR'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered]);
 
-  // Análise por Área: agrupa por área e analisa as questões
   const analiseAreas = useMemo(() => {
-    type QAcc = { soma: number; n: number };
-    const areaMap = new Map<string, Map<string, QAcc>>();
-    filtered.forEach((r) => {
-      if (!r.area || !r.textoQuestao) return;
-      const m = Number(r.media);
-      if (isNaN(m) || m <= 0) return;
-      const qs = areaMap.get(r.area) || new Map<string, QAcc>();
-      const acc = qs.get(r.textoQuestao) || { soma: 0, n: 0 };
-      acc.soma += m; acc.n += 1;
-      qs.set(r.textoQuestao, acc);
-      areaMap.set(r.area, qs);
-    });
-    return [...areaMap.entries()]
-      .map(([area, qs]) => {
-        const qList = [...qs.entries()]
-          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
-          .sort((a, b) => b.media - a.media);
-        const mediaGeral = qList.length > 0
-          ? qList.reduce((s, a) => s + a.media, 0) / qList.length
-          : 0;
-        const fortes = qList.filter((a) => a.media >= 4).slice(0, 3);
-        const atencao = [...qList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
-        const acoes: string[] = [];
-        if (atencao.length > 0) {
-          atencao.forEach((a) => {
-            const trecho = a.nome.length > 80 ? a.nome.substring(0, 80) + '…' : a.nome;
-            acoes.push(`Elaborar plano de ação para o item "${trecho}" (média ${a.media.toFixed(2)})`);
-          });
-        }
-        if (mediaGeral < 3.5) acoes.push(`Revisar processos e práticas da área "${area}"`);
-        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas da área');
-        if (fortes.length > 0 && acoes.length < 4) acoes.push('Disseminar boas práticas dos itens de destaque desta área');
-        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
-        return { area, mediaGeral, fortes, atencao, acoes };
-      })
+    return buildAnalise((r) => r.area, (r) => r.textoQuestao, 'area')
+      .map(({ grupo, resumo, fortes, atencao }) => ({
+        area: grupo,
+        mediaGeral: resumo.media,
+        resumo,
+        fortes,
+        atencao,
+        acoes: buildAcoes(fortes, atencao, resumo, `na área "${grupo}"`, 90),
+      }))
       .sort((a, b) => a.area.localeCompare(b.area, 'pt-BR'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered]);
 
   const pieConceito = useMemo(() => {
@@ -915,24 +959,24 @@ const ResultadosSection = () => {
                   </div>
                   <div className="space-y-2 text-xs">
                     <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados (Excelente / Bom)</p>
                       {c.fortes.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {c.fortes.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctPositivo.toFixed(0)}% Exc+Bom</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Nenhuma área com desempenho destacado (≥ 4,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Nenhum item com ≥ 60% de avaliações Excelente/Bom.</p>}
                     </div>
                     <div>
-                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção (Atende Parcialmente)</p>
                       {c.atencao.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {c.atencao.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctAp.toFixed(0)}% AP{a.pctCritico >= 10 ? ` · ${a.pctCritico.toFixed(0)}% crítico` : ''}</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Sem áreas críticas (todas ≥ 3,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Sem itens com concentração relevante em "Atende Parcialmente".</p>}
                     </div>
                     <div>
                       <p className="font-medium text-primary mb-1">→ Ações propostas</p>
@@ -1008,24 +1052,24 @@ const ResultadosSection = () => {
                   </div>
                   <div className="space-y-2 text-xs">
                     <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados (Excelente / Bom)</p>
                       {d.fortes.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {d.fortes.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctPositivo.toFixed(0)}% Exc+Bom</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Nenhuma área com desempenho destacado (≥ 4,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Nenhum item com ≥ 60% de avaliações Excelente/Bom.</p>}
                     </div>
                     <div>
-                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção (Atende Parcialmente)</p>
                       {d.atencao.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {d.atencao.map((a) => (
-                            <li key={a.nome}><span className="text-foreground">{a.nome}</span> — {a.media.toFixed(2)}</li>
+                            <li key={a.nome}><span className="text-foreground">{a.nome.length > 90 ? a.nome.substring(0, 90) + '…' : a.nome}</span> — {a.pctAp.toFixed(0)}% AP{a.pctCritico >= 10 ? ` · ${a.pctCritico.toFixed(0)}% crítico` : ''}</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Sem áreas críticas (todas ≥ 3,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Sem itens com concentração relevante em "Atende Parcialmente".</p>}
                     </div>
                     <div>
                       <p className="font-medium text-primary mb-1">→ Ações propostas</p>
@@ -1059,24 +1103,24 @@ const ResultadosSection = () => {
                   </div>
                   <div className="space-y-2 text-xs">
                     <div>
-                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados</p>
+                      <p className="font-medium text-emerald-700 dark:text-emerald-400 mb-1">✓ Principais pontos identificados (Excelente / Bom)</p>
                       {a.fortes.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {a.fortes.map((q) => (
-                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.pctPositivo.toFixed(0)}% Exc+Bom</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Nenhum item com desempenho destacado (≥ 4,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Nenhum item com ≥ 60% de avaliações Excelente/Bom.</p>}
                     </div>
                     <div>
-                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção</p>
+                      <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">⚠ Pontos de atenção (Atende Parcialmente)</p>
                       {a.atencao.length > 0 ? (
                         <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
                           {a.atencao.map((q) => (
-                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.media.toFixed(2)}</li>
+                            <li key={q.nome}><span className="text-foreground">{q.nome.length > 90 ? q.nome.substring(0, 90) + '…' : q.nome}</span> — {q.pctAp.toFixed(0)}% AP{q.pctCritico >= 10 ? ` · ${q.pctCritico.toFixed(0)}% crítico` : ''}</li>
                           ))}
                         </ul>
-                      ) : <p className="text-muted-foreground italic">Sem itens críticos (todos ≥ 3,00).</p>}
+                      ) : <p className="text-muted-foreground italic">Sem itens com concentração relevante em "Atende Parcialmente".</p>}
                     </div>
                     <div>
                       <p className="font-medium text-primary mb-1">→ Ações propostas</p>
