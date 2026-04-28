@@ -106,25 +106,30 @@ function calcDias(prazo: string) {
   return Math.ceil((new Date(prazo).getTime() - Date.now()) / 86400000);
 }
 
-function ResponsaveisInput({ value, onChange, readOnly }: { value: string; onChange: (v: string) => void; readOnly?: boolean }) {
-  const [input, setInput] = useState('');
+function MultiSelectCombo({
+  value, onChange, options, placeholder, readOnly, allowCreate,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+  readOnly?: boolean;
+  allowCreate?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
   const list = value.split(',').map((r) => r.trim()).filter(Boolean);
-  const add = (raw: string) => {
-    const parts = raw.split(',').map((r) => r.trim()).filter(Boolean);
-    const next = [...list];
-    for (const p of parts) if (!next.includes(p)) next.push(p);
-    onChange(next.join(', '));
-    setInput('');
+  const setList = (next: string[]) => {
+    const dedup: string[] = [];
+    for (const n of next) if (n && !dedup.includes(n)) dedup.push(n);
+    onChange(dedup.join(', '));
   };
-  const remove = (name: string) => onChange(list.filter((r) => r !== name).join(', '));
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' || e.key === ',') {
-      e.preventDefault();
-      if (input.trim()) add(input);
-    } else if (e.key === 'Backspace' && !input && list.length > 0) {
-      remove(list[list.length - 1]);
-    }
+  const toggle = (name: string) => {
+    if (list.includes(name)) setList(list.filter((r) => r !== name));
+    else setList([...list, name]);
   };
+  const remove = (name: string) => setList(list.filter((r) => r !== name));
+
   if (readOnly) {
     return (
       <div className="flex flex-wrap gap-1.5 min-h-9 px-3 py-2 border rounded-md bg-muted/30">
@@ -133,27 +138,69 @@ function ResponsaveisInput({ value, onChange, readOnly }: { value: string; onCha
       </div>
     );
   }
+
+  const exists = options.some((o) => o.label.toLowerCase() === search.trim().toLowerCase());
+
   return (
-    <div className="flex flex-wrap gap-1.5 min-h-9 px-2 py-1.5 border rounded-md focus-within:ring-2 focus-within:ring-ring">
-      {list.map((r) => (
-        <Badge key={r} variant="secondary" className="text-xs gap-1 pr-1">
-          {r}
-          <button type="button" onClick={() => remove(r)} className="hover:bg-muted-foreground/20 rounded-sm">
-            <X className="w-3 h-3" />
+    <Popover open={open} onOpenChange={setOpen}>
+      <div className="flex flex-wrap gap-1.5 min-h-9 px-2 py-1.5 border rounded-md">
+        {list.map((r) => (
+          <Badge key={r} variant="secondary" className="text-xs gap-1 pr-1">
+            {r}
+            <button type="button" onClick={() => remove(r)} className="hover:bg-muted-foreground/20 rounded-sm">
+              <X className="w-3 h-3" />
+            </button>
+          </Badge>
+        ))}
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex-1 min-w-[120px] text-left text-sm text-muted-foreground inline-flex items-center justify-between gap-2 px-1"
+          >
+            <span className="truncate">{list.length === 0 ? (placeholder || 'Selecione...') : 'Adicionar...'}</span>
+            <ChevronsUpDown className="w-3.5 h-3.5 opacity-50 shrink-0" />
           </button>
-        </Badge>
-      ))}
-      <input
-        className="flex-1 min-w-[120px] bg-transparent outline-none text-sm"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={onKeyDown}
-        onBlur={() => input.trim() && add(input)}
-        placeholder={list.length === 0 ? 'Digite um nome e pressione Enter' : ''}
-      />
-    </div>
+        </PopoverTrigger>
+      </div>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Pesquisar..." value={search} onValueChange={setSearch} />
+          <CommandList>
+            <CommandEmpty>
+              {allowCreate && search.trim() ? (
+                <button
+                  type="button"
+                  className="w-full text-left text-sm px-2 py-1.5 hover:bg-accent rounded"
+                  onClick={() => { toggle(search.trim()); setSearch(''); }}
+                >
+                  + Adicionar "{search.trim()}"
+                </button>
+              ) : 'Nenhum resultado.'}
+            </CommandEmpty>
+            <CommandGroup>
+              {options.map((opt) => {
+                const checked = list.includes(opt.label);
+                return (
+                  <CommandItem key={opt.value} value={opt.label} onSelect={() => toggle(opt.label)}>
+                    <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                    {opt.label}
+                  </CommandItem>
+                );
+              })}
+              {allowCreate && search.trim() && !exists && (
+                <CommandItem value={`__add_${search}`} onSelect={() => { toggle(search.trim()); setSearch(''); }}>
+                  <Check className="mr-2 h-4 w-4 opacity-0" />
+                  + Adicionar "{search.trim()}"
+                </CommandItem>
+              )}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
+
 
 const AcoesSection = () => {
   const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
