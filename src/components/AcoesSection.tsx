@@ -390,7 +390,7 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Eixo *</Label>
+                <Label>Dimensão *</Label>
                 {isReadOnly ? <Input value={formData.eixo} readOnly /> : (
                   <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosSelectOptions} placeholder="Selecione" />
                 )}
