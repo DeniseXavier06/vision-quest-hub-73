@@ -278,19 +278,35 @@ const AcoesSection = () => {
   ];
   const { columns: orderedCols, dragIndex, overIndex, onDragStart, onDragOver, onDragEnd } = useColumnOrder(acaoColumns, 'acoes');
 
-  const renderAcaoCell = (key: string, acao: AcaoLocal) => {
+  const widthFor = (key: string) => {
     switch (key) {
-      case 'nome': return <TableCell key={key} className="font-medium text-xs whitespace-normal break-words">{acao.nome}</TableCell>;
-      case 'eixo': return <TableCell key={key} className="text-xs text-muted-foreground whitespace-normal break-words">{acao.eixo}</TableCell>;
-      case 'setores': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.setores || '—'}</TableCell>;
-      case 'meta': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.meta || '—'}</TableCell>;
-      case 'responsavel': return <TableCell key={key} className="text-xs whitespace-normal break-words">{acao.responsavel}</TableCell>;
-      case 'percentualProgresso': return <TableCell key={key}><div className="flex items-center gap-1.5 min-w-[80px]"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
-      case 'prazo': return <TableCell key={key} className="text-xs whitespace-nowrap">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
-      case 'status': return <TableCell key={key}><Badge className={`${statusColors[acao.status]} text-[11px] px-1.5 py-0.5`} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
+      case 'nome': return 'w-[22%]';
+      case 'eixo': return 'w-[12%]';
+      case 'setores': return 'w-[12%]';
+      case 'meta': return 'w-[14%]';
+      case 'responsavel': return 'w-[14%]';
+      case 'percentualProgresso': return 'w-[10%]';
+      case 'prazo': return 'w-[8%]';
+      case 'status': return 'w-[8%]';
+      default: return '';
+    }
+  };
+
+  const renderAcaoCell = (key: string, acao: AcaoLocal) => {
+    const truncCls = 'text-xs align-top py-2 px-2 truncate max-w-0';
+    switch (key) {
+      case 'nome': return <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>{acao.nome}</TableCell>;
+      case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
+      case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
+      case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
+      case 'responsavel': return <TableCell key={key} className={truncCls} title={acao.responsavel}>{acao.responsavel}</TableCell>;
+      case 'percentualProgresso': return <TableCell key={key} className="py-2 px-2 align-middle"><div className="flex items-center gap-1.5"><Progress value={acao.percentualProgresso} className="h-1.5 flex-1" /><span className="text-[11px] text-muted-foreground w-7">{acao.percentualProgresso}%</span></div></TableCell>;
+      case 'prazo': return <TableCell key={key} className="text-xs whitespace-nowrap py-2 px-2 align-middle">{new Date(acao.prazo).toLocaleDateString('pt-BR')}</TableCell>;
+      case 'status': return <TableCell key={key} className="py-2 px-2 align-middle"><Badge className={`${statusColors[acao.status]} text-[11px] px-1.5 py-0.5`} variant="secondary">{statusLabels[acao.status]}</Badge></TableCell>;
       default: return null;
     }
   };
+
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
@@ -431,28 +447,29 @@ const AcoesSection = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table className="min-w-full text-xs">
+          <div className="w-full">
+            <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
                   {orderedCols.map((col, idx) => (
                     <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
                       draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
                       onDragStartCol={() => onDragStart(idx)} onDragOverCol={() => onDragOver(idx)} onDragEndCol={onDragEnd}
+                      className={`${widthFor(col.key)} px-2`}
                     >{col.label}</SortableTableHead>
                   ))}
-                  <TableHead className="text-right">Ações</TableHead>
+                  <TableHead className="text-right px-2 w-[100px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((acao) => (
                   <TableRow key={acao.id}>
                     {orderedCols.map((col) => renderAcaoCell(col.key, acao))}
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(acao)} title="Editar"><Pencil className="w-4 h-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir"><Trash2 className="w-4 h-4" /></Button>
+                    <TableCell className="py-2 px-2 align-middle">
+                      <div className="flex items-center justify-end gap-0.5">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openView(acao)} title="Visualizar"><Eye className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(acao)} title="Editar"><Pencil className="w-3.5 h-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(acao.id)} title="Excluir"><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
