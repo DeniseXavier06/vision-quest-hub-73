@@ -482,16 +482,35 @@ const AcoesSection = () => {
                 )}
               </div>
               <div className="space-y-2">
-                <Label>Meta</Label>
-                <Input value={formData.meta} onChange={(e) => setFormData({ ...formData, meta: e.target.value })} readOnly={isReadOnly} placeholder="Meta associada" />
+                <Label>Área</Label>
+                {isReadOnly ? <Input value={formData.area} readOnly /> : (
+                  <SearchableSelect value={formData.area} onValueChange={(v) => setFormData({ ...formData, area: v })} options={areasSelectOptions} placeholder="Selecione a área" />
+                )}
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Meta</Label>
+              <Input value={formData.meta} onChange={(e) => setFormData({ ...formData, meta: e.target.value })} readOnly={isReadOnly} placeholder="Meta associada" />
+            </div>
+            <div className="space-y-2">
+              <Label>Responsáveis *</Label>
+              <MultiSelectCombo
+                value={formData.responsavel}
+                onChange={(v) => setFormData({ ...formData, responsavel: v })}
+                options={usuariosOptions}
+                placeholder="Selecione um ou mais responsáveis"
+                readOnly={isReadOnly}
+                allowCreate
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Responsáveis *</Label>
-                <ResponsaveisInput
-                  value={formData.responsavel}
-                  onChange={(v) => setFormData({ ...formData, responsavel: v })}
+                <Label>Setores</Label>
+                <MultiSelectCombo
+                  value={formData.setores}
+                  onChange={(v) => setFormData({ ...formData, setores: v })}
+                  options={setoresOptions}
+                  placeholder="Selecione um ou mais setores"
                   readOnly={isReadOnly}
                 />
               </div>
