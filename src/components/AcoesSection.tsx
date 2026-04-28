@@ -209,6 +209,7 @@ const AcoesSection = () => {
   const [filterResponsavel, setFilterResponsavel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAcao, setFilterAcao] = useState('all');
+  const [filterSetores, setFilterSetores] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
@@ -251,12 +252,17 @@ const AcoesSection = () => {
   const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
+  const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
 
   const filtered = acoes.filter((a) => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
+    if (filterSetores.length > 0) {
+      const acaoSetores = a.setores.split(',').map((s) => s.trim()).filter(Boolean);
+      if (!filterSetores.some((s) => acaoSetores.includes(s))) return false;
+    }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       if (!a.nome.toLowerCase().includes(term) && !a.responsavel.toLowerCase().includes(term) && !a.eixo.toLowerCase().includes(term) && !a.meta.toLowerCase().includes(term)) return false;
@@ -437,6 +443,51 @@ const AcoesSection = () => {
         <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
         <SearchableSelect value={filterResponsavel} onValueChange={setFilterResponsavel} options={filterResponsavelOptions} placeholder="Filtrar por responsável" className="w-[220px]" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[240px] justify-between font-normal">
+              <span className="truncate">
+                {filterSetores.length === 0
+                  ? 'Filtrar por setor/coordenação'
+                  : filterSetores.length === 1
+                    ? filterSetores[0]
+                    : `${filterSetores.length} setores selecionados`}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Pesquisar setor..." />
+              <CommandList>
+                <CommandEmpty>Nenhum setor encontrado.</CommandEmpty>
+                {filterSetores.length > 0 && (
+                  <CommandGroup>
+                    <CommandItem value="__clear__" onSelect={() => setFilterSetores([])}>
+                      <X className="mr-2 h-4 w-4" />
+                      Limpar seleção
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup>
+                  {setoresDisponiveis.map((s) => {
+                    const checked = filterSetores.includes(s);
+                    return (
+                      <CommandItem
+                        key={s}
+                        value={s}
+                        onSelect={() => setFilterSetores(checked ? filterSetores.filter((x) => x !== s) : [...filterSetores, s])}
+                      >
+                        <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                        {s}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Card>
