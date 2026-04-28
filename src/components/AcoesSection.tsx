@@ -216,15 +216,31 @@ const AcoesSection = () => {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
 
+  const [usuariosOptions, setUsuariosOptions] = useState<{ value: string; label: string }[]>([]);
+  const [setoresOptions, setSetoresOptions] = useState<{ value: string; label: string }[]>([]);
+
   const fetchAcoes = useCallback(async () => {
     const { data, error } = await supabase.from('acoes').select('*').order('prazo', { ascending: true });
     if (error) { toast.error('Erro ao carregar ações'); return; }
-    setAcoes((data || []).map((a) => ({
-      id: a.id, nome: a.nome, eixo: a.eixo, meta: a.meta || '', responsavel: a.responsavel,
+    setAcoes((data || []).map((a: any) => ({
+      id: a.id, nome: a.nome, eixo: a.eixo, area: a.area || '', setores: a.setores || '',
+      meta: a.meta || '', responsavel: a.responsavel,
       status: a.status, percentualProgresso: a.percentual_progresso, prazo: a.prazo,
       diasRestantes: calcDias(a.prazo),
     })));
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: us }, { data: st }] = await Promise.all([
+        supabase.from('usuarios_cpa').select('nome').eq('ativo', true).order('nome'),
+        supabase.from('setores').select('nome').eq('ativo', true).order('nome'),
+      ]);
+      setUsuariosOptions((us || []).map((u: any) => ({ value: u.nome, label: u.nome })));
+      setSetoresOptions((st || []).map((s: any) => ({ value: s.nome, label: s.nome })));
+    })();
+  }, []);
+
 
   useEffect(() => { fetchAcoes(); }, [fetchAcoes]);
 
