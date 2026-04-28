@@ -436,6 +436,44 @@ const ResultadosSection = () => {
       .sort((a, b) => a.fullName.localeCompare(b.fullName, 'pt-BR'));
   }, [filtered]);
 
+  const analiseCursos = useMemo(() => {
+    // Para cada curso, calcula média por área e gera feedback
+    type AreaAcc = { soma: number; n: number };
+    const cursoMap = new Map<string, Map<string, AreaAcc>>();
+    filtered.forEach((r) => {
+      if (!r.curso || !r.area) return;
+      const m = Number(r.media);
+      if (isNaN(m)) return;
+      const areas = cursoMap.get(r.curso) || new Map<string, AreaAcc>();
+      const acc = areas.get(r.area) || { soma: 0, n: 0 };
+      acc.soma += m; acc.n += 1;
+      areas.set(r.area, acc);
+      cursoMap.set(r.curso, areas);
+    });
+
+    return [...cursoMap.entries()]
+      .map(([curso, areas]) => {
+        const areaList = [...areas.entries()]
+          .map(([nome, a]) => ({ nome, media: a.n > 0 ? a.soma / a.n : 0 }))
+          .sort((a, b) => b.media - a.media);
+        const mediaGeral = areaList.length > 0
+          ? areaList.reduce((s, a) => s + a.media, 0) / areaList.length
+          : 0;
+        const fortes = areaList.filter((a) => a.media >= 4).slice(0, 3);
+        const atencao = [...areaList].filter((a) => a.media < 3).sort((a, b) => a.media - b.media).slice(0, 3);
+        const acoes: string[] = [];
+        if (atencao.length > 0) {
+          atencao.forEach((a) => acoes.push(`Elaborar plano de ação para "${a.nome}" (média ${a.media.toFixed(2)})`));
+        }
+        if (mediaGeral < 3.5) acoes.push('Realizar reunião com coordenação para revisão geral do curso');
+        if (mediaGeral >= 3.5 && mediaGeral < 4) acoes.push('Monitorar indicadores e reforçar boas práticas');
+        if (fortes.length > 0 && acoes.length < 4) acoes.push(`Disseminar boas práticas das áreas de destaque`);
+        if (acoes.length === 0) acoes.push('Manter o padrão de qualidade e aprofundar boas práticas');
+        return { curso, mediaGeral, fortes, atencao, acoes };
+      })
+      .sort((a, b) => a.curso.localeCompare(b.curso, 'pt-BR'));
+  }, [filtered]);
+
   const pieConceito = useMemo(() => {
     const map = new Map<string, number>();
     filtered.forEach((r) => { if (r.conceito) map.set(r.conceito, (map.get(r.conceito) || 0) + 1); });
