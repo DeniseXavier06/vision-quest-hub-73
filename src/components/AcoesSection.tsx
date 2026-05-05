@@ -493,6 +493,51 @@ const AcoesSection = () => {
             </Command>
           </PopoverContent>
         </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[220px] justify-between font-normal">
+              <span className="truncate">
+                {filterAreas.length === 0
+                  ? 'Filtrar por área'
+                  : filterAreas.length === 1
+                    ? filterAreas[0]
+                    : `${filterAreas.length} áreas selecionadas`}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Pesquisar área..." />
+              <CommandList>
+                <CommandEmpty>Nenhuma área encontrada.</CommandEmpty>
+                {filterAreas.length > 0 && (
+                  <CommandGroup>
+                    <CommandItem value="__clear__" onSelect={() => setFilterAreas([])}>
+                      <X className="mr-2 h-4 w-4" />
+                      Limpar seleção
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup>
+                  {areasDisponiveis.map((a) => {
+                    const checked = filterAreas.includes(a);
+                    return (
+                      <CommandItem
+                        key={a}
+                        value={a}
+                        onSelect={() => setFilterAreas(checked ? filterAreas.filter((x) => x !== a) : [...filterAreas, a])}
+                      >
+                        <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                        {a}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       <Card>
