@@ -210,6 +210,7 @@ const AcoesSection = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAcao, setFilterAcao] = useState('all');
   const [filterSetores, setFilterSetores] = useState<string[]>([]);
+  const [filterAreas, setFilterAreas] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
@@ -253,6 +254,7 @@ const AcoesSection = () => {
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
+  const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
   const filtered = acoes.filter((a) => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
@@ -262,6 +264,9 @@ const AcoesSection = () => {
     if (filterSetores.length > 0) {
       const acaoSetores = a.setores.split(',').map((s) => s.trim()).filter(Boolean);
       if (!filterSetores.some((s) => acaoSetores.includes(s))) return false;
+    }
+    if (filterAreas.length > 0) {
+      if (!filterAreas.includes((a.area || '').trim())) return false;
     }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -480,6 +485,51 @@ const AcoesSection = () => {
                       >
                         <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
                         {s}
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-[220px] justify-between font-normal">
+              <span className="truncate">
+                {filterAreas.length === 0
+                  ? 'Filtrar por área'
+                  : filterAreas.length === 1
+                    ? filterAreas[0]
+                    : `${filterAreas.length} áreas selecionadas`}
+              </span>
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[280px] p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Pesquisar área..." />
+              <CommandList>
+                <CommandEmpty>Nenhuma área encontrada.</CommandEmpty>
+                {filterAreas.length > 0 && (
+                  <CommandGroup>
+                    <CommandItem value="__clear__" onSelect={() => setFilterAreas([])}>
+                      <X className="mr-2 h-4 w-4" />
+                      Limpar seleção
+                    </CommandItem>
+                  </CommandGroup>
+                )}
+                <CommandGroup>
+                  {areasDisponiveis.map((a) => {
+                    const checked = filterAreas.includes(a);
+                    return (
+                      <CommandItem
+                        key={a}
+                        value={a}
+                        onSelect={() => setFilterAreas(checked ? filterAreas.filter((x) => x !== a) : [...filterAreas, a])}
+                      >
+                        <Check className={`mr-2 h-4 w-4 ${checked ? 'opacity-100' : 'opacity-0'}`} />
+                        {a}
                       </CommandItem>
                     );
                   })}
