@@ -254,6 +254,7 @@ const AcoesSection = () => {
   const nomesAcoes = [...new Set(acoes.map((a) => a.nome))].sort();
   const filterAcaoOptions = [{ value: 'all', label: 'Todas as ações' }, ...nomesAcoes.map((n) => ({ value: n, label: n.length > 60 ? n.substring(0, 57) + '...' : n }))];
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
+  const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
   const filtered = acoes.filter((a) => {
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
@@ -263,6 +264,9 @@ const AcoesSection = () => {
     if (filterSetores.length > 0) {
       const acaoSetores = a.setores.split(',').map((s) => s.trim()).filter(Boolean);
       if (!filterSetores.some((s) => acaoSetores.includes(s))) return false;
+    }
+    if (filterAreas.length > 0) {
+      if (!filterAreas.includes((a.area || '').trim())) return false;
     }
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
