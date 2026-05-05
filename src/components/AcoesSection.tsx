@@ -72,6 +72,7 @@ const areasOptions = [
   'Organização didático-pedagógica',
   'Estratégias de Ensino',
   'O envolvimento do Aluno',
+  'Polo',
 ];
 const areasSelectOptions = areasOptions.map((a) => ({ value: a, label: a }));
 
