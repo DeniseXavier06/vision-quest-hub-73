@@ -56,6 +56,7 @@ const eixosOptions = [
   'Infraestrutura', 'Valorização Profissional', 'Imagem Institucional',
   'Ambiente Virtual Aprendizagem', 'Avaliando a Infraestrutura', 'Avaliando a Valorização Profissional',
   'Avaliando a Comunicação', 'Avaliando os Serviços', 'Avaliando a Gestão',
+  'Desenvolvimento Institucional',
 ];
 const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
 
