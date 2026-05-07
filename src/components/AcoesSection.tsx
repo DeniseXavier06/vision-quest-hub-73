@@ -334,7 +334,7 @@ const AcoesSection = () => {
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="truncate">{acao.nome}</span>
             {isDuplicate(acao) && (
-              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com este mesmo título">
+              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com a mesma Ação e Meta">
                 <Copy className="w-2.5 h-2.5" />
                 Repetida
               </Badge>
