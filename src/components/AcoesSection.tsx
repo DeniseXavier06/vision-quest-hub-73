@@ -259,13 +259,14 @@ const AcoesSection = () => {
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
   const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
-  // Detecta ações repetidas pela combinação de Ação + Meta (ignora caixa e espaços extras)
+  // Detecta ações repetidas pela combinação de Ação + Meta + Dimensão (ignora caixa e espaços extras)
   const normalizeText = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
   const dupKey = (a: AcaoLocal) => {
     const n = normalizeText(a.nome);
     const m = normalizeText(a.meta);
-    if (!n || !m) return '';
-    return `${n}||${m}`;
+    const e = normalizeText(a.eixo);
+    if (!n || !m || !e) return '';
+    return `${n}||${m}||${e}`;
   };
   const dupCounts = acoes.reduce<Record<string, number>>((acc, a) => {
     const k = dupKey(a);
