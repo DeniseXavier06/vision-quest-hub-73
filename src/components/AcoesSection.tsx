@@ -259,7 +259,18 @@ const AcoesSection = () => {
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
   const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
+  // Detecta ações repetidas pelo título (ignora caixa e espaços extras)
+  const normalizeNome = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const nomeCounts = acoes.reduce<Record<string, number>>((acc, a) => {
+    const k = normalizeNome(a.nome);
+    if (k) acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+  const isDuplicate = (a: AcaoLocal) => (nomeCounts[normalizeNome(a.nome)] || 0) > 1;
+  const duplicatesCount = acoes.filter(isDuplicate).length;
+
   const filtered = acoes.filter((a) => {
+    if (showOnlyDuplicates && !isDuplicate(a)) return false;
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
