@@ -21,7 +21,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X } from 'lucide-react';
+import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X, Copy } from 'lucide-react';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
@@ -213,6 +213,7 @@ const AcoesSection = () => {
   const [filterAcao, setFilterAcao] = useState('all');
   const [filterSetores, setFilterSetores] = useState<string[]>([]);
   const [filterAreas, setFilterAreas] = useState<string[]>([]);
+  const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
@@ -258,7 +259,18 @@ const AcoesSection = () => {
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
   const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
+  // Detecta ações repetidas pelo título (ignora caixa e espaços extras)
+  const normalizeNome = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const nomeCounts = acoes.reduce<Record<string, number>>((acc, a) => {
+    const k = normalizeNome(a.nome);
+    if (k) acc[k] = (acc[k] || 0) + 1;
+    return acc;
+  }, {});
+  const isDuplicate = (a: AcaoLocal) => (nomeCounts[normalizeNome(a.nome)] || 0) > 1;
+  const duplicatesCount = acoes.filter(isDuplicate).length;
+
   const filtered = acoes.filter((a) => {
+    if (showOnlyDuplicates && !isDuplicate(a)) return false;
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
@@ -308,7 +320,19 @@ const AcoesSection = () => {
   const renderAcaoCell = (key: string, acao: AcaoLocal) => {
     const truncCls = 'text-xs align-top py-2 px-2 truncate max-w-0';
     switch (key) {
-      case 'nome': return <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>{acao.nome}</TableCell>;
+      case 'nome': return (
+        <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="truncate">{acao.nome}</span>
+            {isDuplicate(acao) && (
+              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com este mesmo título">
+                <Copy className="w-2.5 h-2.5" />
+                Repetida
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+      );
       case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
       case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
       case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
@@ -540,6 +564,19 @@ const AcoesSection = () => {
             </Command>
           </PopoverContent>
         </Popover>
+        <Button
+          type="button"
+          variant={showOnlyDuplicates ? 'default' : 'outline'}
+          className="gap-2"
+          onClick={() => setShowOnlyDuplicates((v) => !v)}
+          title="Mostrar apenas ações com título repetido"
+        >
+          <Copy className="w-4 h-4" />
+          {showOnlyDuplicates ? 'Mostrando repetidas' : 'Apenas repetidas'}
+          {duplicatesCount > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{duplicatesCount}</Badge>
+          )}
+        </Button>
       </div>
 
       <Card>
