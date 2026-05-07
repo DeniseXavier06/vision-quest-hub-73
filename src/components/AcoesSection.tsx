@@ -564,6 +564,19 @@ const AcoesSection = () => {
             </Command>
           </PopoverContent>
         </Popover>
+        <Button
+          type="button"
+          variant={showOnlyDuplicates ? 'default' : 'outline'}
+          className="gap-2"
+          onClick={() => setShowOnlyDuplicates((v) => !v)}
+          title="Mostrar apenas ações com título repetido"
+        >
+          <Copy className="w-4 h-4" />
+          {showOnlyDuplicates ? 'Mostrando repetidas' : 'Apenas repetidas'}
+          {duplicatesCount > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{duplicatesCount}</Badge>
+          )}
+        </Button>
       </div>
 
       <Card>
