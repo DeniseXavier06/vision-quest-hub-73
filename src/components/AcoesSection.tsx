@@ -213,6 +213,7 @@ const AcoesSection = () => {
   const [filterAcao, setFilterAcao] = useState('all');
   const [filterSetores, setFilterSetores] = useState<string[]>([]);
   const [filterAreas, setFilterAreas] = useState<string[]>([]);
+  const [showOnlyDuplicates, setShowOnlyDuplicates] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
   const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
