@@ -259,13 +259,14 @@ const AcoesSection = () => {
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
   const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
-  // Detecta ações repetidas pela combinação de Ação + Meta (ignora caixa e espaços extras)
+  // Detecta ações repetidas pela combinação de Ação + Meta + Dimensão (ignora caixa e espaços extras)
   const normalizeText = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
   const dupKey = (a: AcaoLocal) => {
     const n = normalizeText(a.nome);
     const m = normalizeText(a.meta);
-    if (!n || !m) return '';
-    return `${n}||${m}`;
+    const e = normalizeText(a.eixo);
+    if (!n || !m || !e) return '';
+    return `${n}||${m}||${e}`;
   };
   const dupCounts = acoes.reduce<Record<string, number>>((acc, a) => {
     const k = dupKey(a);
@@ -334,7 +335,7 @@ const AcoesSection = () => {
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="truncate">{acao.nome}</span>
             {isDuplicate(acao) && (
-              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com a mesma Ação e Meta">
+              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com a mesma Ação, Meta e Dimensão">
                 <Copy className="w-2.5 h-2.5" />
                 Repetida
               </Badge>
