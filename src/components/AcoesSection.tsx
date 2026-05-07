@@ -259,14 +259,23 @@ const AcoesSection = () => {
   const setoresDisponiveis = [...new Set(acoes.flatMap((a) => a.setores.split(',').map((s) => s.trim())).filter(Boolean))].sort();
   const areasDisponiveis = [...new Set(acoes.map((a) => (a.area || '').trim()).filter(Boolean))].sort();
 
-  // Detecta ações repetidas pelo título (ignora caixa e espaços extras)
-  const normalizeNome = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-  const nomeCounts = acoes.reduce<Record<string, number>>((acc, a) => {
-    const k = normalizeNome(a.nome);
+  // Detecta ações repetidas pela combinação de Ação + Meta (ignora caixa e espaços extras)
+  const normalizeText = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const dupKey = (a: AcaoLocal) => {
+    const n = normalizeText(a.nome);
+    const m = normalizeText(a.meta);
+    if (!n || !m) return '';
+    return `${n}||${m}`;
+  };
+  const dupCounts = acoes.reduce<Record<string, number>>((acc, a) => {
+    const k = dupKey(a);
     if (k) acc[k] = (acc[k] || 0) + 1;
     return acc;
   }, {});
-  const isDuplicate = (a: AcaoLocal) => (nomeCounts[normalizeNome(a.nome)] || 0) > 1;
+  const isDuplicate = (a: AcaoLocal) => {
+    const k = dupKey(a);
+    return !!k && (dupCounts[k] || 0) > 1;
+  };
   const duplicatesCount = acoes.filter(isDuplicate).length;
 
   const filtered = acoes.filter((a) => {
