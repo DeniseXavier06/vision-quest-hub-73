@@ -320,7 +320,19 @@ const AcoesSection = () => {
   const renderAcaoCell = (key: string, acao: AcaoLocal) => {
     const truncCls = 'text-xs align-top py-2 px-2 truncate max-w-0';
     switch (key) {
-      case 'nome': return <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>{acao.nome}</TableCell>;
+      case 'nome': return (
+        <TableCell key={key} className={`${truncCls} font-medium`} title={acao.nome}>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="truncate">{acao.nome}</span>
+            {isDuplicate(acao) && (
+              <Badge variant="secondary" className="bg-warning/15 text-warning border border-warning/30 text-[10px] px-1.5 py-0 h-4 shrink-0 gap-0.5" title="Existem outras ações com este mesmo título">
+                <Copy className="w-2.5 h-2.5" />
+                Repetida
+              </Badge>
+            )}
+          </div>
+        </TableCell>
+      );
       case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
       case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
       case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
