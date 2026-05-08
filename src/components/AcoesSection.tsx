@@ -21,7 +21,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X, Copy } from 'lucide-react';
+import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X, Copy, Combine } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
