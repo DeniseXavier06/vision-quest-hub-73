@@ -468,6 +468,8 @@ const AcoesSection = () => {
       setGrouping(false);
     }
   };
+
+  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setImporting(true);
