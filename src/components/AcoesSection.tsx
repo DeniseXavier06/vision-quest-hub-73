@@ -689,6 +689,24 @@ const AcoesSection = () => {
             <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px] px-2">
+                    <Checkbox
+                      checked={(() => {
+                        const dups = sortedFiltered.filter(isDuplicate);
+                        return dups.length > 0 && dups.every((a) => selectedIds.has(a.id));
+                      })()}
+                      onCheckedChange={(checked) => {
+                        const dups = sortedFiltered.filter(isDuplicate);
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (checked) dups.forEach((a) => next.add(a.id));
+                          else dups.forEach((a) => next.delete(a.id));
+                          return next;
+                        });
+                      }}
+                      aria-label="Selecionar todas repetidas visíveis"
+                    />
+                  </TableHead>
                   {orderedCols.map((col, idx) => (
                     <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
                       draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
@@ -701,7 +719,15 @@ const AcoesSection = () => {
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((acao) => (
-                  <TableRow key={acao.id}>
+                  <TableRow key={acao.id} className={selectedIds.has(acao.id) ? 'bg-warning/5' : ''}>
+                    <TableCell className="py-2 px-2 align-middle">
+                      <Checkbox
+                        checked={selectedIds.has(acao.id)}
+                        disabled={!isDuplicate(acao)}
+                        onCheckedChange={() => toggleSelect(acao.id)}
+                        aria-label="Selecionar ação repetida"
+                      />
+                    </TableCell>
                     {orderedCols.map((col) => renderAcaoCell(col.key, acao))}
                     <TableCell className="py-2 px-2 align-middle">
                       <div className="flex items-center justify-end gap-0.5">
