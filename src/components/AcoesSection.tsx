@@ -824,6 +824,24 @@ const AcoesSection = () => {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={groupConfirmOpen} onOpenChange={setGroupConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">Agrupar ações repetidas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Serão mescladas {selectedDuplicates.length} ações em {groupableGroups.length} grupo(s).
+              A primeira ação de cada grupo será mantida (com responsáveis, setores e área mesclados) e as outras {totalToRemove} ações repetidas serão excluídas. Esta operação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={grouping}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleGroupSelected} disabled={grouping}>
+              {grouping ? 'Agrupando...' : 'Agrupar e excluir repetidas'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
