@@ -21,7 +21,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X, Copy } from 'lucide-react';
+import { ListChecks, Plus, Eye, Pencil, Trash2, Search, Upload, X, Copy, Combine } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useSortable } from '@/hooks/use-sortable';
 import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
@@ -220,6 +221,9 @@ const AcoesSection = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [groupConfirmOpen, setGroupConfirmOpen] = useState(false);
+  const [grouping, setGrouping] = useState(false);
 
   const [usuariosOptions, setUsuariosOptions] = useState<{ value: string; label: string }[]>([]);
   const [setoresOptions, setSetoresOptions] = useState<{ value: string; label: string }[]>([]);
@@ -393,6 +397,76 @@ const AcoesSection = () => {
     toast.success('Ação excluída com sucesso!');
     setDeleteId(null);
     fetchAcoes();
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const mergeCsv = (...vals: string[]) => {
+    const set: string[] = [];
+    for (const v of vals) {
+      for (const item of (v || '').split(',').map((s) => s.trim()).filter(Boolean)) {
+        if (!set.includes(item)) set.push(item);
+      }
+    }
+    return set.join(', ');
+  };
+
+  // Lista de duplicados realmente selecionados (apenas os que ainda são duplicados)
+  const selectedDuplicates = acoes.filter((a) => selectedIds.has(a.id) && isDuplicate(a));
+
+  // Agrupa selecionadas por dupKey
+  const selectedGroups = selectedDuplicates.reduce<Record<string, AcaoLocal[]>>((acc, a) => {
+    const k = dupKey(a);
+    (acc[k] = acc[k] || []).push(a);
+    return acc;
+  }, {});
+  // Só consideramos grupos com 2+ selecionadas
+  const groupableGroups = Object.values(selectedGroups).filter((g) => g.length > 1);
+  const totalToRemove = groupableGroups.reduce((sum, g) => sum + (g.length - 1), 0);
+
+  const handleGroupSelected = async () => {
+    if (groupableGroups.length === 0) return;
+    setGrouping(true);
+    try {
+      for (const group of groupableGroups) {
+        // Mantém a primeira (ordem atual: por prazo asc)
+        const [keep, ...others] = group;
+        const mergedResponsavel = mergeCsv(keep.responsavel, ...others.map((o) => o.responsavel));
+        const mergedSetores = mergeCsv(keep.setores, ...others.map((o) => o.setores));
+        const mergedArea = mergeCsv(keep.area, ...others.map((o) => o.area));
+        const maxProgress = Math.max(keep.percentualProgresso, ...others.map((o) => o.percentualProgresso));
+        // Status: se alguma estiver concluida -> concluida; se em andamento -> em_andamento
+        const statuses = [keep.status, ...others.map((o) => o.status)];
+        const status: StatusAcao = statuses.includes('concluida')
+          ? 'concluida'
+          : statuses.includes('em_andamento') ? 'em_andamento' : 'nao_iniciada';
+
+        const { error: upErr } = await supabase.from('acoes').update({
+          responsavel: mergedResponsavel,
+          setores: mergedSetores,
+          area: mergedArea,
+          percentual_progresso: maxProgress,
+          status,
+        }).eq('id', keep.id);
+        if (upErr) { toast.error('Erro ao mesclar ação'); continue; }
+
+        const { error: delErr } = await supabase.from('acoes').delete().in('id', others.map((o) => o.id));
+        if (delErr) { toast.error('Erro ao excluir repetidas'); continue; }
+      }
+      toast.success(`${groupableGroups.length} grupo(s) agrupado(s), ${totalToRemove} repetida(s) excluída(s).`);
+      setSelectedIds(new Set());
+      setGroupConfirmOpen(false);
+      fetchAcoes();
+    } finally {
+      setGrouping(false);
+    }
   };
 
   const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -587,6 +661,20 @@ const AcoesSection = () => {
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{duplicatesCount}</Badge>
           )}
         </Button>
+        <Button
+          type="button"
+          variant="default"
+          className="gap-2"
+          disabled={groupableGroups.length === 0}
+          onClick={() => setGroupConfirmOpen(true)}
+          title="Mescla as repetidas selecionadas em uma só e exclui as demais"
+        >
+          <Combine className="w-4 h-4" />
+          Agrupar selecionadas
+          {selectedDuplicates.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{selectedDuplicates.length}</Badge>
+          )}
+        </Button>
       </div>
 
       <Card>
@@ -601,6 +689,24 @@ const AcoesSection = () => {
             <Table className="w-full table-fixed text-xs">
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-[40px] px-2">
+                    <Checkbox
+                      checked={(() => {
+                        const dups = sortedFiltered.filter(isDuplicate);
+                        return dups.length > 0 && dups.every((a) => selectedIds.has(a.id));
+                      })()}
+                      onCheckedChange={(checked) => {
+                        const dups = sortedFiltered.filter(isDuplicate);
+                        setSelectedIds((prev) => {
+                          const next = new Set(prev);
+                          if (checked) dups.forEach((a) => next.add(a.id));
+                          else dups.forEach((a) => next.delete(a.id));
+                          return next;
+                        });
+                      }}
+                      aria-label="Selecionar todas repetidas visíveis"
+                    />
+                  </TableHead>
                   {orderedCols.map((col, idx) => (
                     <SortableTableHead key={col.key} sortKey={col.key} currentKey={sortConfig.key} direction={sortConfig.direction} onSort={requestSort}
                       draggable isDragging={dragIndex === idx} isOver={overIndex === idx}
@@ -613,7 +719,15 @@ const AcoesSection = () => {
               </TableHeader>
               <TableBody>
                 {sortedFiltered.map((acao) => (
-                  <TableRow key={acao.id}>
+                  <TableRow key={acao.id} className={selectedIds.has(acao.id) ? 'bg-warning/5' : ''}>
+                    <TableCell className="py-2 px-2 align-middle">
+                      <Checkbox
+                        checked={selectedIds.has(acao.id)}
+                        disabled={!isDuplicate(acao)}
+                        onCheckedChange={() => toggleSelect(acao.id)}
+                        aria-label="Selecionar ação repetida"
+                      />
+                    </TableCell>
                     {orderedCols.map((col) => renderAcaoCell(col.key, acao))}
                     <TableCell className="py-2 px-2 align-middle">
                       <div className="flex items-center justify-end gap-0.5">
@@ -709,6 +823,24 @@ const AcoesSection = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={groupConfirmOpen} onOpenChange={setGroupConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading">Agrupar ações repetidas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Serão mescladas {selectedDuplicates.length} ações em {groupableGroups.length} grupo(s).
+              A primeira ação de cada grupo será mantida (com responsáveis, setores e área mesclados) e as outras {totalToRemove} ações repetidas serão excluídas. Esta operação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={grouping}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleGroupSelected} disabled={grouping}>
+              {grouping ? 'Agrupando...' : 'Agrupar e excluir repetidas'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
