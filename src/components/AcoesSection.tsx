@@ -399,7 +399,75 @@ const AcoesSection = () => {
     fetchAcoes();
   };
 
-  const handleImport = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const mergeCsv = (...vals: string[]) => {
+    const set: string[] = [];
+    for (const v of vals) {
+      for (const item of (v || '').split(',').map((s) => s.trim()).filter(Boolean)) {
+        if (!set.includes(item)) set.push(item);
+      }
+    }
+    return set.join(', ');
+  };
+
+  // Lista de duplicados realmente selecionados (apenas os que ainda são duplicados)
+  const selectedDuplicates = acoes.filter((a) => selectedIds.has(a.id) && isDuplicate(a));
+
+  // Agrupa selecionadas por dupKey
+  const selectedGroups = selectedDuplicates.reduce<Record<string, AcaoLocal[]>>((acc, a) => {
+    const k = dupKey(a);
+    (acc[k] = acc[k] || []).push(a);
+    return acc;
+  }, {});
+  // Só consideramos grupos com 2+ selecionadas
+  const groupableGroups = Object.values(selectedGroups).filter((g) => g.length > 1);
+  const totalToRemove = groupableGroups.reduce((sum, g) => sum + (g.length - 1), 0);
+
+  const handleGroupSelected = async () => {
+    if (groupableGroups.length === 0) return;
+    setGrouping(true);
+    try {
+      for (const group of groupableGroups) {
+        // Mantém a primeira (ordem atual: por prazo asc)
+        const [keep, ...others] = group;
+        const mergedResponsavel = mergeCsv(keep.responsavel, ...others.map((o) => o.responsavel));
+        const mergedSetores = mergeCsv(keep.setores, ...others.map((o) => o.setores));
+        const mergedArea = mergeCsv(keep.area, ...others.map((o) => o.area));
+        const maxProgress = Math.max(keep.percentualProgresso, ...others.map((o) => o.percentualProgresso));
+        // Status: se alguma estiver concluida -> concluida; se em andamento -> em_andamento
+        const statuses = [keep.status, ...others.map((o) => o.status)];
+        const status: StatusAcao = statuses.includes('concluida')
+          ? 'concluida'
+          : statuses.includes('em_andamento') ? 'em_andamento' : 'nao_iniciada';
+
+        const { error: upErr } = await supabase.from('acoes').update({
+          responsavel: mergedResponsavel,
+          setores: mergedSetores,
+          area: mergedArea,
+          percentual_progresso: maxProgress,
+          status,
+        }).eq('id', keep.id);
+        if (upErr) { toast.error('Erro ao mesclar ação'); continue; }
+
+        const { error: delErr } = await supabase.from('acoes').delete().in('id', others.map((o) => o.id));
+        if (delErr) { toast.error('Erro ao excluir repetidas'); continue; }
+      }
+      toast.success(`${groupableGroups.length} grupo(s) agrupado(s), ${totalToRemove} repetida(s) excluída(s).`);
+      setSelectedIds(new Set());
+      setGroupConfirmOpen(false);
+      fetchAcoes();
+    } finally {
+      setGrouping(false);
+    }
+  };
     const files = e.target.files;
     if (!files || files.length === 0) return;
     setImporting(true);
