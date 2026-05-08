@@ -661,6 +661,20 @@ const AcoesSection = () => {
             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{duplicatesCount}</Badge>
           )}
         </Button>
+        <Button
+          type="button"
+          variant="default"
+          className="gap-2"
+          disabled={groupableGroups.length === 0}
+          onClick={() => setGroupConfirmOpen(true)}
+          title="Mescla as repetidas selecionadas em uma só e exclui as demais"
+        >
+          <Combine className="w-4 h-4" />
+          Agrupar selecionadas
+          {selectedDuplicates.length > 0 && (
+            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-[10px]">{selectedDuplicates.length}</Badge>
+          )}
+        </Button>
       </div>
 
       <Card>
