@@ -221,6 +221,9 @@ const AcoesSection = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [groupConfirmOpen, setGroupConfirmOpen] = useState(false);
+  const [grouping, setGrouping] = useState(false);
 
   const [usuariosOptions, setUsuariosOptions] = useState<{ value: string; label: string }[]>([]);
   const [setoresOptions, setSetoresOptions] = useState<{ value: string; label: string }[]>([]);
