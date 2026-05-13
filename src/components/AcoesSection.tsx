@@ -54,11 +54,12 @@ const emptyForm: { nome: string; eixo: string; area: string; setores: string; me
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
-  'Infraestrutura', 'Valorização Profissional', 'Imagem Institucional',
+  'Infraestrutura', 'Infraestrutura Física', 'Valorização Profissional', 'Imagem Institucional',
   'Ambiente Virtual Aprendizagem', 'Avaliando a Infraestrutura', 'Avaliando a Valorização Profissional',
   'Avaliando a Comunicação', 'Avaliando os Serviços', 'Avaliando a Gestão',
   'Desenvolvimento Institucional',
 ];
+
 const eixosSelectOptions = eixosOptions.map((e) => ({ value: e, label: e }));
 
 const areasOptions = [
