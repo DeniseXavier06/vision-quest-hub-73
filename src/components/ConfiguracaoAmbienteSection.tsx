@@ -928,10 +928,55 @@ const AcademicoTab = () => {
   // CRUD helpers
   const addCurso = async () => {
     if (!formCurso.nome.trim() || !semestreId) return;
-    await supabase.from('cursos').insert({ nome: formCurso.nome, sigla: formCurso.sigla, semestre_id: semestreId });
-    setFormCurso({ nome: '', sigla: '' }); toast.success('Curso criado'); fetchCursos();
+    await supabase.from('cursos').insert({ nome: formCurso.nome, sigla: formCurso.sigla, modalidade: formCurso.modalidade, semestre_id: semestreId });
+    setFormCurso({ nome: '', sigla: '', modalidade: 'presencial' }); toast.success('Curso criado'); fetchCursos();
   };
   const removeCurso = async (id: string) => { await supabase.from('cursos').delete().eq('id', id); toast.success('Curso removido'); fetchCursos(); };
+
+  const importarDeSemestre = async () => {
+    if (!importSemestreId || !semestreId || importSemestreId === semestreId) { toast.error('Selecione um semestre de origem diferente'); return; }
+    setImporting(true);
+    try {
+      const { data: srcCursos } = await supabase.from('cursos').select('*').eq('semestre_id', importSemestreId);
+      if (!srcCursos?.length) { toast.error('Semestre de origem não possui cursos'); setImporting(false); return; }
+      const srcCursoIds = srcCursos.map(c => c.id);
+      const { data: srcPeriodos } = await supabase.from('periodos').select('*').in('curso_id', srcCursoIds);
+      const srcPeriodoIds = (srcPeriodos || []).map(p => p.id);
+      const { data: srcTurmas } = srcPeriodoIds.length
+        ? await supabase.from('turmas').select('*').in('periodo_id', srcPeriodoIds)
+        : { data: [] as any[] };
+
+      let totalC = 0, totalP = 0, totalT = 0;
+      for (const c of srcCursos) {
+        const { data: novoCurso } = await supabase.from('cursos').insert({
+          nome: c.nome, sigla: c.sigla, modalidade: (c as any).modalidade || 'presencial', ativo: c.ativo, semestre_id: semestreId,
+        }).select().single();
+        if (!novoCurso) continue;
+        totalC++;
+        const periodosDoCurso = (srcPeriodos || []).filter(p => p.curso_id === c.id);
+        for (const p of periodosDoCurso) {
+          const { data: novoPer } = await supabase.from('periodos').insert({
+            numero: p.numero, nome: p.nome, ativo: p.ativo, curso_id: novoCurso.id,
+          }).select().single();
+          if (!novoPer) continue;
+          totalP++;
+          const turmasDoPer = (srcTurmas || []).filter(t => t.periodo_id === p.id);
+          for (const t of turmasDoPer) {
+            await supabase.from('turmas').insert({
+              nome: t.nome, codigo: t.codigo, ativo: t.ativo, curso_id: novoCurso.id, periodo_id: novoPer.id,
+            });
+            totalT++;
+          }
+        }
+      }
+      toast.success(`Importado: ${totalC} cursos, ${totalP} períodos, ${totalT} turmas`);
+      fetchCursos();
+    } catch (e: any) {
+      toast.error('Erro ao importar: ' + (e?.message || e));
+    } finally {
+      setImporting(false);
+    }
+  };
   const saveEdit = async (table: string, id: string) => {
     await (supabase.from(table as any) as any).update({ nome: editVal }).eq('id', id);
     setEditingId(null); fetchCursos();
