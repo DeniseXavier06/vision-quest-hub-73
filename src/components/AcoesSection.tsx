@@ -313,7 +313,8 @@ const AcoesSection = () => {
 
   const acaoColumns: ColumnDef[] = [
     { key: 'nome', label: 'Ação' },
-    { key: 'eixo', label: 'Dimensão' },
+    { key: 'eixo', label: 'Eixo' },
+    { key: 'dimensao', label: 'Dimensão' },
     { key: 'setores', label: 'Setor/Coordenação' },
     { key: 'meta', label: 'Meta' },
     { key: 'responsavel', label: 'Responsável' },
@@ -325,11 +326,12 @@ const AcoesSection = () => {
 
   const widthFor = (key: string) => {
     switch (key) {
-      case 'nome': return 'w-[22%]';
-      case 'eixo': return 'w-[12%]';
-      case 'setores': return 'w-[12%]';
-      case 'meta': return 'w-[14%]';
-      case 'responsavel': return 'w-[14%]';
+      case 'nome': return 'w-[20%]';
+      case 'eixo': return 'w-[10%]';
+      case 'dimensao': return 'w-[10%]';
+      case 'setores': return 'w-[10%]';
+      case 'meta': return 'w-[12%]';
+      case 'responsavel': return 'w-[12%]';
       case 'percentualProgresso': return 'w-[10%]';
       case 'prazo': return 'w-[8%]';
       case 'status': return 'w-[8%]';
