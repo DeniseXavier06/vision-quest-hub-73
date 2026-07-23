@@ -210,6 +210,7 @@ function MultiSelectCombo({
 const AcoesSection = () => {
   const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
   const [filterEixo, setFilterEixo] = useState('all');
+  const [filterDimensao, setFilterDimensao] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterResponsavel, setFilterResponsavel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
