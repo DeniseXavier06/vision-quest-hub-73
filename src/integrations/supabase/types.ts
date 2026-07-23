@@ -312,6 +312,7 @@ export type Database = {
           ativo: boolean
           created_at: string
           id: string
+          modalidade: string
           nome: string
           semestre_id: string
           sigla: string
@@ -321,6 +322,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          modalidade?: string
           nome: string
           semestre_id: string
           sigla?: string
@@ -330,6 +332,7 @@ export type Database = {
           ativo?: boolean
           created_at?: string
           id?: string
+          modalidade?: string
           nome?: string
           semestre_id?: string
           sigla?: string
