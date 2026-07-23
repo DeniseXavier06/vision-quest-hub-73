@@ -256,8 +256,10 @@ const AcoesSection = () => {
 
   useEffect(() => { fetchAcoes(); }, [fetchAcoes]);
 
-  const eixos = [...new Set(acoes.map((a) => a.eixo))];
-  const filterEixoOptions = [{ value: 'all', label: 'Todas as dimensões' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const eixos = [...new Set(acoes.map((a) => a.eixo).filter(Boolean))].sort();
+  const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const dimensoesDisponiveis = [...new Set(acoes.map((a) => (a.dimensao || '').trim()).filter(Boolean))].sort();
+  const filterDimensaoOptions = [{ value: 'all', label: 'Todas as dimensões' }, ...dimensoesDisponiveis.map((d) => ({ value: d, label: d }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
   const responsaveis = [...new Set(acoes.flatMap((a) => a.responsavel.split(',').map(r => r.trim())).filter(Boolean))].sort();
   const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
