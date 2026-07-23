@@ -363,11 +363,11 @@ const AcoesSection = () => {
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, dimensao: a.dimensao, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('edit'); setDialogOpen(true);
   };
   const openView = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, dimensao: a.dimensao, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('view'); setDialogOpen(true);
   };
 
