@@ -877,9 +877,11 @@ const AcademicoTab = () => {
   const [expandedCurso, setExpandedCurso] = useState<string | null>(null);
   const [expandedPeriodo, setExpandedPeriodo] = useState<string | null>(null);
   const [expandedTurma, setExpandedTurma] = useState<string | null>(null);
-  const [formCurso, setFormCurso] = useState({ nome: '', sigla: '' });
+  const [formCurso, setFormCurso] = useState({ nome: '', sigla: '', modalidade: 'presencial' });
   const [formPeriodo, setFormPeriodo] = useState({ numero: 1 });
   const [formTurma, setFormTurma] = useState({ nome: '', codigo: '' });
+  const [importSemestreId, setImportSemestreId] = useState<string>('');
+  const [importing, setImporting] = useState(false);
   const [formDisc, setFormDisc] = useState({ nome: '', codigo: '', carga_horaria: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editVal, setEditVal] = useState('');
