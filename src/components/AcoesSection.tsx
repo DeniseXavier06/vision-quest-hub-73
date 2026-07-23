@@ -769,11 +769,17 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Dimensão *</Label>
+                <Label>Eixo *</Label>
                 {isReadOnly ? <Input value={formData.eixo} readOnly /> : (
                   <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosSelectOptions} placeholder="Selecione" />
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>Dimensão</Label>
+                <Input value={formData.dimensao} onChange={(e) => setFormData({ ...formData, dimensao: e.target.value })} readOnly={isReadOnly} placeholder="Informe a dimensão" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Área</Label>
                 {isReadOnly ? <Input value={formData.area} readOnly /> : (
