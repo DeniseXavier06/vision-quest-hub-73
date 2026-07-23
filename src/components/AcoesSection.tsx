@@ -374,7 +374,7 @@ const AcoesSection = () => {
   const handleSave = async () => {
     if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     const payload = {
-      nome: formData.nome, eixo: formData.eixo, area: formData.area, setores: formData.setores,
+      nome: formData.nome, eixo: formData.eixo, dimensao: formData.dimensao, area: formData.area, setores: formData.setores,
       meta: formData.meta, responsavel: formData.responsavel,
       status: formData.status as 'nao_iniciada' | 'em_andamento' | 'concluida',
       percentual_progresso: formData.percentualProgresso, prazo: formData.prazo,
