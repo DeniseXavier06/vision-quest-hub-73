@@ -234,7 +234,7 @@ const AcoesSection = () => {
     const { data, error } = await supabase.from('acoes').select('*').order('prazo', { ascending: true });
     if (error) { toast.error('Erro ao carregar ações'); return; }
     setAcoes((data || []).map((a: any) => ({
-      id: a.id, nome: a.nome, eixo: a.eixo, area: a.area || '', setores: a.setores || '',
+      id: a.id, nome: a.nome, eixo: a.eixo, dimensao: a.dimensao || '', area: a.area || '', setores: a.setores || '',
       meta: a.meta || '', responsavel: a.responsavel,
       status: a.status, percentualProgresso: a.percentual_progresso, prazo: a.prazo,
       diasRestantes: calcDias(a.prazo),
