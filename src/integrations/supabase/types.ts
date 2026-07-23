@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           area: string
           created_at: string
+          dimensao: string | null
           eixo: string
           id: string
           meta: string | null
@@ -32,6 +33,7 @@ export type Database = {
         Insert: {
           area?: string
           created_at?: string
+          dimensao?: string | null
           eixo: string
           id?: string
           meta?: string | null
@@ -46,6 +48,7 @@ export type Database = {
         Update: {
           area?: string
           created_at?: string
+          dimensao?: string | null
           eixo?: string
           id?: string
           meta?: string | null

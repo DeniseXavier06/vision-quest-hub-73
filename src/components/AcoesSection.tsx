@@ -33,6 +33,7 @@ interface AcaoLocal {
   id: string;
   nome: string;
   eixo: string;
+  dimensao: string;
   area: string;
   setores: string;
   meta: string;
@@ -50,7 +51,7 @@ const statusColors: Record<string, string> = {
 };
 
 type StatusAcao = 'nao_iniciada' | 'em_andamento' | 'concluida';
-const emptyForm: { nome: string; eixo: string; area: string; setores: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', area: '', setores: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
+const emptyForm: { nome: string; eixo: string; dimensao: string; area: string; setores: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', dimensao: '', area: '', setores: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
@@ -209,6 +210,7 @@ function MultiSelectCombo({
 const AcoesSection = () => {
   const [acoes, setAcoes] = useState<AcaoLocal[]>([]);
   const [filterEixo, setFilterEixo] = useState('all');
+  const [filterDimensao, setFilterDimensao] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterResponsavel, setFilterResponsavel] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
@@ -233,7 +235,7 @@ const AcoesSection = () => {
     const { data, error } = await supabase.from('acoes').select('*').order('prazo', { ascending: true });
     if (error) { toast.error('Erro ao carregar ações'); return; }
     setAcoes((data || []).map((a: any) => ({
-      id: a.id, nome: a.nome, eixo: a.eixo, area: a.area || '', setores: a.setores || '',
+      id: a.id, nome: a.nome, eixo: a.eixo, dimensao: a.dimensao || '', area: a.area || '', setores: a.setores || '',
       meta: a.meta || '', responsavel: a.responsavel,
       status: a.status, percentualProgresso: a.percentual_progresso, prazo: a.prazo,
       diasRestantes: calcDias(a.prazo),
@@ -254,8 +256,10 @@ const AcoesSection = () => {
 
   useEffect(() => { fetchAcoes(); }, [fetchAcoes]);
 
-  const eixos = [...new Set(acoes.map((a) => a.eixo))];
-  const filterEixoOptions = [{ value: 'all', label: 'Todas as dimensões' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const eixos = [...new Set(acoes.map((a) => a.eixo).filter(Boolean))].sort();
+  const filterEixoOptions = [{ value: 'all', label: 'Todos os eixos' }, ...eixos.map((e) => ({ value: e, label: e }))];
+  const dimensoesDisponiveis = [...new Set(acoes.map((a) => (a.dimensao || '').trim()).filter(Boolean))].sort();
+  const filterDimensaoOptions = [{ value: 'all', label: 'Todas as dimensões' }, ...dimensoesDisponiveis.map((d) => ({ value: d, label: d }))];
   const filterStatusOptions = [{ value: 'all', label: 'Todos os status' }, ...statusSelectOptions];
   const responsaveis = [...new Set(acoes.flatMap((a) => a.responsavel.split(',').map(r => r.trim())).filter(Boolean))].sort();
   const filterResponsavelOptions = [{ value: 'all', label: 'Todos os responsáveis' }, ...responsaveis.map((r) => ({ value: r, label: r }))];
@@ -288,6 +292,7 @@ const AcoesSection = () => {
     if (showOnlyDuplicates && !isDuplicate(a)) return false;
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
+    if (filterDimensao !== 'all' && (a.dimensao || '').trim() !== filterDimensao) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
     if (filterSetores.length > 0) {
@@ -308,7 +313,8 @@ const AcoesSection = () => {
 
   const acaoColumns: ColumnDef[] = [
     { key: 'nome', label: 'Ação' },
-    { key: 'eixo', label: 'Dimensão' },
+    { key: 'eixo', label: 'Eixo' },
+    { key: 'dimensao', label: 'Dimensão' },
     { key: 'setores', label: 'Setor/Coordenação' },
     { key: 'meta', label: 'Meta' },
     { key: 'responsavel', label: 'Responsável' },
@@ -320,11 +326,12 @@ const AcoesSection = () => {
 
   const widthFor = (key: string) => {
     switch (key) {
-      case 'nome': return 'w-[22%]';
-      case 'eixo': return 'w-[12%]';
-      case 'setores': return 'w-[12%]';
-      case 'meta': return 'w-[14%]';
-      case 'responsavel': return 'w-[14%]';
+      case 'nome': return 'w-[20%]';
+      case 'eixo': return 'w-[10%]';
+      case 'dimensao': return 'w-[10%]';
+      case 'setores': return 'w-[10%]';
+      case 'meta': return 'w-[12%]';
+      case 'responsavel': return 'w-[12%]';
       case 'percentualProgresso': return 'w-[10%]';
       case 'prazo': return 'w-[8%]';
       case 'status': return 'w-[8%]';
@@ -349,6 +356,7 @@ const AcoesSection = () => {
         </TableCell>
       );
       case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
+      case 'dimensao': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.dimensao || ''}>{acao.dimensao || '—'}</TableCell>;
       case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
       case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
       case 'responsavel': return <TableCell key={key} className={truncCls} title={acao.responsavel}>{acao.responsavel}</TableCell>;
@@ -362,18 +370,18 @@ const AcoesSection = () => {
 
   const openCreate = () => { setFormData(emptyForm); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, dimensao: a.dimensao, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('edit'); setDialogOpen(true);
   };
   const openView = (a: AcaoLocal) => {
-    setFormData({ nome: a.nome, eixo: a.eixo, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
+    setFormData({ nome: a.nome, eixo: a.eixo, dimensao: a.dimensao, area: a.area, setores: a.setores, meta: a.meta, responsavel: a.responsavel, status: a.status, percentualProgresso: a.percentualProgresso, prazo: a.prazo });
     setEditingId(a.id); setDialogMode('view'); setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!formData.nome || !formData.eixo || !formData.responsavel || !formData.prazo) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     const payload = {
-      nome: formData.nome, eixo: formData.eixo, area: formData.area, setores: formData.setores,
+      nome: formData.nome, eixo: formData.eixo, dimensao: formData.dimensao, area: formData.area, setores: formData.setores,
       meta: formData.meta, responsavel: formData.responsavel,
       status: formData.status as 'nao_iniciada' | 'em_andamento' | 'concluida',
       percentual_progresso: formData.percentualProgresso, prazo: formData.prazo,
@@ -555,7 +563,8 @@ const AcoesSection = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input placeholder="Pesquisar ações..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-9" />
         </div>
-        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por dimensão" className="w-[220px]" />
+        <SearchableSelect value={filterEixo} onValueChange={setFilterEixo} options={filterEixoOptions} placeholder="Filtrar por eixo" className="w-[200px]" />
+        <SearchableSelect value={filterDimensao} onValueChange={setFilterDimensao} options={filterDimensaoOptions} placeholder="Filtrar por dimensão" className="w-[200px]" />
         <SearchableSelect value={filterAcao} onValueChange={setFilterAcao} options={filterAcaoOptions} placeholder="Filtrar por ação" className="w-[250px]" />
         <SearchableSelect value={filterStatus} onValueChange={setFilterStatus} options={filterStatusOptions} placeholder="Filtrar por status" className="w-[180px]" />
         <SearchableSelect value={filterResponsavel} onValueChange={setFilterResponsavel} options={filterResponsavelOptions} placeholder="Filtrar por responsável" className="w-[220px]" />
@@ -760,11 +769,17 @@ const AcoesSection = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Dimensão *</Label>
+                <Label>Eixo *</Label>
                 {isReadOnly ? <Input value={formData.eixo} readOnly /> : (
                   <SearchableSelect value={formData.eixo} onValueChange={(v) => setFormData({ ...formData, eixo: v })} options={eixosSelectOptions} placeholder="Selecione" />
                 )}
               </div>
+              <div className="space-y-2">
+                <Label>Dimensão</Label>
+                <Input value={formData.dimensao} onChange={(e) => setFormData({ ...formData, dimensao: e.target.value })} readOnly={isReadOnly} placeholder="Informe a dimensão" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Área</Label>
                 {isReadOnly ? <Input value={formData.area} readOnly /> : (

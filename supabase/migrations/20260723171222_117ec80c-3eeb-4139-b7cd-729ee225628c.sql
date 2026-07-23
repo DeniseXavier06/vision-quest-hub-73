@@ -1,0 +1,1 @@
+ALTER TABLE public.acoes ADD COLUMN IF NOT EXISTS dimensao text;
