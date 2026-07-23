@@ -356,6 +356,7 @@ const AcoesSection = () => {
         </TableCell>
       );
       case 'eixo': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.eixo}>{acao.eixo}</TableCell>;
+      case 'dimensao': return <TableCell key={key} className={`${truncCls} text-muted-foreground`} title={acao.dimensao || ''}>{acao.dimensao || '—'}</TableCell>;
       case 'setores': return <TableCell key={key} className={truncCls} title={acao.setores || ''}>{acao.setores || '—'}</TableCell>;
       case 'meta': return <TableCell key={key} className={truncCls} title={acao.meta || ''}>{acao.meta || '—'}</TableCell>;
       case 'responsavel': return <TableCell key={key} className={truncCls} title={acao.responsavel}>{acao.responsavel}</TableCell>;
