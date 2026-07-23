@@ -877,9 +877,11 @@ const AcademicoTab = () => {
   const [expandedCurso, setExpandedCurso] = useState<string | null>(null);
   const [expandedPeriodo, setExpandedPeriodo] = useState<string | null>(null);
   const [expandedTurma, setExpandedTurma] = useState<string | null>(null);
-  const [formCurso, setFormCurso] = useState({ nome: '', sigla: '' });
+  const [formCurso, setFormCurso] = useState({ nome: '', sigla: '', modalidade: 'presencial' });
   const [formPeriodo, setFormPeriodo] = useState({ numero: 1 });
   const [formTurma, setFormTurma] = useState({ nome: '', codigo: '' });
+  const [importSemestreId, setImportSemestreId] = useState<string>('');
+  const [importing, setImporting] = useState(false);
   const [formDisc, setFormDisc] = useState({ nome: '', codigo: '', carga_horaria: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editVal, setEditVal] = useState('');
@@ -926,10 +928,55 @@ const AcademicoTab = () => {
   // CRUD helpers
   const addCurso = async () => {
     if (!formCurso.nome.trim() || !semestreId) return;
-    await supabase.from('cursos').insert({ nome: formCurso.nome, sigla: formCurso.sigla, semestre_id: semestreId });
-    setFormCurso({ nome: '', sigla: '' }); toast.success('Curso criado'); fetchCursos();
+    await supabase.from('cursos').insert({ nome: formCurso.nome, sigla: formCurso.sigla, modalidade: formCurso.modalidade, semestre_id: semestreId });
+    setFormCurso({ nome: '', sigla: '', modalidade: 'presencial' }); toast.success('Curso criado'); fetchCursos();
   };
   const removeCurso = async (id: string) => { await supabase.from('cursos').delete().eq('id', id); toast.success('Curso removido'); fetchCursos(); };
+
+  const importarDeSemestre = async () => {
+    if (!importSemestreId || !semestreId || importSemestreId === semestreId) { toast.error('Selecione um semestre de origem diferente'); return; }
+    setImporting(true);
+    try {
+      const { data: srcCursos } = await supabase.from('cursos').select('*').eq('semestre_id', importSemestreId);
+      if (!srcCursos?.length) { toast.error('Semestre de origem não possui cursos'); setImporting(false); return; }
+      const srcCursoIds = srcCursos.map(c => c.id);
+      const { data: srcPeriodos } = await supabase.from('periodos').select('*').in('curso_id', srcCursoIds);
+      const srcPeriodoIds = (srcPeriodos || []).map(p => p.id);
+      const { data: srcTurmas } = srcPeriodoIds.length
+        ? await supabase.from('turmas').select('*').in('periodo_id', srcPeriodoIds)
+        : { data: [] as any[] };
+
+      let totalC = 0, totalP = 0, totalT = 0;
+      for (const c of srcCursos) {
+        const { data: novoCurso } = await supabase.from('cursos').insert({
+          nome: c.nome, sigla: c.sigla, modalidade: (c as any).modalidade || 'presencial', ativo: c.ativo, semestre_id: semestreId,
+        }).select().single();
+        if (!novoCurso) continue;
+        totalC++;
+        const periodosDoCurso = (srcPeriodos || []).filter(p => p.curso_id === c.id);
+        for (const p of periodosDoCurso) {
+          const { data: novoPer } = await supabase.from('periodos').insert({
+            numero: p.numero, nome: p.nome, ativo: p.ativo, curso_id: novoCurso.id,
+          }).select().single();
+          if (!novoPer) continue;
+          totalP++;
+          const turmasDoPer = (srcTurmas || []).filter(t => t.periodo_id === p.id);
+          for (const t of turmasDoPer) {
+            await supabase.from('turmas').insert({
+              nome: t.nome, codigo: t.codigo, ativo: t.ativo, curso_id: novoCurso.id, periodo_id: novoPer.id,
+            });
+            totalT++;
+          }
+        }
+      }
+      toast.success(`Importado: ${totalC} cursos, ${totalP} períodos, ${totalT} turmas`);
+      fetchCursos();
+    } catch (e: any) {
+      toast.error('Erro ao importar: ' + (e?.message || e));
+    } finally {
+      setImporting(false);
+    }
+  };
   const saveEdit = async (table: string, id: string) => {
     await (supabase.from(table as any) as any).update({ nome: editVal }).eq('id', id);
     setEditingId(null); fetchCursos();
@@ -989,9 +1036,34 @@ const AcademicoTab = () => {
 
           {semestreId && (
             <>
+              <div className="rounded-md border border-dashed p-3 bg-muted/10 space-y-2">
+                <Label className="text-xs font-semibold uppercase text-muted-foreground">Importar de outro semestre</Label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Select value={importSemestreId} onValueChange={setImportSemestreId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o semestre de origem" /></SelectTrigger>
+                      <SelectContent>{semestres.filter(s => s.id !== semestreId).map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" disabled={importing || !importSemestreId} onClick={importarDeSemestre}>
+                    {importing ? 'Importando...' : 'Importar cursos, períodos e turmas'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Copia todos os cursos, períodos e turmas do semestre selecionado para o semestre atual.</p>
+              </div>
+
               <div className="flex gap-2 items-end">
                 <div className="flex-1"><Label>Curso</Label><Input value={formCurso.nome} onChange={e => setFormCurso({ ...formCurso, nome: e.target.value })} placeholder="Ex: Engenharia de Software" /></div>
                 <div className="w-28"><Label>Sigla</Label><Input value={formCurso.sigla} onChange={e => setFormCurso({ ...formCurso, sigla: e.target.value })} placeholder="ES" /></div>
+                <div className="w-36"><Label>Modalidade</Label>
+                  <Select value={formCurso.modalidade} onValueChange={v => setFormCurso({ ...formCurso, modalidade: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="presencial">Presencial</SelectItem>
+                      <SelectItem value="ead">EAD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button onClick={addCurso}><Plus className="w-4 h-4 mr-1" />Curso</Button>
               </div>
 
@@ -1005,6 +1077,7 @@ const AcademicoTab = () => {
                           {expandedCurso === c.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                           <EditableLabel id={c.id} table="cursos" label={c.nome} className="font-medium" />
                           {c.sigla && <Badge variant="outline">{c.sigla}</Badge>}
+                          <Badge variant={c.modalidade === 'ead' ? 'default' : 'secondary'} className="text-xs">{c.modalidade === 'ead' ? 'EAD' : 'Presencial'}</Badge>
                           <Badge variant="secondary">{c.periodos?.length || 0} períodos</Badge>
                         </div>
                         <ActionBtns id={c.id} table="cursos" name={c.nome} onRemove={() => removeCurso(c.id)} />
