@@ -292,6 +292,7 @@ const AcoesSection = () => {
     if (showOnlyDuplicates && !isDuplicate(a)) return false;
     if (filterAcao !== 'all' && a.nome !== filterAcao) return false;
     if (filterEixo !== 'all' && a.eixo !== filterEixo) return false;
+    if (filterDimensao !== 'all' && (a.dimensao || '').trim() !== filterDimensao) return false;
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     if (filterResponsavel !== 'all' && !a.responsavel.toLowerCase().includes(filterResponsavel.toLowerCase())) return false;
     if (filterSetores.length > 0) {
