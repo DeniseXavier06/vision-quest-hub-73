@@ -33,6 +33,7 @@ interface AcaoLocal {
   id: string;
   nome: string;
   eixo: string;
+  dimensao: string;
   area: string;
   setores: string;
   meta: string;
@@ -50,7 +51,7 @@ const statusColors: Record<string, string> = {
 };
 
 type StatusAcao = 'nao_iniciada' | 'em_andamento' | 'concluida';
-const emptyForm: { nome: string; eixo: string; area: string; setores: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', area: '', setores: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
+const emptyForm: { nome: string; eixo: string; dimensao: string; area: string; setores: string; meta: string; responsavel: string; status: StatusAcao; percentualProgresso: number; prazo: string } = { nome: '', eixo: '', dimensao: '', area: '', setores: '', meta: '', responsavel: '', status: 'nao_iniciada', percentualProgresso: 0, prazo: '' };
 
 const eixosOptions = [
   'Planejamento e Avaliação', 'Políticas Acadêmicas', 'Políticas de Gestão',
