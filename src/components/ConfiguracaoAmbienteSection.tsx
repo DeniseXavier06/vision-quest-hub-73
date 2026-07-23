@@ -1036,9 +1036,34 @@ const AcademicoTab = () => {
 
           {semestreId && (
             <>
+              <div className="rounded-md border border-dashed p-3 bg-muted/10 space-y-2">
+                <Label className="text-xs font-semibold uppercase text-muted-foreground">Importar de outro semestre</Label>
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Select value={importSemestreId} onValueChange={setImportSemestreId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione o semestre de origem" /></SelectTrigger>
+                      <SelectContent>{semestres.filter(s => s.id !== semestreId).map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <Button variant="outline" disabled={importing || !importSemestreId} onClick={importarDeSemestre}>
+                    {importing ? 'Importando...' : 'Importar cursos, períodos e turmas'}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Copia todos os cursos, períodos e turmas do semestre selecionado para o semestre atual.</p>
+              </div>
+
               <div className="flex gap-2 items-end">
                 <div className="flex-1"><Label>Curso</Label><Input value={formCurso.nome} onChange={e => setFormCurso({ ...formCurso, nome: e.target.value })} placeholder="Ex: Engenharia de Software" /></div>
                 <div className="w-28"><Label>Sigla</Label><Input value={formCurso.sigla} onChange={e => setFormCurso({ ...formCurso, sigla: e.target.value })} placeholder="ES" /></div>
+                <div className="w-36"><Label>Modalidade</Label>
+                  <Select value={formCurso.modalidade} onValueChange={v => setFormCurso({ ...formCurso, modalidade: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="presencial">Presencial</SelectItem>
+                      <SelectItem value="ead">EAD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <Button onClick={addCurso}><Plus className="w-4 h-4 mr-1" />Curso</Button>
               </div>
 
