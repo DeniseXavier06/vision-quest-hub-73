@@ -1077,6 +1077,7 @@ const AcademicoTab = () => {
                           {expandedCurso === c.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                           <EditableLabel id={c.id} table="cursos" label={c.nome} className="font-medium" />
                           {c.sigla && <Badge variant="outline">{c.sigla}</Badge>}
+                          <Badge variant={c.modalidade === 'ead' ? 'default' : 'secondary'} className="text-xs">{c.modalidade === 'ead' ? 'EAD' : 'Presencial'}</Badge>
                           <Badge variant="secondary">{c.periodos?.length || 0} períodos</Badge>
                         </div>
                         <ActionBtns id={c.id} table="cursos" name={c.nome} onRemove={() => removeCurso(c.id)} />
