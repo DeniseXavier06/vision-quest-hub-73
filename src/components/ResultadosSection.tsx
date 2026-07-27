@@ -161,10 +161,10 @@ function parseNum(val: unknown): number {
   return isNaN(n) ? 0 : n;
 }
 
-function parseRow(row: Record<string, unknown>, tipoAvaliacao: string): ResultadoRow {
+function parseRow(row: Record<string, unknown>, tipoAvaliacao: string, fallbackSemestre = ''): ResultadoRow {
   return {
-    semestre: String(row['SEMESTRE_LETIVO'] ?? ''),
-    nivel: String(row['NIVEL'] ?? ''),
+    semestre: String(row['SEMESTRE_LETIVO'] ?? row['SEMESTRE'] ?? '').trim() || fallbackSemestre,
+    nivel: String(row['NIVEL'] ?? row['NÍVEL'] ?? '').trim() || tipoAvaliacao,
     curso: String(row['NOME_CURSO'] ?? row['NOME_SECAO'] ?? ''),
     dimensao: String(row['DIMENSAO'] ?? ''),
     area: String(row['AREA'] ?? row['EIXO'] ?? ''),
@@ -293,7 +293,7 @@ const ResultadosSection = () => {
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
-        const allRows = json.map((row) => parseRow(row, importPerfil));
+        const allRows = json.map((row) => parseRow(row, importPerfil, importPeriodo.trim()));
 
         if (allRows.length === 0) {
           toast.error(`O arquivo "${file.name}" não possui linhas válidas para importar`);
