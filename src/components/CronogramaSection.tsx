@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { avaliacoesData as initialAvaliacoes, statusLabels, type Avaliacao } from '@/lib/mockData';
+import { useEffect, useState } from 'react';
+import { statusLabels, type Avaliacao } from '@/lib/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,8 @@ const statusSelectOptions = [
 ];
 
 const CronogramaSection = () => {
-  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>(initialAvaliacoes);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -55,6 +57,32 @@ const CronogramaSection = () => {
   const [formData, setFormData] = useState<Omit<Avaliacao, 'id'>>(emptyAvaliacao);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const fetchAvaliacoes = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('avaliacoes')
+      .select('*')
+      .order('data_inicio', { ascending: true });
+    if (error) {
+      toast.error('Erro ao carregar cronograma: ' + error.message);
+    } else {
+      setAvaliacoes(
+        (data ?? []).map((r) => ({
+          id: r.id,
+          tipo: r.tipo,
+          descricao: r.descricao ?? '',
+          dataInicio: r.data_inicio,
+          dataFim: r.data_fim,
+          status: r.status,
+          responsavel: r.responsavel,
+        })) as Avaliacao[],
+      );
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchAvaliacoes(); }, []);
 
   const openCreate = () => { setFormData(emptyAvaliacao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
   const openEdit = (av: Avaliacao) => {
@@ -66,20 +94,36 @@ const CronogramaSection = () => {
     setEditingId(av.id); setDialogMode('view'); setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.tipo || !formData.dataInicio || !formData.dataFim || !formData.responsavel) { toast.error('Preencha todos os campos obrigatórios.'); return; }
+    const payload = {
+      tipo: formData.tipo,
+      descricao: formData.descricao || null,
+      data_inicio: formData.dataInicio,
+      data_fim: formData.dataFim,
+      status: formData.status,
+      responsavel: formData.responsavel,
+    };
     if (dialogMode === 'create') {
-      setAvaliacoes((prev) => [...prev, { ...formData, id: crypto.randomUUID() }]);
+      const { error } = await supabase.from('avaliacoes').insert(payload);
+      if (error) { toast.error('Erro ao cadastrar: ' + error.message); return; }
       toast.success('Avaliação cadastrada com sucesso!');
     } else if (dialogMode === 'edit' && editingId) {
-      setAvaliacoes((prev) => prev.map((a) => (a.id === editingId ? { ...a, ...formData } : a)));
+      const { error } = await supabase.from('avaliacoes').update(payload).eq('id', editingId);
+      if (error) { toast.error('Erro ao salvar: ' + error.message); return; }
       toast.success('Avaliação atualizada com sucesso!');
     }
     setDialogOpen(false);
+    fetchAvaliacoes();
   };
 
-  const handleDelete = () => {
-    if (deleteId) { setAvaliacoes((prev) => prev.filter((a) => a.id !== deleteId)); toast.success('Avaliação excluída com sucesso!'); setDeleteId(null); }
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from('avaliacoes').delete().eq('id', deleteId);
+    if (error) { toast.error('Erro ao excluir: ' + error.message); return; }
+    toast.success('Avaliação excluída com sucesso!');
+    setDeleteId(null);
+    fetchAvaliacoes();
   };
 
   const isReadOnly = dialogMode === 'view';
@@ -103,6 +147,10 @@ const CronogramaSection = () => {
       </div>
 
       <div className="space-y-4">
+        {loading && <p className="text-sm text-muted-foreground">Carregando...</p>}
+        {!loading && avaliacoes.length === 0 && (
+          <p className="text-sm text-muted-foreground">Nenhuma avaliação cadastrada.</p>
+        )}
         {avaliacoes.filter((av) => {
           if (!searchTerm) return true;
           const term = searchTerm.toLowerCase();
