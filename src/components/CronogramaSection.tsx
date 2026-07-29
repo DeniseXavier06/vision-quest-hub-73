@@ -263,11 +263,22 @@ const CronogramaSection = () => {
               <div className="space-y-2">
                 <Label>Status</Label>
                 {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
-                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} options={statusSelectOptions} />
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as StatusAv })} options={statusSelectOptions} />
                 )}
               </div>
             </div>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-primary"
+                checked={formData.exibirHome}
+                disabled={isReadOnly}
+                onChange={(e) => setFormData({ ...formData, exibirHome: e.target.checked })}
+              />
+              Exibir na Página Inicial
+            </label>
           </div>
+
           {!isReadOnly && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
