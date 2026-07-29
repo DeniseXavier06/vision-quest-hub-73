@@ -24,23 +24,28 @@ const statusColors: Record<string, string> = {
   concluido: 'bg-success/10 text-success',
 };
 
-const emptyAvaliacao: Omit<Avaliacao, 'id'> = {
+type StatusAv = 'planejado' | 'em_execucao' | 'concluido';
+type ItemCronograma = Omit<Avaliacao, 'id' | 'status'> & { id: string; status: StatusAv; exibirHome: boolean };
+type FormCronograma = Omit<ItemCronograma, 'id'>;
+
+const emptyAvaliacao: FormCronograma = {
   tipo: '',
   descricao: '',
   dataInicio: '',
   dataFim: '',
   status: 'planejado',
   responsavel: '',
+  exibirHome: false,
 };
 
 const tiposAvaliacao = [
-  'Perfil Acadêmico',
-  'Avaliação Quantitativa',
-  'Avaliação Qualitativa',
-  'Comunidade Externa',
+  'Planejamento',
+  'Desenvolvimento',
+  'Consolidação',
 ];
 
 const tipoSelectOptions = tiposAvaliacao.map((t) => ({ value: t, label: t }));
+
 const statusSelectOptions = [
   { value: 'planejado', label: 'Planejado' },
   { value: 'em_execucao', label: 'Em execução' },
@@ -48,13 +53,13 @@ const statusSelectOptions = [
 ];
 
 const CronogramaSection = () => {
-  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<ItemCronograma[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [formData, setFormData] = useState<Omit<Avaliacao, 'id'>>(emptyAvaliacao);
+  const [formData, setFormData] = useState<FormCronograma>(emptyAvaliacao);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -74,9 +79,10 @@ const CronogramaSection = () => {
           descricao: r.descricao ?? '',
           dataInicio: r.data_inicio,
           dataFim: r.data_fim,
-          status: r.status,
+          status: r.status as StatusAv,
           responsavel: r.responsavel,
-        })) as Avaliacao[],
+          exibirHome: !!r.exibir_home,
+        })),
       );
     }
     setLoading(false);
@@ -84,13 +90,18 @@ const CronogramaSection = () => {
 
   useEffect(() => { fetchAvaliacoes(); }, []);
 
+  const toForm = (av: ItemCronograma): FormCronograma => ({
+    tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim,
+    status: av.status, responsavel: av.responsavel, exibirHome: av.exibirHome,
+  });
+
   const openCreate = () => { setFormData(emptyAvaliacao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
-  const openEdit = (av: Avaliacao) => {
-    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+  const openEdit = (av: ItemCronograma) => {
+    setFormData(toForm(av));
     setEditingId(av.id); setDialogMode('edit'); setDialogOpen(true);
   };
-  const openView = (av: Avaliacao) => {
-    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+  const openView = (av: ItemCronograma) => {
+    setFormData(toForm(av));
     setEditingId(av.id); setDialogMode('view'); setDialogOpen(true);
   };
 
@@ -103,7 +114,9 @@ const CronogramaSection = () => {
       data_fim: formData.dataFim,
       status: formData.status,
       responsavel: formData.responsavel,
+      exibir_home: formData.exibirHome,
     };
+
     if (dialogMode === 'create') {
       const { error } = await supabase.from('avaliacoes').insert(payload);
       if (error) { toast.error('Erro ao cadastrar: ' + error.message); return; }
@@ -164,8 +177,12 @@ const CronogramaSection = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <h3 className="text-sm font-heading font-semibold text-foreground">{av.tipo}</h3>
-                  <Badge className={statusColors[av.status]} variant="secondary">{statusLabels[av.status]}</Badge>
+                  <div className="flex items-center gap-2">
+                    {av.exibirHome && <Badge variant="outline">Página Inicial</Badge>}
+                    <Badge className={statusColors[av.status]} variant="secondary">{statusLabels[av.status]}</Badge>
+                  </div>
                 </div>
+
                 <p className="text-sm text-muted-foreground mt-1">{av.descricao}</p>
                 <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
                   <span>📅 {new Date(av.dataInicio).toLocaleDateString('pt-BR')} — {new Date(av.dataFim).toLocaleDateString('pt-BR')}</span>
@@ -250,11 +267,22 @@ const CronogramaSection = () => {
               <div className="space-y-2">
                 <Label>Status</Label>
                 {isReadOnly ? <Input value={statusLabels[formData.status]} readOnly /> : (
-                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })} options={statusSelectOptions} />
+                  <SearchableSelect value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as StatusAv })} options={statusSelectOptions} />
                 )}
               </div>
             </div>
+            <label className="flex items-center gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                className="h-4 w-4 accent-primary"
+                checked={formData.exibirHome}
+                disabled={isReadOnly}
+                onChange={(e) => setFormData({ ...formData, exibirHome: e.target.checked })}
+              />
+              Exibir na Página Inicial
+            </label>
           </div>
+
           {!isReadOnly && (
             <DialogFooter>
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

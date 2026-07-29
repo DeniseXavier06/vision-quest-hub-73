@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type Fase = 'planejamento' | 'desenvolvimento' | 'consolidacao';
 
@@ -139,32 +140,39 @@ const fases: {
   },
 ];
 
-const cronograma = [
-  { data: '22/07/2026', atividade: 'Abertura do chamado para criação das artes', responsavel: 'CPA / setor responsável', status: 'A acompanhar' },
-  { data: '22/07/2026', atividade: 'Solicitação ao Danilo sobre os relatórios 2026.2', responsavel: 'CPA / Danilo', status: 'E-mail enviado' },
-  { data: '01/08/2026', atividade: 'Início da divulgação da campanha', responsavel: 'CPA / comunicação', status: 'Programado' },
-  { data: '24/08/2026', atividade: 'Abertura da Avaliação Institucional', responsavel: 'CPA', status: 'Programado' },
-  { data: '14/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '15/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '16/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '18/09/2026', atividade: 'Encerramento da avaliação', responsavel: 'CPA', status: 'Programado' },
-  { data: 'Após 18/09', atividade: 'Análise e consolidação dos resultados', responsavel: 'CPA', status: 'A definir' },
-  { data: 'Após a análise', atividade: 'Discussão e divulgação dos resultados', responsavel: 'CPA / coordenações', status: 'A definir' },
-];
+const statusLabelsCron: Record<string, string> = {
+  planejado: 'Planejado',
+  em_execucao: 'Em execução',
+  concluido: 'Concluído',
+};
 
 const statusVariant = (s: string): 'default' | 'secondary' | 'outline' => {
-  if (s === 'Programado' || s === 'E-mail enviado') return 'default';
-  if (s === 'A confirmar' || s === 'A acompanhar') return 'secondary';
+  if (s === 'Concluído') return 'default';
+  if (s === 'Em execução') return 'secondary';
   return 'outline';
+};
+
+
+type CronogramaItem = {
+  id: string; tipo: string; descricao: string | null; data_inicio: string;
+  data_fim: string; status: string; responsavel: string;
 };
 
 const Landing = () => {
   const [faseAtual, setFaseAtual] = useState<Fase>('planejamento');
+  const [cronograma, setCronograma] = useState<CronogramaItem[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem(FASE_KEY) as Fase | null;
     if (stored) setFaseAtual(stored);
+    supabase
+      .from('avaliacoes')
+      .select('id,tipo,descricao,data_inicio,data_fim,status,responsavel')
+      .eq('exibir_home', true)
+      .order('data_inicio', { ascending: true })
+      .then(({ data }) => setCronograma((data ?? []) as CronogramaItem[]));
   }, []);
+
 
   const alterarFase = (f: Fase) => {
     setFaseAtual(f);
@@ -346,17 +354,29 @@ const Landing = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {cronograma.map((item, i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{item.data}</td>
-                        <td className="px-4 py-3 text-foreground">{item.atividade}</td>
+                    {cronograma.length === 0 && (
+                      <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Nenhuma atividade publicada no cronograma.</td></tr>
+                    )}
+                    {cronograma.map((item) => (
+                      <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
+                          {new Date(item.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          {item.data_fim && item.data_fim !== item.data_inicio && ` — ${new Date(item.data_fim + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+                        </td>
+                        <td className="px-4 py-3 text-foreground">
+                          <span className="font-medium">{item.tipo}</span>
+                          {item.descricao && <span className="block text-xs text-muted-foreground">{item.descricao}</span>}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">{item.responsavel}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                          <Badge variant={statusVariant(statusLabelsCron[item.status] ?? item.status)}>
+                            {statusLabelsCron[item.status] ?? item.status}
+                          </Badge>
                         </td>
                       </tr>
                     ))}
                   </tbody>
+
                 </table>
               </div>
             </CardContent>
