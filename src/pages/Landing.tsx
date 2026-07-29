@@ -15,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 type Fase = 'planejamento' | 'desenvolvimento' | 'consolidacao';
 
