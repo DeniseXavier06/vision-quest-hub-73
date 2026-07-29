@@ -340,17 +340,29 @@ const Landing = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {cronograma.map((item, i) => (
-                      <tr key={i} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">{item.data}</td>
-                        <td className="px-4 py-3 text-foreground">{item.atividade}</td>
+                    {cronograma.length === 0 && (
+                      <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Nenhuma atividade publicada no cronograma.</td></tr>
+                    )}
+                    {cronograma.map((item) => (
+                      <tr key={item.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3 font-medium text-foreground whitespace-nowrap">
+                          {new Date(item.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}
+                          {item.data_fim && item.data_fim !== item.data_inicio && ` — ${new Date(item.data_fim + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+                        </td>
+                        <td className="px-4 py-3 text-foreground">
+                          <span className="font-medium">{item.tipo}</span>
+                          {item.descricao && <span className="block text-xs text-muted-foreground">{item.descricao}</span>}
+                        </td>
                         <td className="px-4 py-3 text-muted-foreground">{item.responsavel}</td>
                         <td className="px-4 py-3">
-                          <Badge variant={statusVariant(item.status)}>{item.status}</Badge>
+                          <Badge variant={statusVariant(statusLabelsCron[item.status] ?? item.status)}>
+                            {statusLabelsCron[item.status] ?? item.status}
+                          </Badge>
                         </td>
                       </tr>
                     ))}
                   </tbody>
+
                 </table>
               </div>
             </CardContent>
