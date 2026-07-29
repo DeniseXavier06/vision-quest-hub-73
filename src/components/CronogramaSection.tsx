@@ -24,23 +24,28 @@ const statusColors: Record<string, string> = {
   concluido: 'bg-success/10 text-success',
 };
 
-const emptyAvaliacao: Omit<Avaliacao, 'id'> = {
+type StatusAv = 'planejado' | 'em_execucao' | 'concluido';
+type ItemCronograma = Omit<Avaliacao, 'id' | 'status'> & { id: string; status: StatusAv; exibirHome: boolean };
+type FormCronograma = Omit<ItemCronograma, 'id'>;
+
+const emptyAvaliacao: FormCronograma = {
   tipo: '',
   descricao: '',
   dataInicio: '',
   dataFim: '',
   status: 'planejado',
   responsavel: '',
+  exibirHome: false,
 };
 
 const tiposAvaliacao = [
-  'Perfil Acadêmico',
-  'Avaliação Quantitativa',
-  'Avaliação Qualitativa',
-  'Comunidade Externa',
+  'Planejamento',
+  'Desenvolvimento',
+  'Consolidação',
 ];
 
 const tipoSelectOptions = tiposAvaliacao.map((t) => ({ value: t, label: t }));
+
 const statusSelectOptions = [
   { value: 'planejado', label: 'Planejado' },
   { value: 'em_execucao', label: 'Em execução' },
