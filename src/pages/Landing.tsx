@@ -152,13 +152,26 @@ const statusVariant = (s: string): 'default' | 'secondary' | 'outline' => {
 };
 
 
+type CronogramaItem = {
+  id: string; tipo: string; descricao: string | null; data_inicio: string;
+  data_fim: string; status: string; responsavel: string;
+};
+
 const Landing = () => {
   const [faseAtual, setFaseAtual] = useState<Fase>('planejamento');
+  const [cronograma, setCronograma] = useState<CronogramaItem[]>([]);
 
   useEffect(() => {
     const stored = localStorage.getItem(FASE_KEY) as Fase | null;
     if (stored) setFaseAtual(stored);
+    supabase
+      .from('avaliacoes')
+      .select('id,tipo,descricao,data_inicio,data_fim,status,responsavel')
+      .eq('exibir_home', true)
+      .order('data_inicio', { ascending: true })
+      .then(({ data }) => setCronograma((data ?? []) as CronogramaItem[]));
   }, []);
+
 
   const alterarFase = (f: Fase) => {
     setFaseAtual(f);
