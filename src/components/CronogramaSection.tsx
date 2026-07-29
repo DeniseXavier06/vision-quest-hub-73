@@ -177,8 +177,12 @@ const CronogramaSection = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <h3 className="text-sm font-heading font-semibold text-foreground">{av.tipo}</h3>
-                  <Badge className={statusColors[av.status]} variant="secondary">{statusLabels[av.status]}</Badge>
+                  <div className="flex items-center gap-2">
+                    {av.exibirHome && <Badge variant="outline">Página Inicial</Badge>}
+                    <Badge className={statusColors[av.status]} variant="secondary">{statusLabels[av.status]}</Badge>
+                  </div>
                 </div>
+
                 <p className="text-sm text-muted-foreground mt-1">{av.descricao}</p>
                 <div className="flex flex-wrap gap-4 mt-2 text-xs text-muted-foreground">
                   <span>📅 {new Date(av.dataInicio).toLocaleDateString('pt-BR')} — {new Date(av.dataFim).toLocaleDateString('pt-BR')}</span>
