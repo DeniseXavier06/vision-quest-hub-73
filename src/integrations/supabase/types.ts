@@ -215,6 +215,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           descricao: string | null
+          exibir_home: boolean
           id: string
           responsavel: string
           status: Database["public"]["Enums"]["status_avaliacao"]
@@ -226,6 +227,7 @@ export type Database = {
           data_fim: string
           data_inicio: string
           descricao?: string | null
+          exibir_home?: boolean
           id?: string
           responsavel: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
@@ -237,6 +239,7 @@ export type Database = {
           data_fim?: string
           data_inicio?: string
           descricao?: string | null
+          exibir_home?: boolean
           id?: string
           responsavel?: string
           status?: Database["public"]["Enums"]["status_avaliacao"]
