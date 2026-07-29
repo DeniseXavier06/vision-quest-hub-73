@@ -139,24 +139,18 @@ const fases: {
   },
 ];
 
-const cronograma = [
-  { data: '22/07/2026', atividade: 'Abertura do chamado para criação das artes', responsavel: 'CPA / setor responsável', status: 'A acompanhar' },
-  { data: '22/07/2026', atividade: 'Solicitação ao Danilo sobre os relatórios 2026.2', responsavel: 'CPA / Danilo', status: 'E-mail enviado' },
-  { data: '01/08/2026', atividade: 'Início da divulgação da campanha', responsavel: 'CPA / comunicação', status: 'Programado' },
-  { data: '24/08/2026', atividade: 'Abertura da Avaliação Institucional', responsavel: 'CPA', status: 'Programado' },
-  { data: '14/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '15/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '16/09/2026', atividade: 'Apoio no laboratório do terceiro andar', responsavel: 'Edemilton / CPA', status: 'A confirmar' },
-  { data: '18/09/2026', atividade: 'Encerramento da avaliação', responsavel: 'CPA', status: 'Programado' },
-  { data: 'Após 18/09', atividade: 'Análise e consolidação dos resultados', responsavel: 'CPA', status: 'A definir' },
-  { data: 'Após a análise', atividade: 'Discussão e divulgação dos resultados', responsavel: 'CPA / coordenações', status: 'A definir' },
-];
+const statusLabelsCron: Record<string, string> = {
+  planejado: 'Planejado',
+  em_execucao: 'Em execução',
+  concluido: 'Concluído',
+};
 
 const statusVariant = (s: string): 'default' | 'secondary' | 'outline' => {
-  if (s === 'Programado' || s === 'E-mail enviado') return 'default';
-  if (s === 'A confirmar' || s === 'A acompanhar') return 'secondary';
+  if (s === 'Concluído') return 'default';
+  if (s === 'Em execução') return 'secondary';
   return 'outline';
 };
+
 
 const Landing = () => {
   const [faseAtual, setFaseAtual] = useState<Fase>('planejamento');
