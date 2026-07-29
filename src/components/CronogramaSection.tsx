@@ -53,13 +53,13 @@ const statusSelectOptions = [
 ];
 
 const CronogramaSection = () => {
-  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<ItemCronograma[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<'create' | 'edit' | 'view'>('create');
-  const [formData, setFormData] = useState<Omit<Avaliacao, 'id'>>(emptyAvaliacao);
+  const [formData, setFormData] = useState<FormCronograma>(emptyAvaliacao);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
@@ -79,9 +79,10 @@ const CronogramaSection = () => {
           descricao: r.descricao ?? '',
           dataInicio: r.data_inicio,
           dataFim: r.data_fim,
-          status: r.status,
+          status: r.status as StatusAv,
           responsavel: r.responsavel,
-        })) as Avaliacao[],
+          exibirHome: !!r.exibir_home,
+        })),
       );
     }
     setLoading(false);
@@ -89,13 +90,18 @@ const CronogramaSection = () => {
 
   useEffect(() => { fetchAvaliacoes(); }, []);
 
+  const toForm = (av: ItemCronograma): FormCronograma => ({
+    tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim,
+    status: av.status, responsavel: av.responsavel, exibirHome: av.exibirHome,
+  });
+
   const openCreate = () => { setFormData(emptyAvaliacao); setEditingId(null); setDialogMode('create'); setDialogOpen(true); };
-  const openEdit = (av: Avaliacao) => {
-    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+  const openEdit = (av: ItemCronograma) => {
+    setFormData(toForm(av));
     setEditingId(av.id); setDialogMode('edit'); setDialogOpen(true);
   };
-  const openView = (av: Avaliacao) => {
-    setFormData({ tipo: av.tipo, descricao: av.descricao, dataInicio: av.dataInicio, dataFim: av.dataFim, status: av.status, responsavel: av.responsavel });
+  const openView = (av: ItemCronograma) => {
+    setFormData(toForm(av));
     setEditingId(av.id); setDialogMode('view'); setDialogOpen(true);
   };
 
@@ -108,7 +114,9 @@ const CronogramaSection = () => {
       data_fim: formData.dataFim,
       status: formData.status,
       responsavel: formData.responsavel,
+      exibir_home: formData.exibirHome,
     };
+
     if (dialogMode === 'create') {
       const { error } = await supabase.from('avaliacoes').insert(payload);
       if (error) { toast.error('Erro ao cadastrar: ' + error.message); return; }
