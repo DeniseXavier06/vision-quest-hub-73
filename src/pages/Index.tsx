@@ -13,6 +13,8 @@ import SetoresSection from '@/components/SetoresSection';
 import ConfiguracaoAmbienteSection from '@/components/ConfiguracaoAmbienteSection';
 import ImportacoesSection from '@/components/ImportacoesSection';
 import AvaliadoresSection from '@/components/AvaliadoresSection';
+import AcessosSection from '@/components/AcessosSection';
+
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -37,7 +39,9 @@ const Index = () => {
       case 'configuracao': return <ConfiguracaoAmbienteSection />;
       case 'importacoes': return <ImportacoesSection />;
       case 'avaliadores': return <AvaliadoresSection />;
+      case 'acessos': return <AcessosSection />;
       default: return <DashboardOverview onSectionChange={setActiveSection} />;
+
     }
   };
 
