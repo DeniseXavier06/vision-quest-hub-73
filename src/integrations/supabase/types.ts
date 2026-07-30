@@ -528,6 +528,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          aprovado: boolean
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado?: boolean
+          created_at?: string
+          email: string
+          id: string
+          nome?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado?: boolean
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       questoes_avaliacao: {
         Row: {
           area_id: string | null
@@ -895,6 +922,27 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       usuarios_cpa: {
         Row: {
           ativo: boolean
@@ -936,9 +984,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "user"
       nivel_avaliacao: "presencial" | "ead"
       perfil_avaliacao: "professor" | "aluno" | "colaborador" | "coordenador"
       status_acao: "nao_iniciada" | "em_andamento" | "concluida"
@@ -1073,6 +1128,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "user"],
       nivel_avaliacao: ["presencial", "ead"],
       perfil_avaliacao: ["professor", "aluno", "colaborador", "coordenador"],
       status_acao: ["nao_iniciada", "em_andamento", "concluida"],
