@@ -70,7 +70,7 @@ const SidebarCPA = ({ activeSection, onSectionChange }: SidebarCPAProps) => {
       </div>
 
       <nav className="flex-1 py-4 space-y-1 px-2">
-        {menuItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
           return (
@@ -91,14 +91,27 @@ const SidebarCPA = ({ activeSection, onSectionChange }: SidebarCPAProps) => {
         })}
       </nav>
 
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="p-3 border-t border-sidebar-border text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors flex items-center justify-center"
-      >
-        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-      </button>
+      <div className="border-t border-sidebar-border px-2 py-3 space-y-1">
+        {!collapsed && user && (
+          <p className="px-3 text-xs text-sidebar-foreground/60 truncate">{user.email}</p>
+        )}
+        <button
+          onClick={signOut}
+          className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors"
+        >
+          <LogOut className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && <span>Sair</span>}
+        </button>
+        <button
+          onClick={() => setCollapsed(!collapsed)}
+          className="w-full py-2 text-sidebar-foreground/60 hover:text-sidebar-foreground transition-colors flex items-center justify-center"
+        >
+          {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+        </button>
+      </div>
     </aside>
   );
 };
+
 
 export default SidebarCPA;
