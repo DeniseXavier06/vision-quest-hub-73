@@ -42,6 +42,9 @@ const menuItems = [
 
 const SidebarCPA = ({ activeSection, onSectionChange }: SidebarCPAProps) => {
   const [collapsed, setCollapsed] = useState(false);
+  const { isAdmin, user, signOut } = useAuth();
+  const items = isAdmin ? [...menuItems, { id: 'acessos', label: 'Acessos', icon: ShieldCheck }] : menuItems;
+
 
   return (
     <aside
