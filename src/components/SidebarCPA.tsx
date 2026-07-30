@@ -14,8 +14,11 @@ import {
   Settings2,
   FileUp,
   ClipboardList,
+  ShieldCheck,
+  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
 
 interface SidebarCPAProps {
   activeSection: string;
@@ -35,6 +38,7 @@ const menuItems = [
   { id: 'avaliadores', label: 'Avaliadores', icon: ClipboardList },
   { id: 'configuracao', label: 'Configuração', icon: Settings2 },
 ];
+
 
 const SidebarCPA = ({ activeSection, onSectionChange }: SidebarCPAProps) => {
   const [collapsed, setCollapsed] = useState(false);
