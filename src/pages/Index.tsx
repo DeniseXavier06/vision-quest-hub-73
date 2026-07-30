@@ -13,6 +13,8 @@ import SetoresSection from '@/components/SetoresSection';
 import ConfiguracaoAmbienteSection from '@/components/ConfiguracaoAmbienteSection';
 import ImportacoesSection from '@/components/ImportacoesSection';
 import AvaliadoresSection from '@/components/AvaliadoresSection';
+import AcessosSection from '@/components/AcessosSection';
+
 
 const Index = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
