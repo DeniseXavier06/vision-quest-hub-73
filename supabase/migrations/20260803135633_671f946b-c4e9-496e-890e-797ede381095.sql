@@ -1,0 +1,1 @@
+UPDATE public.profiles SET aprovado = true WHERE lower(email) = 'denise.santos@uniriosead.com';
