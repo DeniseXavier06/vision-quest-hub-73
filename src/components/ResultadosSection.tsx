@@ -186,6 +186,7 @@ const PAGE_SIZE = 200;
 
 const ResultadosSection = () => {
   const [data, setData] = useState<ResultadoRow[]>([]);
+  const [grupo, setGrupo] = useState<'discdoc' | 'colaborador' | 'coordenador'>('discdoc');
   const [importacoes, setImportacoes] = useState<Importacao[]>([]);
   const [filterSemestre, setFilterSemestre] = useState('all');
   const [filterNivel, setFilterNivel] = useState('all');
