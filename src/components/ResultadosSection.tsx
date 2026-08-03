@@ -898,6 +898,25 @@ const ResultadosSection = () => {
         </div>
       </div>
 
+      {/* Submenus por nível */}
+      <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-muted w-fit">
+        {([
+          { id: 'discdoc', label: 'Discentes/Docentes' },
+          { id: 'colaborador', label: 'Colaborador' },
+          { id: 'coordenador', label: 'Coordenador' },
+        ] as const).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => { setGrupo(t.id); clearFilters(); }}
+            className={`px-4 py-2 text-sm rounded-md transition-colors ${grupo === t.id ? 'bg-background text-foreground font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4 flex items-center gap-3">
