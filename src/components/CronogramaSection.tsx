@@ -25,7 +25,35 @@ const statusColors: Record<string, string> = {
   chamado_aberto: 'bg-warning/10 text-warning',
 };
 
-type StatusAv = 'planejado' | 'em_execucao' | 'concluido' | 'chamado_aberto';
+type ItemCronograma = Omit<Avaliacao, 'id' | 'status'> & { id: string; status: StatusAv; exibirHome: boolean };
+type FormCronograma = Omit<ItemCronograma, 'id'>;
+
+const emptyAvaliacao: FormCronograma = {
+  tipo: '',
+  descricao: '',
+  dataInicio: '',
+  dataFim: '',
+  status: 'planejado',
+  responsavel: '',
+  exibirHome: false,
+};
+
+const tiposAvaliacao = [
+  'Planejamento',
+  'Desenvolvimento',
+  'Consolidação',
+];
+
+const tipoSelectOptions = tiposAvaliacao.map((t) => ({ value: t, label: t }));
+
+const statusSelectOptions = [
+  { value: 'planejado', label: 'Planejado' },
+  { value: 'em_execucao', label: 'Em execução' },
+  { value: 'concluido', label: 'Concluído' },
+  { value: 'chamado_aberto', label: 'Chamado aberto' },
+];
+
+
 
 
 const CronogramaSection = () => {
