@@ -997,7 +997,11 @@ export type Database = {
       nivel_avaliacao: "presencial" | "ead"
       perfil_avaliacao: "professor" | "aluno" | "colaborador" | "coordenador"
       status_acao: "nao_iniciada" | "em_andamento" | "concluida"
-      status_avaliacao: "planejado" | "em_execucao" | "concluido"
+      status_avaliacao:
+        | "planejado"
+        | "em_execucao"
+        | "concluido"
+        | "chamado_aberto"
       status_reuniao: "agendada" | "realizada" | "cancelada"
       tipo_setor: "departamento" | "coordenacao" | "setor"
       tipo_usuario: "coordenador" | "gestor" | "admin_cpa"
@@ -1132,7 +1136,12 @@ export const Constants = {
       nivel_avaliacao: ["presencial", "ead"],
       perfil_avaliacao: ["professor", "aluno", "colaborador", "coordenador"],
       status_acao: ["nao_iniciada", "em_andamento", "concluida"],
-      status_avaliacao: ["planejado", "em_execucao", "concluido"],
+      status_avaliacao: [
+        "planejado",
+        "em_execucao",
+        "concluido",
+        "chamado_aberto",
+      ],
       status_reuniao: ["agendada", "realizada", "cancelada"],
       tipo_setor: ["departamento", "coordenacao", "setor"],
       tipo_usuario: ["coordenador", "gestor", "admin_cpa"],

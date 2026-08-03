@@ -1,0 +1,1 @@
+ALTER TYPE public.status_avaliacao ADD VALUE IF NOT EXISTS 'chamado_aberto';
