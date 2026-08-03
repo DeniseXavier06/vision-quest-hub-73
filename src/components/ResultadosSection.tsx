@@ -678,7 +678,7 @@ const ResultadosSection = () => {
   }, []);
 
   // === Colaboradores-specific charts ===
-  const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
+  const colabData = useMemo(() => scopedData, [scopedData]);
 
   const colabMediaDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
