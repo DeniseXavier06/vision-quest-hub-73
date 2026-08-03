@@ -186,6 +186,7 @@ const PAGE_SIZE = 200;
 
 const ResultadosSection = () => {
   const [data, setData] = useState<ResultadoRow[]>([]);
+  const [grupo, setGrupo] = useState<'discdoc' | 'colaborador' | 'coordenador'>('discdoc');
   const [importacoes, setImportacoes] = useState<Importacao[]>([]);
   const [filterSemestre, setFilterSemestre] = useState('all');
   const [filterNivel, setFilterNivel] = useState('all');
@@ -362,18 +363,31 @@ const ResultadosSection = () => {
     fetchImportacoes();
   };
 
+  // Escopo por submenu (nível): Discentes/Docentes, Colaborador, Coordenador
+  const scopedData = useMemo(() => {
+    return data.filter((r) => {
+      const t = (r.tipoAvaliacao || '').toLowerCase();
+      const n = (r.nivel || '').toLowerCase();
+      const isColab = t.includes('colabora') || n.includes('colabora');
+      const isCoord = t.includes('coordena') || n.includes('coordena');
+      if (grupo === 'colaborador') return isColab;
+      if (grupo === 'coordenador') return isCoord;
+      return !isColab && !isCoord;
+    });
+  }, [data, grupo]);
+
   // Filter options
   const filterOptions = useMemo(() => {
-    const semestres = [...new Set(data.map((r) => r.semestre).filter(Boolean))].sort();
-    const niveis = [...new Set(data.map((r) => r.nivel).filter(Boolean))].sort();
-    const cursos = [...new Set(data.map((r) => r.curso).filter(Boolean))].sort();
-    const dimensoes = [...new Set(data.map((r) => r.dimensao).filter(Boolean))].sort();
-    const areas = [...new Set(data.map((r) => r.area).filter(Boolean))].sort();
+    const semestres = [...new Set(scopedData.map((r) => r.semestre).filter(Boolean))].sort();
+    const niveis = [...new Set(scopedData.map((r) => r.nivel).filter(Boolean))].sort();
+    const cursos = [...new Set(scopedData.map((r) => r.curso).filter(Boolean))].sort();
+    const dimensoes = [...new Set(scopedData.map((r) => r.dimensao).filter(Boolean))].sort();
+    const areas = [...new Set(scopedData.map((r) => r.area).filter(Boolean))].sort();
     return { semestres, niveis, cursos, dimensoes, areas };
-  }, [data]);
+  }, [scopedData]);
 
   const filtered = useMemo(() => {
-    return data.filter((r) => {
+    return scopedData.filter((r) => {
       if (filterSemestre !== 'all' && r.semestre !== filterSemestre) return false;
       if (filterNivel !== 'all' && r.nivel !== filterNivel) return false;
       if (filterCurso !== 'all' && r.curso !== filterCurso) return false;
@@ -385,7 +399,7 @@ const ResultadosSection = () => {
       }
       return true;
     });
-  }, [data, filterSemestre, filterNivel, filterCurso, filterDimensao, filterArea, searchTerm]);
+  }, [scopedData, filterSemestre, filterNivel, filterCurso, filterDimensao, filterArea, searchTerm]);
 
   const stats = useMemo(() => ({
     total: filtered.length,
@@ -664,7 +678,7 @@ const ResultadosSection = () => {
   }, []);
 
   // === Colaboradores-specific charts ===
-  const colabData = useMemo(() => data.filter(r => r.tipoAvaliacao === 'Colaboradores'), [data]);
+  const colabData = useMemo(() => scopedData, [scopedData]);
 
   const colabMediaDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
@@ -884,6 +898,25 @@ const ResultadosSection = () => {
         </div>
       </div>
 
+      {/* Submenus por nível */}
+      <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-muted w-fit">
+        {([
+          { id: 'discdoc', label: 'Discentes/Docentes' },
+          { id: 'colaborador', label: 'Colaborador' },
+          { id: 'coordenador', label: 'Coordenador' },
+        ] as const).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => { setGrupo(t.id); clearFilters(); }}
+            className={`px-4 py-2 text-sm rounded-md transition-colors ${grupo === t.id ? 'bg-background text-foreground font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+
+
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card><CardContent className="p-4 flex items-center gap-3">
@@ -919,7 +952,7 @@ const ResultadosSection = () => {
       </div>
 
       {/* Charts Row 1 - hidden when viewing Colaboradores */}
-      {filterNivel !== 'Colaboradores' && (<>
+      {grupo !== 'colaborador' && (<>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-base font-heading flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" />Registros por Curso<ChartFontControl chartId="cursoBar" sizes={chartFontSizes} onChange={updateFontSize} /></CardTitle></CardHeader>
@@ -1140,7 +1173,7 @@ const ResultadosSection = () => {
       </>)}
 
       {/* === Colaboradores Section - only when nivel = Colaboradores === */}
-      {filterNivel === 'Colaboradores' && colabData.length > 0 && (
+      {grupo === 'colaborador' && colabData.length > 0 && (
         <>
           <div className="pt-4">
             <h3 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
