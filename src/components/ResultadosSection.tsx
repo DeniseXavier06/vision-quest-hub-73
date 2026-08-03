@@ -363,18 +363,31 @@ const ResultadosSection = () => {
     fetchImportacoes();
   };
 
+  // Escopo por submenu (nível): Discentes/Docentes, Colaborador, Coordenador
+  const scopedData = useMemo(() => {
+    return data.filter((r) => {
+      const t = (r.tipoAvaliacao || '').toLowerCase();
+      const n = (r.nivel || '').toLowerCase();
+      const isColab = t.includes('colabora') || n.includes('colabora');
+      const isCoord = t.includes('coordena') || n.includes('coordena');
+      if (grupo === 'colaborador') return isColab;
+      if (grupo === 'coordenador') return isCoord;
+      return !isColab && !isCoord;
+    });
+  }, [data, grupo]);
+
   // Filter options
   const filterOptions = useMemo(() => {
-    const semestres = [...new Set(data.map((r) => r.semestre).filter(Boolean))].sort();
-    const niveis = [...new Set(data.map((r) => r.nivel).filter(Boolean))].sort();
-    const cursos = [...new Set(data.map((r) => r.curso).filter(Boolean))].sort();
-    const dimensoes = [...new Set(data.map((r) => r.dimensao).filter(Boolean))].sort();
-    const areas = [...new Set(data.map((r) => r.area).filter(Boolean))].sort();
+    const semestres = [...new Set(scopedData.map((r) => r.semestre).filter(Boolean))].sort();
+    const niveis = [...new Set(scopedData.map((r) => r.nivel).filter(Boolean))].sort();
+    const cursos = [...new Set(scopedData.map((r) => r.curso).filter(Boolean))].sort();
+    const dimensoes = [...new Set(scopedData.map((r) => r.dimensao).filter(Boolean))].sort();
+    const areas = [...new Set(scopedData.map((r) => r.area).filter(Boolean))].sort();
     return { semestres, niveis, cursos, dimensoes, areas };
-  }, [data]);
+  }, [scopedData]);
 
   const filtered = useMemo(() => {
-    return data.filter((r) => {
+    return scopedData.filter((r) => {
       if (filterSemestre !== 'all' && r.semestre !== filterSemestre) return false;
       if (filterNivel !== 'all' && r.nivel !== filterNivel) return false;
       if (filterCurso !== 'all' && r.curso !== filterCurso) return false;
@@ -386,7 +399,7 @@ const ResultadosSection = () => {
       }
       return true;
     });
-  }, [data, filterSemestre, filterNivel, filterCurso, filterDimensao, filterArea, searchTerm]);
+  }, [scopedData, filterSemestre, filterNivel, filterCurso, filterDimensao, filterArea, searchTerm]);
 
   const stats = useMemo(() => ({
     total: filtered.length,
