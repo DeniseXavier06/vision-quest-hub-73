@@ -126,6 +126,7 @@ export const statusLabels: Record<string, string> = {
   planejado: 'Planejado',
   em_execucao: 'Em execução',
   concluido: 'Concluído',
+  chamado_aberto: 'Chamado aberto',
   agendada: 'Agendada',
   realizada: 'Realizada',
   cancelada: 'Cancelada',
