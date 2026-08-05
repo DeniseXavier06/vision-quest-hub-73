@@ -35,6 +35,7 @@ const Index = () => {
       case 'acoes': return <AcoesSection />;
       case 'cronograma': return <CronogramaSection />;
       case 'resultados': return <ResultadosSection />;
+      case 'analise': return <AnaliseSection />;
       case 'reunioes': return <ReunioesSection />;
       case 'relatorios': return <RelatoriosSection />;
       case 'configuracao': return <ConfiguracaoAmbienteSection />;
