@@ -4,6 +4,7 @@ import {
   ListChecks,
   Calendar,
   BarChart3,
+  PieChart,
   Users,
   FileText,
   ChevronLeft,
