@@ -32,6 +32,7 @@ const menuItems = [
   { id: 'acoes', label: 'Ações', icon: ListChecks },
   { id: 'cronograma', label: 'Cronograma', icon: Calendar },
   { id: 'resultados', label: 'Resultados', icon: BarChart3 },
+  { id: 'analise', label: 'Análise', icon: PieChart },
   { id: 'reunioes', label: 'Reuniões', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: FileText },
   { id: 'importacoes', label: 'Importações', icon: FileUp },
