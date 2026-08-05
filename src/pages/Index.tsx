@@ -14,6 +14,7 @@ import ConfiguracaoAmbienteSection from '@/components/ConfiguracaoAmbienteSectio
 import ImportacoesSection from '@/components/ImportacoesSection';
 import AvaliadoresSection from '@/components/AvaliadoresSection';
 import AcessosSection from '@/components/AcessosSection';
+import AnaliseSection from '@/components/AnaliseSection';
 
 
 const Index = () => {
