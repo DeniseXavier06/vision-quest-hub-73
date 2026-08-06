@@ -187,10 +187,52 @@ const Shelf = ({ icon: Icon, title, pills, onDrop, onRemove, onToggleAgg }: {
   </div>
 );
 
+const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAgg }: {
+  icon: typeof Rows3; title: string; pill?: Pill; hint: string;
+  onDrop: (key: string) => void; onRemove: () => void; onToggleAgg: () => void;
+}) => (
+  <div
+    onDragOver={(e) => e.preventDefault()}
+    onDrop={(e) => { e.preventDefault(); const k = e.dataTransfer.getData('text/field'); if (k) onDrop(k); }}
+    className="flex items-center gap-2 rounded border border-dashed border-border px-2 py-1.5 min-h-[34px]"
+  >
+    <div className="flex items-center gap-1.5 w-20 flex-shrink-0 text-xs font-medium text-muted-foreground">
+      <Icon className="w-3.5 h-3.5" />{title}
+    </div>
+    <div className="flex-1 min-w-0">
+      {pill
+        ? <PillTag pill={pill} onRemove={onRemove} onToggleAgg={onToggleAgg} />
+        : <span className="text-[11px] text-muted-foreground/60">{hint}</span>}
+    </div>
+  </div>
+);
+
 /* ---------------- Renderização de gráfico ---------------- */
 
 const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; height?: number }) => {
-  const { chartData, series } = useMemo(() => aggregate(data, sheet.cols, sheet.rows), [data, sheet.cols, sheet.rows]);
+  const marks = useMemo(
+    () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
+    [sheet.color, sheet.size, sheet.label, sheet.detail],
+  );
+  const { chartData, series } = useMemo(
+    () => aggregate(data, sheet.cols, sheet.rows, marks),
+    [data, sheet.cols, sheet.rows, marks],
+  );
+
+  const colorIsMeasure = !!sheet.color && fieldOf(sheet.color.key).kind === 'measure';
+  const colorRamp = useMemo(() => {
+    if (!colorIsMeasure) return null;
+    const vals = chartData.map((d) => Number(d.__color) || 0);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    return (v: number) => {
+      const t = max === min ? 0.5 : (v - min) / (max - min);
+      return `hsl(var(--chart-1) / ${(0.35 + t * 0.65).toFixed(2)})`;
+    };
+  }, [colorIsMeasure, chartData]);
+
+  const showLabels = !!sheet.label;
+  const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
+
 
   if (!chartData.length) {
     return (
