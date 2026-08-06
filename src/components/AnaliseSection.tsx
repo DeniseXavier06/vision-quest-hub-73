@@ -502,6 +502,29 @@ const AnaliseSection = () => {
                     rows: sheet.rows.map((p, x) => x === i ? { ...p, agg: p.agg === 'avg' ? 'sum' : p.agg === 'sum' ? 'count' : 'avg' } : p),
                   })} />
 
+                <div className="px-3 py-2 border-b border-border bg-muted/20">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">Marcas</p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {([
+                      { slot: 'color' as MarkSlot, title: 'Cor', icon: Palette, hint: 'Arraste para colorir' },
+                      { slot: 'size' as MarkSlot, title: 'Tamanho', icon: Ruler, hint: 'Arraste uma medida' },
+                      { slot: 'label' as MarkSlot, title: 'Rótulo', icon: Tag, hint: 'Arraste para exibir rótulos' },
+                      { slot: 'detail' as MarkSlot, title: 'Detalhe', icon: Layers, hint: 'Arraste para detalhar' },
+                    ]).map((m) => (
+                      <MarkShelf key={m.slot} icon={m.icon} title={m.title} hint={m.hint} pill={sheet[m.slot]}
+                        onDrop={(k) => setMark(m.slot, k)}
+                        onRemove={() => updateSheet(sheet.id, { [m.slot]: undefined } as Partial<Sheet>)}
+                        onToggleAgg={() => {
+                          const p = sheet[m.slot];
+                          if (!p) return;
+                          updateSheet(sheet.id, {
+                            [m.slot]: { ...p, agg: p.agg === 'avg' ? 'sum' : p.agg === 'sum' ? 'count' : 'avg' },
+                          } as Partial<Sheet>);
+                        }} />
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex-1 p-4 min-w-0">
                   <Input
                     value={sheet.name}
@@ -510,6 +533,7 @@ const AnaliseSection = () => {
                   />
                   <ChartView sheet={sheet} data={sheetData} />
                 </div>
+
               </>
             ) : dashboard ? (
               <div className="flex-1 p-4 space-y-3">
