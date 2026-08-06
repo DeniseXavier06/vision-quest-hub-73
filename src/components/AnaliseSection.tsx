@@ -350,6 +350,11 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
 
 type TabRef = { kind: 'sheet' | 'dashboard' | 'story'; id: string };
 
+interface AnaliseRow {
+  id: string; nome: string; descricao: string | null; updated_at: string;
+  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[] };
+}
+
 const AnaliseSection = () => {
   const [data, setData] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -359,19 +364,81 @@ const AnaliseSection = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [active, setActive] = useState<TabRef>({ kind: 'sheet', id: '' });
 
-  /* persistência local */
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const wb = JSON.parse(raw);
-        if (wb.sheets?.length) setSheets(wb.sheets);
-        if (wb.dashboards) setDashboards(wb.dashboards);
-        if (wb.stories) setStories(wb.stories);
-      }
-    } catch { /* ignora */ }
+  /* lista de análises salvas */
+  const [analises, setAnalises] = useState<AnaliseRow[]>([]);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [savingState, setSavingState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [newName, setNewName] = useState('');
+
+  const fetchAnalises = useCallback(async () => {
+    const { data: rows } = await supabase.from('analises')
+      .select('id, nome, descricao, updated_at, workbook').order('updated_at', { ascending: false });
+    if (rows) setAnalises(rows as unknown as AnaliseRow[]);
   }, []);
 
+  useEffect(() => { fetchAnalises(); }, [fetchAnalises]);
+
+  const current = analises.find((a) => a.id === currentId) || null;
+
+  const openAnalise = (a: AnaliseRow) => {
+    const wb = a.workbook || {};
+    setSheets(wb.sheets?.length ? wb.sheets : [newSheet(1)]);
+    setDashboards(wb.dashboards || []);
+    setStories(wb.stories || []);
+    setActive({ kind: 'sheet', id: '' });
+    setCurrentId(a.id);
+    setSavingState('idle');
+  };
+
+  const createAnalise = async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const nome = newName.trim() || `Análise ${analises.length + 1}`;
+    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [] };
+    const { data: row } = await supabase.from('analises')
+      .insert({ user_id: auth.user.id, nome, workbook: wb as never })
+      .select('id, nome, descricao, updated_at, workbook').single();
+    if (row) {
+      setNewName('');
+      setAnalises((p) => [row as unknown as AnaliseRow, ...p]);
+      openAnalise(row as unknown as AnaliseRow);
+    }
+  };
+
+  const duplicateAnalise = async (a: AnaliseRow) => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const { data: row } = await supabase.from('analises')
+      .insert({ user_id: auth.user.id, nome: `${a.nome} (cópia)`, descricao: a.descricao, workbook: a.workbook as never })
+      .select('id, nome, descricao, updated_at, workbook').single();
+    if (row) setAnalises((p) => [row as unknown as AnaliseRow, ...p]);
+  };
+
+  const renameAnalise = async (a: AnaliseRow, nome: string) => {
+    setAnalises((p) => p.map((x) => (x.id === a.id ? { ...x, nome } : x)));
+    await supabase.from('analises').update({ nome }).eq('id', a.id);
+  };
+
+  const deleteAnalise = async (a: AnaliseRow) => {
+    setAnalises((p) => p.filter((x) => x.id !== a.id));
+    if (currentId === a.id) setCurrentId(null);
+    await supabase.from('analises').delete().eq('id', a.id);
+  };
+
+  /* autosave da análise aberta */
+  useEffect(() => {
+    if (!currentId) return;
+    setSavingState('saving');
+    const t = setTimeout(async () => {
+      const wb = { sheets, dashboards, stories };
+      await supabase.from('analises').update({ workbook: wb as never }).eq('id', currentId);
+      setAnalises((p) => p.map((x) => (x.id === currentId ? { ...x, workbook: wb, updated_at: new Date().toISOString() } : x)));
+      setSavingState('saved');
+    }, 800);
+    return () => clearTimeout(t);
+  }, [sheets, dashboards, stories, currentId]);
+
+  /* backup local */
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories }));
   }, [sheets, dashboards, stories]);
@@ -379,6 +446,7 @@ const AnaliseSection = () => {
   useEffect(() => {
     if (!active.id && sheets.length) setActive({ kind: 'sheet', id: sheets[0].id });
   }, [sheets, active.id]);
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
