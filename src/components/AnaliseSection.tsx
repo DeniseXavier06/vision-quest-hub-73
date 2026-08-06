@@ -9,13 +9,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend,
+  LabelList, ResponsiveContainer,
 } from 'recharts';
 import {
   BarChart3, BarChartHorizontal, LineChart as LineIcon, AreaChart as AreaIcon, PieChart as PieIcon,
   Table as TableIcon, ScatterChart as ScatterIcon, Plus, X, Filter, Rows3, Columns3,
-  Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2,
+  Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2, Palette, Ruler, Tag, Layers,
 } from 'lucide-react';
+
 
 /* ---------------- Modelo de dados ---------------- */
 
