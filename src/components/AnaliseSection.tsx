@@ -57,10 +57,12 @@ const CHART_TYPES: { type: ChartType; label: string; icon: typeof BarChart3 }[] 
 type Agg = 'avg' | 'sum' | 'count';
 interface Pill { key: string; agg?: Agg }
 interface FilterDef { key: string; values: string[] }
+type MarkSlot = 'color' | 'size' | 'label' | 'detail';
 
 interface Sheet {
   id: string; name: string;
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
+  color?: Pill; size?: Pill; label?: Pill; detail?: Pill;
   chart: ChartType;
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
@@ -77,22 +79,41 @@ const newSheet = (n: number): Sheet => ({
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 const STORAGE_KEY = 'cpa-analise-workbook';
 
+const aggValue = (vals: number[], agg: Agg) => {
+  const sum = vals.reduce((a, v) => a + v, 0);
+  if (agg === 'count') return vals.length;
+  if (agg === 'avg') return Number((sum / (vals.length || 1)).toFixed(2));
+  return Number(sum.toFixed(2));
+};
+
 /* ---------------- Agregação ---------------- */
 
-function aggregate(data: Row[], cols: Pill[], rows: Pill[]) {
+interface Marks { color?: Pill; size?: Pill; label?: Pill; detail?: Pill }
+
+function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}) {
+  const isDim = (p?: Pill) => !!p && fieldOf(p.key).kind === 'dim';
   const colDims = cols.filter((p) => fieldOf(p.key).kind === 'dim');
   const rowDims = rows.filter((p) => fieldOf(p.key).kind === 'dim');
   const measures = [...cols, ...rows].filter((p) => fieldOf(p.key).kind === 'measure');
 
+  // Detalhe: aumenta a granularidade do eixo. Cor (dimensão): quebra em séries.
+  const xDims = [...colDims, ...(isDim(marks.detail) ? [marks.detail!] : [])];
+  const grpDims = [...rowDims, ...(isDim(marks.color) ? [marks.color!] : [])];
+
   const label = (p: Pill) => `${(p.agg || 'avg') === 'avg' ? 'MÉD' : (p.agg === 'sum' ? 'SOMA' : 'CONT')}(${fieldOf(p.key).label})`;
   const seriesDefs = measures.length ? measures : [{ key: 'total', agg: 'count' as Agg }];
 
-  const buckets = new Map<string, { x: string; series: Map<string, number[]> }>();
+  const buckets = new Map<string, {
+    x: string; series: Map<string, number[]>; size: number[]; labels: number[]; colorVals: number[];
+  }>();
   for (const r of data) {
-    const x = colDims.length ? colDims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
-    const grp = rowDims.length ? rowDims.map((d) => String(r[d.key] ?? '')).join(' / ') : '';
-    if (!buckets.has(x)) buckets.set(x, { x, series: new Map() });
+    const x = xDims.length ? xDims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
+    const grp = grpDims.length ? grpDims.map((d) => String(r[d.key] ?? '')).join(' / ') : '';
+    if (!buckets.has(x)) buckets.set(x, { x, series: new Map(), size: [], labels: [], colorVals: [] });
     const b = buckets.get(x)!;
+    if (marks.size && !isDim(marks.size)) b.size.push(Number(r[marks.size.key]) || 0);
+    if (marks.label && !isDim(marks.label)) b.labels.push(Number(r[marks.label.key]) || 0);
+    if (marks.color && !isDim(marks.color)) b.colorVals.push(Number(r[marks.color.key]) || 0);
     for (const m of seriesDefs) {
       const name = grp ? `${grp} — ${label(m)}` : label(m);
       if (!b.series.has(name)) b.series.set(name, []);
@@ -106,16 +127,21 @@ function aggregate(data: Row[], cols: Pill[], rows: Pill[]) {
     b.series.forEach((vals, name) => {
       seriesNames.add(name);
       const def = seriesDefs.find((m) => name.endsWith(label(m)));
-      const agg = def?.agg || 'avg';
-      const sum = vals.reduce((a, v) => a + v, 0);
-      out[name] = agg === 'avg' ? Number((sum / (vals.length || 1)).toFixed(2))
-        : agg === 'count' ? vals.length : Number(sum.toFixed(2));
+      out[name] = aggValue(vals, def?.agg || 'avg');
     });
+    if (b.size.length) out.__size = aggValue(b.size, marks.size?.agg || 'avg');
+    if (b.colorVals.length) out.__color = aggValue(b.colorVals, marks.color?.agg || 'avg');
+    if (marks.label) {
+      out.__label = isDim(marks.label)
+        ? b.x
+        : aggValue(b.labels, marks.label.agg || 'avg');
+    }
     return out;
   }).sort((a, b) => String(a.x).localeCompare(String(b.x)));
 
   return { chartData: result, series: [...seriesNames] };
 }
+
 
 /* ---------------- Pílulas / Shelves ---------------- */
 
