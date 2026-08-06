@@ -433,6 +433,13 @@ const AnaliseSection = () => {
     if (!sheet || sheet.filters.some((f) => f.key === key)) return;
     updateSheet(sheet.id, { filters: [...sheet.filters, { key, values: [] }] });
   };
+  const setMark = (slot: MarkSlot, key: string) => {
+    if (!sheet) return;
+    const f = fieldOf(key);
+    const pill: Pill = { key, agg: f.kind === 'measure' ? (key === 'media' ? 'avg' : 'sum') : undefined };
+    updateSheet(sheet.id, { [slot]: pill } as Partial<Sheet>);
+  };
+
 
   return (
     <div className="space-y-4">
