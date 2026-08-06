@@ -168,6 +168,36 @@ export type Database = {
           },
         ]
       }
+      analises: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string
+          user_id: string
+          workbook: Json
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+          user_id: string
+          workbook?: Json
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+          user_id?: string
+          workbook?: Json
+        }
+        Relationships: []
+      }
       areas_avaliacao: {
         Row: {
           ativo: boolean

@@ -350,6 +350,11 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
 
 type TabRef = { kind: 'sheet' | 'dashboard' | 'story'; id: string };
 
+interface AnaliseRow {
+  id: string; nome: string; descricao: string | null; updated_at: string;
+  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[] };
+}
+
 const AnaliseSection = () => {
   const [data, setData] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -359,19 +364,81 @@ const AnaliseSection = () => {
   const [stories, setStories] = useState<Story[]>([]);
   const [active, setActive] = useState<TabRef>({ kind: 'sheet', id: '' });
 
-  /* persistência local */
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const wb = JSON.parse(raw);
-        if (wb.sheets?.length) setSheets(wb.sheets);
-        if (wb.dashboards) setDashboards(wb.dashboards);
-        if (wb.stories) setStories(wb.stories);
-      }
-    } catch { /* ignora */ }
+  /* lista de análises salvas */
+  const [analises, setAnalises] = useState<AnaliseRow[]>([]);
+  const [currentId, setCurrentId] = useState<string | null>(null);
+  const [savingState, setSavingState] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [newName, setNewName] = useState('');
+
+  const fetchAnalises = useCallback(async () => {
+    const { data: rows } = await supabase.from('analises')
+      .select('id, nome, descricao, updated_at, workbook').order('updated_at', { ascending: false });
+    if (rows) setAnalises(rows as unknown as AnaliseRow[]);
   }, []);
 
+  useEffect(() => { fetchAnalises(); }, [fetchAnalises]);
+
+  const current = analises.find((a) => a.id === currentId) || null;
+
+  const openAnalise = (a: AnaliseRow) => {
+    const wb = a.workbook || {};
+    setSheets(wb.sheets?.length ? wb.sheets : [newSheet(1)]);
+    setDashboards(wb.dashboards || []);
+    setStories(wb.stories || []);
+    setActive({ kind: 'sheet', id: '' });
+    setCurrentId(a.id);
+    setSavingState('idle');
+  };
+
+  const createAnalise = async () => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const nome = newName.trim() || `Análise ${analises.length + 1}`;
+    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [] };
+    const { data: row } = await supabase.from('analises')
+      .insert({ user_id: auth.user.id, nome, workbook: wb as never })
+      .select('id, nome, descricao, updated_at, workbook').single();
+    if (row) {
+      setNewName('');
+      setAnalises((p) => [row as unknown as AnaliseRow, ...p]);
+      openAnalise(row as unknown as AnaliseRow);
+    }
+  };
+
+  const duplicateAnalise = async (a: AnaliseRow) => {
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) return;
+    const { data: row } = await supabase.from('analises')
+      .insert({ user_id: auth.user.id, nome: `${a.nome} (cópia)`, descricao: a.descricao, workbook: a.workbook as never })
+      .select('id, nome, descricao, updated_at, workbook').single();
+    if (row) setAnalises((p) => [row as unknown as AnaliseRow, ...p]);
+  };
+
+  const renameAnalise = async (a: AnaliseRow, nome: string) => {
+    setAnalises((p) => p.map((x) => (x.id === a.id ? { ...x, nome } : x)));
+    await supabase.from('analises').update({ nome }).eq('id', a.id);
+  };
+
+  const deleteAnalise = async (a: AnaliseRow) => {
+    setAnalises((p) => p.filter((x) => x.id !== a.id));
+    if (currentId === a.id) setCurrentId(null);
+    await supabase.from('analises').delete().eq('id', a.id);
+  };
+
+  /* autosave da análise aberta */
+  useEffect(() => {
+    if (!currentId) return;
+    setSavingState('saving');
+    const t = setTimeout(async () => {
+      const wb = { sheets, dashboards, stories };
+      await supabase.from('analises').update({ workbook: wb as never }).eq('id', currentId);
+      setAnalises((p) => p.map((x) => (x.id === currentId ? { ...x, workbook: wb, updated_at: new Date().toISOString() } : x)));
+      setSavingState('saved');
+    }, 800);
+    return () => clearTimeout(t);
+  }, [sheets, dashboards, stories, currentId]);
+
+  /* backup local */
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories }));
   }, [sheets, dashboards, stories]);
@@ -379,6 +446,7 @@ const AnaliseSection = () => {
   useEffect(() => {
     if (!active.id && sheets.length) setActive({ kind: 'sheet', id: sheets[0].id });
   }, [sheets, active.id]);
+
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -441,14 +509,83 @@ const AnaliseSection = () => {
   };
 
 
+  /* ---------- Lista de análises salvas ---------- */
+  if (!currentId) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-heading font-bold text-foreground">Análise</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Suas análises salvas — planilhas, painéis e histórias ficam guardados no sistema
+          </p>
+        </div>
+
+        <Card className="p-4 flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs">Nome da nova análise</Label>
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex.: Avaliação Discentes 2026.1" className="h-9" />
+          </div>
+          <Button onClick={createAnalise} className="h-9">
+            <Plus className="w-4 h-4 mr-1" /> Nova análise
+          </Button>
+        </Card>
+
+        {analises.length === 0 ? (
+          <Card className="p-10 text-center text-sm text-muted-foreground">
+            Nenhuma análise criada ainda. Crie a primeira acima.
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {analises.map((a) => {
+              const wb = a.workbook || {};
+              return (
+                <Card key={a.id} className="p-4 space-y-3 hover:border-primary/50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <button className="text-left font-medium text-sm hover:text-primary line-clamp-2"
+                      onClick={() => openAnalise(a)}>{a.nome}</button>
+                    <button onClick={() => deleteAnalise(a)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><FileSpreadsheet className="w-3 h-3" />{wb.sheets?.length || 0} planilhas</span>
+                    <span className="flex items-center gap-1"><Presentation className="w-3 h-3" />{wb.dashboards?.length || 0} painéis</span>
+                    <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{wb.stories?.length || 0} histórias</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Atualizado em {new Date(a.updated_at).toLocaleString('pt-BR')}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-7 text-xs" onClick={() => openAnalise(a)}>Abrir</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateAnalise(a)}>Duplicar</Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-heading font-bold text-foreground">Análise</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Construtor de gráficos, painéis e histórias a partir dos resultados das avaliações
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <Button variant="ghost" size="sm" className="h-7 px-1 text-xs text-muted-foreground -ml-1"
+            onClick={() => { setCurrentId(null); fetchAnalises(); }}>
+            ← Todas as análises
+          </Button>
+          <Input value={current?.nome ?? ''}
+            onChange={(e) => current && renameAnalise(current, e.target.value)}
+            className="h-9 text-lg font-heading font-bold border-transparent px-1 focus-visible:border-input" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {savingState === 'saving' ? 'Salvando…' : savingState === 'saved' ? 'Salvo automaticamente' : ''}
+        </span>
       </div>
+
 
       <Card className="overflow-hidden">
         <div className="flex" style={{ minHeight: 560 }}>
