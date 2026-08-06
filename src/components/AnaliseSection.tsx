@@ -265,41 +265,62 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     );
   }
 
+  const labelList = showLabels
+    ? <LabelList dataKey="__label" position="top" style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />
+    : null;
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       {sheet.chart === 'line' ? (
-        <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}
+          {series.map((s, i) => (
+            <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 4 : 2}>
+              {i === 0 ? labelList : null}
+            </Line>
+          ))}
         </LineChart>
       ) : sheet.chart === 'area' ? (
-        <AreaChart data={chartData} margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.3} />)}
+          {series.map((s, i) => (
+            <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 3 : 1} fill={COLORS[i % COLORS.length]} fillOpacity={0.3}>
+              {i === 0 ? labelList : null}
+            </Area>
+          ))}
         </AreaChart>
       ) : sheet.chart === 'pie' ? (
         <PieChart>
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%" label={{ fontSize: 10 }}>
-            {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%"
+            label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
+            {chartData.map((d, i) => (
+              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : COLORS[i % COLORS.length]} />
+            ))}
           </Pie>
         </PieChart>
       ) : sheet.chart === 'scatter' ? (
-        <ScatterChart margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <ScatterChart margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
+          {sizeIsMeasure && <ZAxis dataKey="__size" range={[40, 400]} />}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]} />)}
+          {series.map((s, i) => (
+            <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]}>
+              {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
+              {i === 0 ? labelList : null}
+            </Scatter>
+          ))}
         </ScatterChart>
       ) : (
-        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 10, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
+        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           {sheet.chart === 'barh' ? <>
             <XAxis type="number" tick={{ fontSize: 10 }} />
@@ -309,9 +330,16 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
             <YAxis tick={{ fontSize: 10 }} />
           </>}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]} />)}
+          {series.map((s, i) => (
+            <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]}
+              barSize={sizeIsMeasure ? 32 : undefined}>
+              {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
+              {showLabels && <LabelList dataKey="__label" position={sheet.chart === 'barh' ? 'right' : 'top'} style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />}
+            </Bar>
+          ))}
         </BarChart>
       )}
+
     </ResponsiveContainer>
   );
 };
