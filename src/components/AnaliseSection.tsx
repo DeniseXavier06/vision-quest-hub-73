@@ -509,14 +509,83 @@ const AnaliseSection = () => {
   };
 
 
+  /* ---------- Lista de análises salvas ---------- */
+  if (!currentId) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-2xl font-heading font-bold text-foreground">Análise</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Suas análises salvas — planilhas, painéis e histórias ficam guardados no sistema
+          </p>
+        </div>
+
+        <Card className="p-4 flex flex-col sm:flex-row gap-2 sm:items-end">
+          <div className="flex-1 space-y-1">
+            <Label className="text-xs">Nome da nova análise</Label>
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex.: Avaliação Discentes 2026.1" className="h-9" />
+          </div>
+          <Button onClick={createAnalise} className="h-9">
+            <Plus className="w-4 h-4 mr-1" /> Nova análise
+          </Button>
+        </Card>
+
+        {analises.length === 0 ? (
+          <Card className="p-10 text-center text-sm text-muted-foreground">
+            Nenhuma análise criada ainda. Crie a primeira acima.
+          </Card>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {analises.map((a) => {
+              const wb = a.workbook || {};
+              return (
+                <Card key={a.id} className="p-4 space-y-3 hover:border-primary/50 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <button className="text-left font-medium text-sm hover:text-primary line-clamp-2"
+                      onClick={() => openAnalise(a)}>{a.nome}</button>
+                    <button onClick={() => deleteAnalise(a)} className="text-muted-foreground hover:text-destructive">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
+                    <span className="flex items-center gap-1"><FileSpreadsheet className="w-3 h-3" />{wb.sheets?.length || 0} planilhas</span>
+                    <span className="flex items-center gap-1"><Presentation className="w-3 h-3" />{wb.dashboards?.length || 0} painéis</span>
+                    <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{wb.stories?.length || 0} histórias</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Atualizado em {new Date(a.updated_at).toLocaleString('pt-BR')}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-7 text-xs" onClick={() => openAnalise(a)}>Abrir</Button>
+                    <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => duplicateAnalise(a)}>Duplicar</Button>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-heading font-bold text-foreground">Análise</h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Construtor de gráficos, painéis e histórias a partir dos resultados das avaliações
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <Button variant="ghost" size="sm" className="h-7 px-1 text-xs text-muted-foreground -ml-1"
+            onClick={() => { setCurrentId(null); fetchAnalises(); }}>
+            ← Todas as análises
+          </Button>
+          <Input value={current?.nome ?? ''}
+            onChange={(e) => current && renameAnalise(current, e.target.value)}
+            className="h-9 text-lg font-heading font-bold border-transparent px-1 focus-visible:border-input" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {savingState === 'saving' ? 'Salvando…' : savingState === 'saved' ? 'Salvo automaticamente' : ''}
+        </span>
       </div>
+
 
       <Card className="overflow-hidden">
         <div className="flex" style={{ minHeight: 560 }}>
