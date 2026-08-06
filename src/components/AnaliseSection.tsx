@@ -9,13 +9,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, PieChart, Pie, Cell,
-  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ScatterChart, Scatter, XAxis, YAxis, ZAxis, CartesianGrid, Tooltip, Legend,
+  LabelList, ResponsiveContainer,
 } from 'recharts';
 import {
   BarChart3, BarChartHorizontal, LineChart as LineIcon, AreaChart as AreaIcon, PieChart as PieIcon,
   Table as TableIcon, ScatterChart as ScatterIcon, Plus, X, Filter, Rows3, Columns3,
-  Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2,
+  Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2, Palette, Ruler, Tag, Layers,
 } from 'lucide-react';
+
 
 /* ---------------- Modelo de dados ---------------- */
 
@@ -57,10 +59,12 @@ const CHART_TYPES: { type: ChartType; label: string; icon: typeof BarChart3 }[] 
 type Agg = 'avg' | 'sum' | 'count';
 interface Pill { key: string; agg?: Agg }
 interface FilterDef { key: string; values: string[] }
+type MarkSlot = 'color' | 'size' | 'label' | 'detail';
 
 interface Sheet {
   id: string; name: string;
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
+  color?: Pill; size?: Pill; label?: Pill; detail?: Pill;
   chart: ChartType;
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
@@ -77,22 +81,41 @@ const newSheet = (n: number): Sheet => ({
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 const STORAGE_KEY = 'cpa-analise-workbook';
 
+const aggValue = (vals: number[], agg: Agg) => {
+  const sum = vals.reduce((a, v) => a + v, 0);
+  if (agg === 'count') return vals.length;
+  if (agg === 'avg') return Number((sum / (vals.length || 1)).toFixed(2));
+  return Number(sum.toFixed(2));
+};
+
 /* ---------------- Agregação ---------------- */
 
-function aggregate(data: Row[], cols: Pill[], rows: Pill[]) {
+interface Marks { color?: Pill; size?: Pill; label?: Pill; detail?: Pill }
+
+function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}) {
+  const isDim = (p?: Pill) => !!p && fieldOf(p.key).kind === 'dim';
   const colDims = cols.filter((p) => fieldOf(p.key).kind === 'dim');
   const rowDims = rows.filter((p) => fieldOf(p.key).kind === 'dim');
   const measures = [...cols, ...rows].filter((p) => fieldOf(p.key).kind === 'measure');
 
+  // Detalhe: aumenta a granularidade do eixo. Cor (dimensão): quebra em séries.
+  const xDims = [...colDims, ...(isDim(marks.detail) ? [marks.detail!] : [])];
+  const grpDims = [...rowDims, ...(isDim(marks.color) ? [marks.color!] : [])];
+
   const label = (p: Pill) => `${(p.agg || 'avg') === 'avg' ? 'MÉD' : (p.agg === 'sum' ? 'SOMA' : 'CONT')}(${fieldOf(p.key).label})`;
   const seriesDefs = measures.length ? measures : [{ key: 'total', agg: 'count' as Agg }];
 
-  const buckets = new Map<string, { x: string; series: Map<string, number[]> }>();
+  const buckets = new Map<string, {
+    x: string; series: Map<string, number[]>; size: number[]; labels: number[]; colorVals: number[];
+  }>();
   for (const r of data) {
-    const x = colDims.length ? colDims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
-    const grp = rowDims.length ? rowDims.map((d) => String(r[d.key] ?? '')).join(' / ') : '';
-    if (!buckets.has(x)) buckets.set(x, { x, series: new Map() });
+    const x = xDims.length ? xDims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
+    const grp = grpDims.length ? grpDims.map((d) => String(r[d.key] ?? '')).join(' / ') : '';
+    if (!buckets.has(x)) buckets.set(x, { x, series: new Map(), size: [], labels: [], colorVals: [] });
     const b = buckets.get(x)!;
+    if (marks.size && !isDim(marks.size)) b.size.push(Number(r[marks.size.key]) || 0);
+    if (marks.label && !isDim(marks.label)) b.labels.push(Number(r[marks.label.key]) || 0);
+    if (marks.color && !isDim(marks.color)) b.colorVals.push(Number(r[marks.color.key]) || 0);
     for (const m of seriesDefs) {
       const name = grp ? `${grp} — ${label(m)}` : label(m);
       if (!b.series.has(name)) b.series.set(name, []);
@@ -106,16 +129,21 @@ function aggregate(data: Row[], cols: Pill[], rows: Pill[]) {
     b.series.forEach((vals, name) => {
       seriesNames.add(name);
       const def = seriesDefs.find((m) => name.endsWith(label(m)));
-      const agg = def?.agg || 'avg';
-      const sum = vals.reduce((a, v) => a + v, 0);
-      out[name] = agg === 'avg' ? Number((sum / (vals.length || 1)).toFixed(2))
-        : agg === 'count' ? vals.length : Number(sum.toFixed(2));
+      out[name] = aggValue(vals, def?.agg || 'avg');
     });
+    if (b.size.length) out.__size = aggValue(b.size, marks.size?.agg || 'avg');
+    if (b.colorVals.length) out.__color = aggValue(b.colorVals, marks.color?.agg || 'avg');
+    if (marks.label) {
+      out.__label = isDim(marks.label)
+        ? b.x
+        : aggValue(b.labels, marks.label.agg || 'avg');
+    }
     return out;
   }).sort((a, b) => String(a.x).localeCompare(String(b.x)));
 
   return { chartData: result, series: [...seriesNames] };
 }
+
 
 /* ---------------- Pílulas / Shelves ---------------- */
 
@@ -161,10 +189,52 @@ const Shelf = ({ icon: Icon, title, pills, onDrop, onRemove, onToggleAgg }: {
   </div>
 );
 
+const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAgg }: {
+  icon: typeof Rows3; title: string; pill?: Pill; hint: string;
+  onDrop: (key: string) => void; onRemove: () => void; onToggleAgg: () => void;
+}) => (
+  <div
+    onDragOver={(e) => e.preventDefault()}
+    onDrop={(e) => { e.preventDefault(); const k = e.dataTransfer.getData('text/field'); if (k) onDrop(k); }}
+    className="flex items-center gap-2 rounded border border-dashed border-border px-2 py-1.5 min-h-[34px]"
+  >
+    <div className="flex items-center gap-1.5 w-20 flex-shrink-0 text-xs font-medium text-muted-foreground">
+      <Icon className="w-3.5 h-3.5" />{title}
+    </div>
+    <div className="flex-1 min-w-0">
+      {pill
+        ? <PillTag pill={pill} onRemove={onRemove} onToggleAgg={onToggleAgg} />
+        : <span className="text-[11px] text-muted-foreground/60">{hint}</span>}
+    </div>
+  </div>
+);
+
 /* ---------------- Renderização de gráfico ---------------- */
 
 const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; height?: number }) => {
-  const { chartData, series } = useMemo(() => aggregate(data, sheet.cols, sheet.rows), [data, sheet.cols, sheet.rows]);
+  const marks = useMemo(
+    () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
+    [sheet.color, sheet.size, sheet.label, sheet.detail],
+  );
+  const { chartData, series } = useMemo(
+    () => aggregate(data, sheet.cols, sheet.rows, marks),
+    [data, sheet.cols, sheet.rows, marks],
+  );
+
+  const colorIsMeasure = !!sheet.color && fieldOf(sheet.color.key).kind === 'measure';
+  const colorRamp = useMemo(() => {
+    if (!colorIsMeasure) return null;
+    const vals = chartData.map((d) => Number(d.__color) || 0);
+    const min = Math.min(...vals), max = Math.max(...vals);
+    return (v: number) => {
+      const t = max === min ? 0.5 : (v - min) / (max - min);
+      return `hsl(var(--chart-1) / ${(0.35 + t * 0.65).toFixed(2)})`;
+    };
+  }, [colorIsMeasure, chartData]);
+
+  const showLabels = !!sheet.label;
+  const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
+
 
   if (!chartData.length) {
     return (
@@ -197,41 +267,62 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     );
   }
 
+  const labelList = showLabels
+    ? <LabelList dataKey="__label" position="top" style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />
+    : null;
+
   return (
     <ResponsiveContainer width="100%" height={height}>
       {sheet.chart === 'line' ? (
-        <LineChart data={chartData} margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={2} />)}
+          {series.map((s, i) => (
+            <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 4 : 2}>
+              {i === 0 ? labelList : null}
+            </Line>
+          ))}
         </LineChart>
       ) : sheet.chart === 'area' ? (
-        <AreaChart data={chartData} margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <AreaChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} fill={COLORS[i % COLORS.length]} fillOpacity={0.3} />)}
+          {series.map((s, i) => (
+            <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 3 : 1} fill={COLORS[i % COLORS.length]} fillOpacity={0.3}>
+              {i === 0 ? labelList : null}
+            </Area>
+          ))}
         </AreaChart>
       ) : sheet.chart === 'pie' ? (
         <PieChart>
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%" label={{ fontSize: 10 }}>
-            {chartData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%"
+            label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
+            {chartData.map((d, i) => (
+              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : COLORS[i % COLORS.length]} />
+            ))}
           </Pie>
         </PieChart>
       ) : sheet.chart === 'scatter' ? (
-        <ScatterChart margin={{ top: 10, right: 20, bottom: 40, left: 0 }}>
+        <ScatterChart margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
+          {sizeIsMeasure && <ZAxis dataKey="__size" range={[40, 400]} />}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]} />)}
+          {series.map((s, i) => (
+            <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]}>
+              {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
+              {i === 0 ? labelList : null}
+            </Scatter>
+          ))}
         </ScatterChart>
       ) : (
-        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 10, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
+        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           {sheet.chart === 'barh' ? <>
             <XAxis type="number" tick={{ fontSize: 10 }} />
@@ -241,9 +332,16 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
             <YAxis tick={{ fontSize: 10 }} />
           </>}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          {series.map((s, i) => <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]} />)}
+          {series.map((s, i) => (
+            <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]}
+              barSize={sizeIsMeasure ? 32 : undefined}>
+              {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
+              {showLabels && <LabelList dataKey="__label" position={sheet.chart === 'barh' ? 'right' : 'top'} style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />}
+            </Bar>
+          ))}
         </BarChart>
       )}
+
     </ResponsiveContainer>
   );
 };
@@ -335,6 +433,13 @@ const AnaliseSection = () => {
     if (!sheet || sheet.filters.some((f) => f.key === key)) return;
     updateSheet(sheet.id, { filters: [...sheet.filters, { key, values: [] }] });
   };
+  const setMark = (slot: MarkSlot, key: string) => {
+    if (!sheet) return;
+    const f = fieldOf(key);
+    const pill: Pill = { key, agg: f.kind === 'measure' ? (key === 'media' ? 'avg' : 'sum') : undefined };
+    updateSheet(sheet.id, { [slot]: pill } as Partial<Sheet>);
+  };
+
 
   return (
     <div className="space-y-4">
@@ -404,6 +509,29 @@ const AnaliseSection = () => {
                     rows: sheet.rows.map((p, x) => x === i ? { ...p, agg: p.agg === 'avg' ? 'sum' : p.agg === 'sum' ? 'count' : 'avg' } : p),
                   })} />
 
+                <div className="px-3 py-2 border-b border-border bg-muted/20">
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground mb-1.5">Marcas</p>
+                  <div className="grid gap-1.5 sm:grid-cols-2">
+                    {([
+                      { slot: 'color' as MarkSlot, title: 'Cor', icon: Palette, hint: 'Arraste para colorir' },
+                      { slot: 'size' as MarkSlot, title: 'Tamanho', icon: Ruler, hint: 'Arraste uma medida' },
+                      { slot: 'label' as MarkSlot, title: 'Rótulo', icon: Tag, hint: 'Arraste para exibir rótulos' },
+                      { slot: 'detail' as MarkSlot, title: 'Detalhe', icon: Layers, hint: 'Arraste para detalhar' },
+                    ]).map((m) => (
+                      <MarkShelf key={m.slot} icon={m.icon} title={m.title} hint={m.hint} pill={sheet[m.slot]}
+                        onDrop={(k) => setMark(m.slot, k)}
+                        onRemove={() => updateSheet(sheet.id, { [m.slot]: undefined } as Partial<Sheet>)}
+                        onToggleAgg={() => {
+                          const p = sheet[m.slot];
+                          if (!p) return;
+                          updateSheet(sheet.id, {
+                            [m.slot]: { ...p, agg: p.agg === 'avg' ? 'sum' : p.agg === 'sum' ? 'count' : 'avg' },
+                          } as Partial<Sheet>);
+                        }} />
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex-1 p-4 min-w-0">
                   <Input
                     value={sheet.name}
@@ -412,6 +540,7 @@ const AnaliseSection = () => {
                   />
                   <ChartView sheet={sheet} data={sheetData} />
                 </div>
+
               </>
             ) : dashboard ? (
               <div className="flex-1 p-4 space-y-3">
