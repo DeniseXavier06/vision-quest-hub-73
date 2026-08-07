@@ -526,6 +526,38 @@ const AnaliseSection = () => {
     updateSheet(sheet.id, { [slot]: pill } as Partial<Sheet>);
   };
 
+  /* séries atuais (para editar legenda e cores) */
+  const sheetSeries = useMemo(() => {
+    if (!sheet) return [] as string[];
+    if (sheet.chart === 'pie') {
+      const { chartData } = aggregate(sheetData, sheet.cols, sheet.rows, {
+        color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail,
+      });
+      return chartData.map((d) => String(d.x));
+    }
+    const { series } = aggregate(sheetData, sheet.cols, sheet.rows, {
+      color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail,
+    });
+    return series;
+  }, [sheet, sheetData]);
+
+  /* duplicar abas */
+  const duplicateSheet = (s: Sheet) => {
+    const copy: Sheet = { ...JSON.parse(JSON.stringify(s)), id: uid(), name: `${s.name} (cópia)` };
+    setSheets((prev) => [...prev, copy]);
+    setActive({ kind: 'sheet', id: copy.id });
+  };
+  const duplicateDashboard = (d: Dashboard) => {
+    const copy: Dashboard = { ...d, id: uid(), name: `${d.name} (cópia)`, sheetIds: [...d.sheetIds] };
+    setDashboards((prev) => [...prev, copy]);
+    setActive({ kind: 'dashboard', id: copy.id });
+  };
+  const duplicateStory = (st: Story) => {
+    const copy: Story = { ...st, id: uid(), name: `${st.name} (cópia)`, points: st.points.map((p) => ({ ...p, id: uid() })) };
+    setStories((prev) => [...prev, copy]);
+    setActive({ kind: 'story', id: copy.id });
+  };
+
 
   /* ---------- Lista de análises salvas ---------- */
   if (!currentId) {
