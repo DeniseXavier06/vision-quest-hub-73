@@ -16,6 +16,7 @@ import {
   BarChart3, BarChartHorizontal, LineChart as LineIcon, AreaChart as AreaIcon, PieChart as PieIcon,
   Table as TableIcon, ScatterChart as ScatterIcon, Plus, X, Filter, Rows3, Columns3,
   Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2, Palette, Ruler, Tag, Layers,
+  ChevronDown, ChevronRight, Copy,
 } from 'lucide-react';
 
 
@@ -66,6 +67,9 @@ interface Sheet {
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
   color?: Pill; size?: Pill; label?: Pill; detail?: Pill;
   chart: ChartType;
+  palette?: string;
+  seriesColors?: Record<string, string>;
+  legend?: Record<string, string>;
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
 interface StoryPoint { id: string; sheetId: string; caption: string }
@@ -75,10 +79,20 @@ interface Row { [k: string]: string | number }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const newSheet = (n: number): Sheet => ({
-  id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar',
+  id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar', palette: 'default',
 });
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+const PALETTES: { id: string; label: string; colors: string[] }[] = [
+  { id: 'default', label: 'Padrão', colors: COLORS },
+  { id: 'cpa', label: 'Conceitos CPA', colors: ['hsl(142 70% 42%)', 'hsl(199 85% 45%)', 'hsl(45 93% 47%)', 'hsl(25 92% 53%)', 'hsl(0 78% 55%)'] },
+  { id: 'azuis', label: 'Azuis', colors: ['hsl(210 90% 25%)', 'hsl(210 85% 38%)', 'hsl(205 80% 50%)', 'hsl(198 75% 62%)', 'hsl(192 70% 75%)'] },
+  { id: 'quentes', label: 'Quentes', colors: ['hsl(350 75% 45%)', 'hsl(12 85% 52%)', 'hsl(28 90% 55%)', 'hsl(40 92% 58%)', 'hsl(52 90% 60%)'] },
+  { id: 'verdes', label: 'Verdes', colors: ['hsl(160 70% 25%)', 'hsl(155 60% 35%)', 'hsl(148 55% 45%)', 'hsl(140 50% 57%)', 'hsl(130 48% 70%)'] },
+  { id: 'sobrio', label: 'Sóbrio', colors: ['hsl(222 25% 25%)', 'hsl(222 15% 40%)', 'hsl(220 12% 55%)', 'hsl(220 10% 68%)', 'hsl(220 8% 80%)'] },
+];
+const paletteOf = (id?: string) => PALETTES.find((p) => p.id === id)?.colors || COLORS;
 const STORAGE_KEY = 'cpa-analise-workbook';
 
 const aggValue = (vals: number[], agg: Agg) => {
@@ -221,6 +235,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     [data, sheet.cols, sheet.rows, marks],
   );
 
+  const palette = paletteOf(sheet.palette);
+  const colorFor = (name: string, i: number) => sheet.seriesColors?.[name] || palette[i % palette.length];
+  const legendName = (name: string) => sheet.legend?.[name] || name;
+
   const colorIsMeasure = !!sheet.color && fieldOf(sheet.color.key).kind === 'measure';
   const colorRamp = useMemo(() => {
     if (!colorIsMeasure) return null;
@@ -228,9 +246,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     const min = Math.min(...vals), max = Math.max(...vals);
     return (v: number) => {
       const t = max === min ? 0.5 : (v - min) / (max - min);
-      return `hsl(var(--chart-1) / ${(0.35 + t * 0.65).toFixed(2)})`;
+      const idx = Math.min(palette.length - 1, Math.round((1 - t) * (palette.length - 1)));
+      return palette[idx];
     };
-  }, [colorIsMeasure, chartData]);
+  }, [colorIsMeasure, chartData, palette]);
 
   const showLabels = !!sheet.label;
   const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
@@ -251,7 +270,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <thead className="bg-muted sticky top-0">
             <tr>
               <th className="text-left p-2 font-medium">Dimensão</th>
-              {series.map((s) => <th key={s} className="text-right p-2 font-medium">{s}</th>)}
+              {series.map((s) => <th key={s} className="text-right p-2 font-medium">{legendName(s)}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -280,7 +299,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 4 : 2}>
+            <Line key={s} type="monotone" dataKey={s} name={legendName(s)} stroke={colorFor(s, i)} strokeWidth={sizeIsMeasure ? 4 : 2}>
               {i === 0 ? labelList : null}
             </Line>
           ))}
@@ -292,7 +311,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 3 : 1} fill={COLORS[i % COLORS.length]} fillOpacity={0.3}>
+            <Area key={s} type="monotone" dataKey={s} name={legendName(s)} stroke={colorFor(s, i)} strokeWidth={sizeIsMeasure ? 3 : 1} fill={colorFor(s, i)} fillOpacity={0.3}>
               {i === 0 ? labelList : null}
             </Area>
           ))}
@@ -300,10 +319,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
       ) : sheet.chart === 'pie' ? (
         <PieChart>
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%"
+          <Pie data={chartData.map((d) => ({ ...d, x: legendName(String(d.x)) }))} dataKey={series[0]} nameKey="x" outerRadius="70%"
             label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
             {chartData.map((d, i) => (
-              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : COLORS[i % COLORS.length]} />
+              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
             ))}
           </Pie>
         </PieChart>
@@ -315,7 +334,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           {sizeIsMeasure && <ZAxis dataKey="__size" range={[40, 400]} />}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]}>
+            <Scatter key={s} name={legendName(s)} data={chartData} dataKey={s} fill={colorFor(s, i)}>
               {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
               {i === 0 ? labelList : null}
             </Scatter>
@@ -333,7 +352,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           </>}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]}
+            <Bar key={s} dataKey={s} name={legendName(s)} fill={colorFor(s, i)} radius={[3, 3, 0, 0]}
               barSize={sizeIsMeasure ? 32 : undefined}>
               {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
               {showLabels && <LabelList dataKey="__label" position={sheet.chart === 'barh' ? 'right' : 'top'} style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />}
@@ -358,6 +377,7 @@ interface AnaliseRow {
 const AnaliseSection = () => {
   const [data, setData] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openField, setOpenField] = useState<string | null>(null);
 
   const [sheets, setSheets] = useState<Sheet[]>([newSheet(1)]);
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
@@ -508,6 +528,38 @@ const AnaliseSection = () => {
     updateSheet(sheet.id, { [slot]: pill } as Partial<Sheet>);
   };
 
+  /* séries atuais (para editar legenda e cores) */
+  const sheetSeries = useMemo(() => {
+    if (!sheet) return [] as string[];
+    if (sheet.chart === 'pie') {
+      const { chartData } = aggregate(sheetData, sheet.cols, sheet.rows, {
+        color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail,
+      });
+      return chartData.map((d) => String(d.x));
+    }
+    const { series } = aggregate(sheetData, sheet.cols, sheet.rows, {
+      color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail,
+    });
+    return series;
+  }, [sheet, sheetData]);
+
+  /* duplicar abas */
+  const duplicateSheet = (s: Sheet) => {
+    const copy: Sheet = { ...JSON.parse(JSON.stringify(s)), id: uid(), name: `${s.name} (cópia)` };
+    setSheets((prev) => [...prev, copy]);
+    setActive({ kind: 'sheet', id: copy.id });
+  };
+  const duplicateDashboard = (d: Dashboard) => {
+    const copy: Dashboard = { ...d, id: uid(), name: `${d.name} (cópia)`, sheetIds: [...d.sheetIds] };
+    setDashboards((prev) => [...prev, copy]);
+    setActive({ kind: 'dashboard', id: copy.id });
+  };
+  const duplicateStory = (st: Story) => {
+    const copy: Story = { ...st, id: uid(), name: `${st.name} (cópia)`, points: st.points.map((p) => ({ ...p, id: uid() })) };
+    setStories((prev) => [...prev, copy]);
+    setActive({ kind: 'story', id: copy.id });
+  };
+
 
   /* ---------- Lista de análises salvas ---------- */
   if (!currentId) {
@@ -590,7 +642,7 @@ const AnaliseSection = () => {
       <Card className="overflow-hidden">
         <div className="flex" style={{ minHeight: 560 }}>
           {/* Painel de dados */}
-          <div className="w-56 flex-shrink-0 border-r border-border bg-muted/30 flex flex-col">
+          <div className="w-64 flex-shrink-0 border-r border-border bg-muted/30 flex flex-col">
             <div className="px-3 py-2 border-b border-border text-xs font-semibold">
               Dados <span className="text-muted-foreground font-normal">({data.length} registros)</span>
             </div>
@@ -601,20 +653,52 @@ const AnaliseSection = () => {
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 mb-1">
                       {kind === 'dim' ? 'Dimensões' : 'Medidas'}
                     </p>
-                    {FIELDS.filter((f) => f.kind === kind).map((f) => (
-                      <div
-                        key={f.key}
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('text/field', f.key)}
-                        onDoubleClick={() => addToShelf(f.kind === 'dim' ? 'cols' : 'rows', f.key)}
-                        className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-grab hover:bg-accent"
-                      >
-                        <span className={cn('text-[10px] font-bold', f.kind === 'dim' ? 'text-muted-foreground' : 'text-primary')}>
-                          {f.kind === 'dim' ? 'Abc' : '#'}
-                        </span>
-                        <span className="truncate">{f.label}</span>
-                      </div>
-                    ))}
+                    {FIELDS.filter((f) => f.kind === kind).map((f) => {
+                      const open = openField === f.key;
+                      const values = f.kind === 'dim' ? distinct(f.key) : [];
+                      const nums = f.kind === 'measure' ? data.map((r) => Number(r[f.key]) || 0) : [];
+                      return (
+                        <div key={f.key}>
+                          <div
+                            draggable
+                            onDragStart={(e) => e.dataTransfer.setData('text/field', f.key)}
+                            onDoubleClick={() => addToShelf(f.kind === 'dim' ? 'cols' : 'rows', f.key)}
+                            className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-grab hover:bg-accent"
+                          >
+                            <button onClick={() => setOpenField(open ? null : f.key)} className="text-muted-foreground hover:text-foreground">
+                              {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            </button>
+                            <span className={cn('text-[10px] font-bold', f.kind === 'dim' ? 'text-muted-foreground' : 'text-primary')}>
+                              {f.kind === 'dim' ? 'Abc' : '#'}
+                            </span>
+                            <span className="truncate flex-1">{f.label}</span>
+                            {f.kind === 'dim' && (
+                              <span className="text-[9px] text-muted-foreground tabular-nums">{values.length}</span>
+                            )}
+                          </div>
+                          {open && (
+                            <div className="ml-5 mb-1 rounded border border-border bg-background/60 p-1.5 space-y-0.5 max-h-40 overflow-auto">
+                              {f.kind === 'measure' ? (
+                                <p className="text-[10px] text-muted-foreground">
+                                  mín {nums.length ? Math.min(...nums).toFixed(2) : '-'} · máx {nums.length ? Math.max(...nums).toFixed(2) : '-'}
+                                </p>
+                              ) : values.length === 0 ? (
+                                <p className="text-[10px] text-muted-foreground">Sem valores</p>
+                              ) : (
+                                <>
+                                  {values.slice(0, 50).map((v) => (
+                                    <p key={v} className="text-[10px] text-muted-foreground line-clamp-2" title={v}>{v}</p>
+                                  ))}
+                                  {values.length > 50 && (
+                                    <p className="text-[10px] text-muted-foreground/70">+{values.length - 50} valores…</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
@@ -778,6 +862,45 @@ const AnaliseSection = () => {
                   );
                 })}
               </div>
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Cores</div>
+              <div className="p-2 space-y-2">
+                {PALETTES.map((p) => (
+                  <button key={p.id} onClick={() => updateSheet(sheet.id, { palette: p.id, seriesColors: {} })}
+                    className={cn('w-full flex items-center gap-2 rounded border px-1.5 py-1 text-[11px]',
+                      (sheet.palette || 'default') === p.id ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent')}>
+                    <span className="flex gap-0.5">
+                      {p.colors.map((c) => <span key={c} className="w-3 h-3 rounded-sm" style={{ backgroundColor: c }} />)}
+                    </span>
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Legenda</div>
+              <ScrollArea className="max-h-56">
+                <div className="p-2 space-y-2">
+                  {sheetSeries.length === 0 && <p className="text-xs text-muted-foreground">Monte o gráfico para editar a legenda</p>}
+                  {sheetSeries.slice(0, 20).map((s, i) => (
+                    <div key={s} className="space-y-1">
+                      <Input value={sheet.legend?.[s] ?? s}
+                        onChange={(e) => updateSheet(sheet.id, { legend: { ...(sheet.legend || {}), [s]: e.target.value } })}
+                        className="h-7 text-[11px]" />
+                      <div className="flex gap-1 flex-wrap">
+                        {paletteOf(sheet.palette).map((c) => {
+                          const activeColor = (sheet.seriesColors?.[s] || paletteOf(sheet.palette)[i % paletteOf(sheet.palette).length]) === c;
+                          return (
+                            <button key={c} title="Aplicar cor"
+                              onClick={() => updateSheet(sheet.id, { seriesColors: { ...(sheet.seriesColors || {}), [s]: c } })}
+                              className={cn('w-4 h-4 rounded-sm border', activeColor ? 'border-foreground' : 'border-transparent')}
+                              style={{ backgroundColor: c }} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
               <div className="px-3 py-2 border-y border-border text-xs font-semibold">Valores do filtro</div>
               <ScrollArea className="h-72">
                 <div className="p-2 space-y-3">
@@ -812,6 +935,7 @@ const AnaliseSection = () => {
             <TabButton key={s.id} icon={FileSpreadsheet} label={s.name}
               activeTab={active.kind === 'sheet' && active.id === s.id}
               onClick={() => setActive({ kind: 'sheet', id: s.id })}
+              onDuplicate={() => duplicateSheet(s)}
               onDelete={sheets.length > 1 ? () => {
                 setSheets((prev) => prev.filter((x) => x.id !== s.id));
                 if (active.id === s.id) setActive({ kind: 'sheet', id: '' });
@@ -821,12 +945,14 @@ const AnaliseSection = () => {
             <TabButton key={d.id} icon={Presentation} label={d.name}
               activeTab={active.kind === 'dashboard' && active.id === d.id}
               onClick={() => setActive({ kind: 'dashboard', id: d.id })}
+              onDuplicate={() => duplicateDashboard(d)}
               onDelete={() => { setDashboards((p) => p.filter((x) => x.id !== d.id)); setActive({ kind: 'sheet', id: '' }); }} />
           ))}
           {stories.map((s) => (
             <TabButton key={s.id} icon={BookOpen} label={s.name}
               activeTab={active.kind === 'story' && active.id === s.id}
               onClick={() => setActive({ kind: 'story', id: s.id })}
+              onDuplicate={() => duplicateStory(s)}
               onDelete={() => { setStories((p) => p.filter((x) => x.id !== s.id)); setActive({ kind: 'sheet', id: '' }); }} />
           ))}
 
@@ -856,16 +982,23 @@ const AnaliseSection = () => {
   );
 };
 
-const TabButton = ({ icon: Icon, label, activeTab, onClick, onDelete }: {
-  icon: typeof FileSpreadsheet; label: string; activeTab: boolean; onClick: () => void; onDelete?: () => void;
+const TabButton = ({ icon: Icon, label, activeTab, onClick, onDelete, onDuplicate }: {
+  icon: typeof FileSpreadsheet; label: string; activeTab: boolean; onClick: () => void;
+  onDelete?: () => void; onDuplicate?: () => void;
 }) => (
   <div className={cn('group flex items-center gap-1 rounded-t px-2 py-1 text-xs cursor-pointer whitespace-nowrap border-b-2',
     activeTab ? 'bg-background border-primary font-medium' : 'border-transparent hover:bg-accent')}
     onClick={onClick}>
     <Icon className="w-3.5 h-3.5" />
     {label}
+    {onDuplicate && (
+      <button title="Duplicar" onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+        className="opacity-0 group-hover:opacity-60 hover:opacity-100">
+        <Copy className="w-3 h-3" />
+      </button>
+    )}
     {onDelete && (
-      <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-60 hover:opacity-100">
+      <button title="Excluir" onClick={(e) => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-60 hover:opacity-100">
         <X className="w-3 h-3" />
       </button>
     )}
