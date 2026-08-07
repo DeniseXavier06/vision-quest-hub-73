@@ -269,7 +269,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <thead className="bg-muted sticky top-0">
             <tr>
               <th className="text-left p-2 font-medium">Dimensão</th>
-              {series.map((s) => <th key={s} className="text-right p-2 font-medium">{s}</th>)}
+              {series.map((s) => <th key={s} className="text-right p-2 font-medium">{legendName(s)}</th>)}
             </tr>
           </thead>
           <tbody>
