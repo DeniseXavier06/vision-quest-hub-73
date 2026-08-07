@@ -862,6 +862,45 @@ const AnaliseSection = () => {
                   );
                 })}
               </div>
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Cores</div>
+              <div className="p-2 space-y-2">
+                {PALETTES.map((p) => (
+                  <button key={p.id} onClick={() => updateSheet(sheet.id, { palette: p.id, seriesColors: {} })}
+                    className={cn('w-full flex items-center gap-2 rounded border px-1.5 py-1 text-[11px]',
+                      (sheet.palette || 'default') === p.id ? 'border-primary bg-primary/10' : 'border-border hover:bg-accent')}>
+                    <span className="flex gap-0.5">
+                      {p.colors.map((c) => <span key={c} className="w-3 h-3 rounded-sm" style={{ backgroundColor: c }} />)}
+                    </span>
+                    <span className="truncate">{p.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Legenda</div>
+              <ScrollArea className="max-h-56">
+                <div className="p-2 space-y-2">
+                  {sheetSeries.length === 0 && <p className="text-xs text-muted-foreground">Monte o gráfico para editar a legenda</p>}
+                  {sheetSeries.slice(0, 20).map((s, i) => (
+                    <div key={s} className="space-y-1">
+                      <Input value={sheet.legend?.[s] ?? s}
+                        onChange={(e) => updateSheet(sheet.id, { legend: { ...(sheet.legend || {}), [s]: e.target.value } })}
+                        className="h-7 text-[11px]" />
+                      <div className="flex gap-1 flex-wrap">
+                        {paletteOf(sheet.palette).map((c) => {
+                          const activeColor = (sheet.seriesColors?.[s] || paletteOf(sheet.palette)[i % paletteOf(sheet.palette).length]) === c;
+                          return (
+                            <button key={c} title="Aplicar cor"
+                              onClick={() => updateSheet(sheet.id, { seriesColors: { ...(sheet.seriesColors || {}), [s]: c } })}
+                              className={cn('w-4 h-4 rounded-sm border', activeColor ? 'border-foreground' : 'border-transparent')}
+                              style={{ backgroundColor: c }} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
               <div className="px-3 py-2 border-y border-border text-xs font-semibold">Valores do filtro</div>
               <ScrollArea className="h-72">
                 <div className="p-2 space-y-3">
