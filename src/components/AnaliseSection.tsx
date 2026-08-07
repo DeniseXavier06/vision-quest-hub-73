@@ -234,6 +234,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     [data, sheet.cols, sheet.rows, marks],
   );
 
+  const palette = paletteOf(sheet.palette);
+  const colorFor = (name: string, i: number) => sheet.seriesColors?.[name] || palette[i % palette.length];
+  const legendName = (name: string) => sheet.legend?.[name] || name;
+
   const colorIsMeasure = !!sheet.color && fieldOf(sheet.color.key).kind === 'measure';
   const colorRamp = useMemo(() => {
     if (!colorIsMeasure) return null;
@@ -241,9 +245,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
     const min = Math.min(...vals), max = Math.max(...vals);
     return (v: number) => {
       const t = max === min ? 0.5 : (v - min) / (max - min);
-      return `hsl(var(--chart-1) / ${(0.35 + t * 0.65).toFixed(2)})`;
+      const idx = Math.min(palette.length - 1, Math.round((1 - t) * (palette.length - 1)));
+      return palette[idx];
     };
-  }, [colorIsMeasure, chartData]);
+  }, [colorIsMeasure, chartData, palette]);
 
   const showLabels = !!sheet.label;
   const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
