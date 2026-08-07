@@ -66,6 +66,9 @@ interface Sheet {
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
   color?: Pill; size?: Pill; label?: Pill; detail?: Pill;
   chart: ChartType;
+  palette?: string;
+  seriesColors?: Record<string, string>;
+  legend?: Record<string, string>;
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
 interface StoryPoint { id: string; sheetId: string; caption: string }
@@ -75,10 +78,20 @@ interface Row { [k: string]: string | number }
 
 const uid = () => Math.random().toString(36).slice(2, 9);
 const newSheet = (n: number): Sheet => ({
-  id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar',
+  id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar', palette: 'default',
 });
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
+
+const PALETTES: { id: string; label: string; colors: string[] }[] = [
+  { id: 'default', label: 'Padrão', colors: COLORS },
+  { id: 'cpa', label: 'Conceitos CPA', colors: ['hsl(142 70% 42%)', 'hsl(199 85% 45%)', 'hsl(45 93% 47%)', 'hsl(25 92% 53%)', 'hsl(0 78% 55%)'] },
+  { id: 'azuis', label: 'Azuis', colors: ['hsl(210 90% 25%)', 'hsl(210 85% 38%)', 'hsl(205 80% 50%)', 'hsl(198 75% 62%)', 'hsl(192 70% 75%)'] },
+  { id: 'quentes', label: 'Quentes', colors: ['hsl(350 75% 45%)', 'hsl(12 85% 52%)', 'hsl(28 90% 55%)', 'hsl(40 92% 58%)', 'hsl(52 90% 60%)'] },
+  { id: 'verdes', label: 'Verdes', colors: ['hsl(160 70% 25%)', 'hsl(155 60% 35%)', 'hsl(148 55% 45%)', 'hsl(140 50% 57%)', 'hsl(130 48% 70%)'] },
+  { id: 'sobrio', label: 'Sóbrio', colors: ['hsl(222 25% 25%)', 'hsl(222 15% 40%)', 'hsl(220 12% 55%)', 'hsl(220 10% 68%)', 'hsl(220 8% 80%)'] },
+];
+const paletteOf = (id?: string) => PALETTES.find((p) => p.id === id)?.colors || COLORS;
 const STORAGE_KEY = 'cpa-analise-workbook';
 
 const aggValue = (vals: number[], agg: Agg) => {
