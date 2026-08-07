@@ -640,7 +640,7 @@ const AnaliseSection = () => {
       <Card className="overflow-hidden">
         <div className="flex" style={{ minHeight: 560 }}>
           {/* Painel de dados */}
-          <div className="w-56 flex-shrink-0 border-r border-border bg-muted/30 flex flex-col">
+          <div className="w-64 flex-shrink-0 border-r border-border bg-muted/30 flex flex-col">
             <div className="px-3 py-2 border-b border-border text-xs font-semibold">
               Dados <span className="text-muted-foreground font-normal">({data.length} registros)</span>
             </div>
@@ -651,20 +651,52 @@ const AnaliseSection = () => {
                     <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-1 mb-1">
                       {kind === 'dim' ? 'Dimensões' : 'Medidas'}
                     </p>
-                    {FIELDS.filter((f) => f.kind === kind).map((f) => (
-                      <div
-                        key={f.key}
-                        draggable
-                        onDragStart={(e) => e.dataTransfer.setData('text/field', f.key)}
-                        onDoubleClick={() => addToShelf(f.kind === 'dim' ? 'cols' : 'rows', f.key)}
-                        className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-grab hover:bg-accent"
-                      >
-                        <span className={cn('text-[10px] font-bold', f.kind === 'dim' ? 'text-muted-foreground' : 'text-primary')}>
-                          {f.kind === 'dim' ? 'Abc' : '#'}
-                        </span>
-                        <span className="truncate">{f.label}</span>
-                      </div>
-                    ))}
+                    {FIELDS.filter((f) => f.kind === kind).map((f) => {
+                      const open = openField === f.key;
+                      const values = f.kind === 'dim' ? distinct(f.key) : [];
+                      const nums = f.kind === 'measure' ? data.map((r) => Number(r[f.key]) || 0) : [];
+                      return (
+                        <div key={f.key}>
+                          <div
+                            draggable
+                            onDragStart={(e) => e.dataTransfer.setData('text/field', f.key)}
+                            onDoubleClick={() => addToShelf(f.kind === 'dim' ? 'cols' : 'rows', f.key)}
+                            className="flex items-center gap-1.5 px-1.5 py-1 rounded text-xs cursor-grab hover:bg-accent"
+                          >
+                            <button onClick={() => setOpenField(open ? null : f.key)} className="text-muted-foreground hover:text-foreground">
+                              {open ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                            </button>
+                            <span className={cn('text-[10px] font-bold', f.kind === 'dim' ? 'text-muted-foreground' : 'text-primary')}>
+                              {f.kind === 'dim' ? 'Abc' : '#'}
+                            </span>
+                            <span className="truncate flex-1">{f.label}</span>
+                            {f.kind === 'dim' && (
+                              <span className="text-[9px] text-muted-foreground tabular-nums">{values.length}</span>
+                            )}
+                          </div>
+                          {open && (
+                            <div className="ml-5 mb-1 rounded border border-border bg-background/60 p-1.5 space-y-0.5 max-h-40 overflow-auto">
+                              {f.kind === 'measure' ? (
+                                <p className="text-[10px] text-muted-foreground">
+                                  mín {nums.length ? Math.min(...nums).toFixed(2) : '-'} · máx {nums.length ? Math.max(...nums).toFixed(2) : '-'}
+                                </p>
+                              ) : values.length === 0 ? (
+                                <p className="text-[10px] text-muted-foreground">Sem valores</p>
+                              ) : (
+                                <>
+                                  {values.slice(0, 50).map((v) => (
+                                    <p key={v} className="text-[10px] text-muted-foreground line-clamp-2" title={v}>{v}</p>
+                                  ))}
+                                  {values.length > 50 && (
+                                    <p className="text-[10px] text-muted-foreground/70">+{values.length - 50} valores…</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 ))}
               </div>
