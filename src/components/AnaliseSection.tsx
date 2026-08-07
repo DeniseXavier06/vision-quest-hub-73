@@ -377,6 +377,7 @@ interface AnaliseRow {
 const AnaliseSection = () => {
   const [data, setData] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openField, setOpenField] = useState<string | null>(null);
 
   const [sheets, setSheets] = useState<Sheet[]>([newSheet(1)]);
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
