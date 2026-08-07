@@ -982,16 +982,23 @@ const AnaliseSection = () => {
   );
 };
 
-const TabButton = ({ icon: Icon, label, activeTab, onClick, onDelete }: {
-  icon: typeof FileSpreadsheet; label: string; activeTab: boolean; onClick: () => void; onDelete?: () => void;
+const TabButton = ({ icon: Icon, label, activeTab, onClick, onDelete, onDuplicate }: {
+  icon: typeof FileSpreadsheet; label: string; activeTab: boolean; onClick: () => void;
+  onDelete?: () => void; onDuplicate?: () => void;
 }) => (
   <div className={cn('group flex items-center gap-1 rounded-t px-2 py-1 text-xs cursor-pointer whitespace-nowrap border-b-2',
     activeTab ? 'bg-background border-primary font-medium' : 'border-transparent hover:bg-accent')}
     onClick={onClick}>
     <Icon className="w-3.5 h-3.5" />
     {label}
+    {onDuplicate && (
+      <button title="Duplicar" onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+        className="opacity-0 group-hover:opacity-60 hover:opacity-100">
+        <Copy className="w-3 h-3" />
+      </button>
+    )}
     {onDelete && (
-      <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-60 hover:opacity-100">
+      <button title="Excluir" onClick={(e) => { e.stopPropagation(); onDelete(); }} className="opacity-0 group-hover:opacity-60 hover:opacity-100">
         <X className="w-3 h-3" />
       </button>
     )}
