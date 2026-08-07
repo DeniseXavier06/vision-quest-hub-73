@@ -298,7 +298,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Line key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 4 : 2}>
+            <Line key={s} type="monotone" dataKey={s} name={legendName(s)} stroke={colorFor(s, i)} strokeWidth={sizeIsMeasure ? 4 : 2}>
               {i === 0 ? labelList : null}
             </Line>
           ))}
@@ -310,7 +310,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <YAxis tick={{ fontSize: 10 }} />
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Area key={s} type="monotone" dataKey={s} stroke={COLORS[i % COLORS.length]} strokeWidth={sizeIsMeasure ? 3 : 1} fill={COLORS[i % COLORS.length]} fillOpacity={0.3}>
+            <Area key={s} type="monotone" dataKey={s} name={legendName(s)} stroke={colorFor(s, i)} strokeWidth={sizeIsMeasure ? 3 : 1} fill={colorFor(s, i)} fillOpacity={0.3}>
               {i === 0 ? labelList : null}
             </Area>
           ))}
@@ -318,10 +318,10 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
       ) : sheet.chart === 'pie' ? (
         <PieChart>
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
-          <Pie data={chartData} dataKey={series[0]} nameKey="x" outerRadius="70%"
+          <Pie data={chartData.map((d) => ({ ...d, x: legendName(String(d.x)) }))} dataKey={series[0]} nameKey="x" outerRadius="70%"
             label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
             {chartData.map((d, i) => (
-              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : COLORS[i % COLORS.length]} />
+              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
             ))}
           </Pie>
         </PieChart>
@@ -333,7 +333,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           {sizeIsMeasure && <ZAxis dataKey="__size" range={[40, 400]} />}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Scatter key={s} name={s} data={chartData} dataKey={s} fill={COLORS[i % COLORS.length]}>
+            <Scatter key={s} name={legendName(s)} data={chartData} dataKey={s} fill={colorFor(s, i)}>
               {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
               {i === 0 ? labelList : null}
             </Scatter>
@@ -351,7 +351,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           </>}
           <Tooltip /><Legend wrapperStyle={{ fontSize: 11 }} />
           {series.map((s, i) => (
-            <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]}
+            <Bar key={s} dataKey={s} name={legendName(s)} fill={colorFor(s, i)} radius={[3, 3, 0, 0]}
               barSize={sizeIsMeasure ? 32 : undefined}>
               {colorRamp && chartData.map((d, j) => <Cell key={j} fill={colorRamp(Number(d.__color) || 0)} />)}
               {showLabels && <LabelList dataKey="__label" position={sheet.chart === 'barh' ? 'right' : 'top'} style={{ fontSize: 10, fill: 'hsl(var(--foreground))' }} />}
