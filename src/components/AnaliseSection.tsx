@@ -935,6 +935,7 @@ const AnaliseSection = () => {
             <TabButton key={s.id} icon={FileSpreadsheet} label={s.name}
               activeTab={active.kind === 'sheet' && active.id === s.id}
               onClick={() => setActive({ kind: 'sheet', id: s.id })}
+              onDuplicate={() => duplicateSheet(s)}
               onDelete={sheets.length > 1 ? () => {
                 setSheets((prev) => prev.filter((x) => x.id !== s.id));
                 if (active.id === s.id) setActive({ kind: 'sheet', id: '' });
@@ -944,12 +945,14 @@ const AnaliseSection = () => {
             <TabButton key={d.id} icon={Presentation} label={d.name}
               activeTab={active.kind === 'dashboard' && active.id === d.id}
               onClick={() => setActive({ kind: 'dashboard', id: d.id })}
+              onDuplicate={() => duplicateDashboard(d)}
               onDelete={() => { setDashboards((p) => p.filter((x) => x.id !== d.id)); setActive({ kind: 'sheet', id: '' }); }} />
           ))}
           {stories.map((s) => (
             <TabButton key={s.id} icon={BookOpen} label={s.name}
               activeTab={active.kind === 'story' && active.id === s.id}
               onClick={() => setActive({ kind: 'story', id: s.id })}
+              onDuplicate={() => duplicateStory(s)}
               onDelete={() => { setStories((p) => p.filter((x) => x.id !== s.id)); setActive({ kind: 'sheet', id: '' }); }} />
           ))}
 
