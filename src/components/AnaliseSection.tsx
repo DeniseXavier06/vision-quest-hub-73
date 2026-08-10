@@ -364,7 +364,7 @@ const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, inter
   return (
     <ResponsiveContainer width="100%" height={height}>
       {sheet.chart === 'line' ? (
-        <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <LineChart data={chartData} onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -376,7 +376,7 @@ const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, inter
           ))}
         </LineChart>
       ) : sheet.chart === 'area' ? (
-        <AreaChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <AreaChart data={chartData} onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -393,12 +393,14 @@ const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, inter
           <Pie data={chartData.map((d) => ({ ...d, x: legendName(String(d.x)) }))} dataKey={series[0]} nameKey="x" outerRadius="70%"
             label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
             {chartData.map((d, i) => (
-              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
+              <Cell key={i} style={{ cursor: interactive && onMarkSelect ? 'pointer' : undefined }}
+                onClick={() => interactive && onMarkSelect?.(String(d.x))}
+                fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
             ))}
           </Pie>
         </PieChart>
       ) : sheet.chart === 'scatter' ? (
-        <ScatterChart margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <ScatterChart onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -412,7 +414,7 @@ const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, inter
           ))}
         </ScatterChart>
       ) : (
-        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
+        <BarChart data={chartData} onClick={handleClick} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           {sheet.chart === 'barh' ? <>
             <XAxis type="number" tick={{ fontSize: 10 }} />
