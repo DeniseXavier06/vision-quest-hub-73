@@ -444,7 +444,7 @@ type TabRef = { kind: 'sheet' | 'dashboard' | 'story'; id: string };
 
 interface AnaliseRow {
   id: string; nome: string; descricao: string | null; updated_at: string;
-  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[] };
+  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[]; params?: Param[] };
 }
 
 const AnaliseSection = () => {
@@ -455,6 +455,8 @@ const AnaliseSection = () => {
   const [sheets, setSheets] = useState<Sheet[]>([newSheet(1)]);
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
+  const [params, setParams] = useState<Param[]>([]);
+  const [selectedMark, setSelectedMark] = useState<string | null>(null);
   const [active, setActive] = useState<TabRef>({ kind: 'sheet', id: '' });
 
   /* lista de análises salvas */
@@ -478,6 +480,7 @@ const AnaliseSection = () => {
     setSheets(wb.sheets?.length ? wb.sheets : [newSheet(1)]);
     setDashboards(wb.dashboards || []);
     setStories(wb.stories || []);
+    setParams(wb.params || []);
     setActive({ kind: 'sheet', id: '' });
     setCurrentId(a.id);
     setSavingState('idle');
@@ -487,7 +490,7 @@ const AnaliseSection = () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
     const nome = newName.trim() || `Análise ${analises.length + 1}`;
-    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [] };
+    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [], params: [] };
     const { data: row } = await supabase.from('analises')
       .insert({ user_id: auth.user.id, nome, workbook: wb as never })
       .select('id, nome, descricao, updated_at, workbook').single();
@@ -523,18 +526,18 @@ const AnaliseSection = () => {
     if (!currentId) return;
     setSavingState('saving');
     const t = setTimeout(async () => {
-      const wb = { sheets, dashboards, stories };
+      const wb = { sheets, dashboards, stories, params };
       await supabase.from('analises').update({ workbook: wb as never }).eq('id', currentId);
       setAnalises((p) => p.map((x) => (x.id === currentId ? { ...x, workbook: wb, updated_at: new Date().toISOString() } : x)));
       setSavingState('saved');
     }, 800);
     return () => clearTimeout(t);
-  }, [sheets, dashboards, stories, currentId]);
+  }, [sheets, dashboards, stories, params, currentId]);
 
   /* backup local */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories }));
-  }, [sheets, dashboards, stories]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories, params }));
+  }, [sheets, dashboards, stories, params]);
 
   useEffect(() => {
     if (!active.id && sheets.length) setActive({ kind: 'sheet', id: sheets[0].id });
