@@ -62,6 +62,29 @@ interface Pill { key: string; agg?: Agg }
 interface FilterDef { key: string; values: string[] }
 type MarkSlot = 'color' | 'size' | 'label' | 'detail';
 
+/* Parâmetros (usados pelo intervalo de cores dinâmico) */
+interface Param { id: string; name: string; value: number }
+
+type RangeMode = 'auto' | 'custom' | 'param';
+type RangePoint = 'start' | 'center' | 'end';
+interface RangePointCfg { mode: RangeMode; value?: number; paramId?: string }
+interface ColorRange { start: RangePointCfg; center: RangePointCfg; end: RangePointCfg }
+
+/* Ação de parâmetro: interação com marcas atualiza um parâmetro */
+type ParamAgg = 'min' | 'q1' | 'max' | 'q3' | 'value';
+interface ParamAction {
+  id: string; name: string;
+  sourceSheetId: string;      // planilha de origem (ou planilha de um painel)
+  targetParamId: string;      // parâmetro de destino
+  sourceFieldKey: string;     // medida contínua usada para codificar a cor
+  agg: ParamAgg;
+  onClear: 'keep' | 'reset';  // limpeza da seleção
+}
+
+const defaultColorRange = (): ColorRange => ({
+  start: { mode: 'auto' }, center: { mode: 'auto' }, end: { mode: 'auto' },
+});
+
 interface Sheet {
   id: string; name: string;
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
@@ -70,6 +93,8 @@ interface Sheet {
   palette?: string;
   seriesColors?: Record<string, string>;
   legend?: Record<string, string>;
+  colorRange?: ColorRange;
+  paramActions?: ParamAction[];
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
 interface StoryPoint { id: string; sheetId: string; caption: string }
@@ -80,7 +105,27 @@ interface Row { [k: string]: string | number }
 const uid = () => Math.random().toString(36).slice(2, 9);
 const newSheet = (n: number): Sheet => ({
   id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar', palette: 'default',
+  colorRange: defaultColorRange(), paramActions: [],
 });
+
+const quantile = (vals: number[], q: number) => {
+  if (!vals.length) return 0;
+  const s = [...vals].sort((a, b) => a - b);
+  const pos = (s.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return Number((s[lo] + (s[hi] - s[lo]) * (pos - lo)).toFixed(2));
+};
+const aggOfSelection = (vals: number[], agg: ParamAgg) => {
+  if (!vals.length) return 0;
+  if (agg === 'min') return Number(Math.min(...vals).toFixed(2));
+  if (agg === 'max') return Number(Math.max(...vals).toFixed(2));
+  if (agg === 'q1') return quantile(vals, 0.25);
+  if (agg === 'q3') return quantile(vals, 0.75);
+  return Number((vals.reduce((a, v) => a + v, 0) / vals.length).toFixed(2));
+};
+const PARAM_AGG_LABEL: Record<ParamAgg, string> = {
+  min: 'Mínimo', q1: 'Primeiro quartil', q3: 'Terceiro quartil', max: 'Máximo', value: 'Valor da marca',
+};
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
