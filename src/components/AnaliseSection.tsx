@@ -889,7 +889,18 @@ const AnaliseSection = () => {
                     onChange={(e) => updateSheet(sheet.id, { name: e.target.value })}
                     className="border-0 shadow-none px-0 text-base font-heading font-semibold h-8 focus-visible:ring-0"
                   />
-                  <ChartView sheet={sheet} data={sheetData} />
+                  <ChartView sheet={sheet} data={sheetData} params={params}
+                    onMarkSelect={(x) => handleMarkSelect(sheet, x)} />
+                  {(sheet.paramActions || []).length > 0 && (
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>
+                        {selectedMark ? <>Marca selecionada: <strong className="text-foreground">{selectedMark}</strong></> : 'Clique em uma marca para atualizar o intervalo de cores'}
+                      </span>
+                      <Button size="sm" variant="outline" className="h-6 text-[11px]" onClick={() => clearSelection(sheet)}>
+                        Limpar seleção
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
               </>
@@ -921,7 +932,8 @@ const AnaliseSection = () => {
                       return (
                         <Card key={id} className="p-3">
                           <p className="text-xs font-semibold mb-2">{s.name}</p>
-                          <ChartView sheet={s} data={dashSheetData(s)} height={260} />
+                          <ChartView sheet={s} data={dashSheetData(s)} height={260} params={params}
+                            onMarkSelect={(x) => handleMarkSelect(s, x)} />
                         </Card>
                       );
                     })}
@@ -933,6 +945,10 @@ const AnaliseSection = () => {
                 <Input value={story.name}
                   onChange={(e) => setStories((prev) => prev.map((s) => s.id === story.id ? { ...s, name: e.target.value } : s))}
                   className="border-0 shadow-none px-0 text-base font-heading font-semibold h-8 focus-visible:ring-0" />
+                <p className="text-[11px] rounded border border-border bg-muted/40 px-2 py-1.5 text-muted-foreground">
+                  Atenção: intervalos de cores dinâmicos não são atualizados dentro de histórias — os pontos usam o último
+                  valor aplicado aos parâmetros. Para interagir com as marcas, abra a planilha ou o painel de origem.
+                </p>
                 <Button size="sm" variant="outline" onClick={() => setStories((prev) => prev.map((s) => s.id === story.id ? {
                   ...s, points: [...s.points, { id: uid(), sheetId: sheets[0]?.id || '', caption: 'Novo ponto da história' }],
                 } : s))}>
@@ -967,7 +983,7 @@ const AnaliseSection = () => {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        {s && <ChartView sheet={s} data={dashSheetData(s)} height={240} />}
+                        {s && <ChartView sheet={s} data={dashSheetData(s)} height={240} params={params} interactive={false} />}
                       </Card>
                     );
                   })}
