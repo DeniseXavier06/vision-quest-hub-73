@@ -586,6 +586,60 @@ const AnaliseSection = () => {
   const dashSheetData = useCallback((s: Sheet) =>
     data.filter((r) => s.filters.every((f) => !f.values.length || f.values.includes(String(r[f.key] ?? '')))), [data]);
 
+  /* ---------- Parâmetros e ações de parâmetro ---------- */
+  const addParam = () => {
+    const p: Param = { id: uid(), name: `Parâmetro ${params.length + 1}`, value: 0 };
+    setParams((prev) => [...prev, p]);
+    return p;
+  };
+  const updateParam = (id: string, patch: Partial<Param>) =>
+    setParams((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  /* RF-85: ao excluir, o último valor é preservado nos pontos que o usavam (e o parâmetro é desvinculado) */
+  const deleteParam = (id: string) => {
+    const last = params.find((p) => p.id === id)?.value ?? 0;
+    setSheets((prev) => prev.map((s) => {
+      const cr = s.colorRange || defaultColorRange();
+      const fix = (pt: RangePointCfg): RangePointCfg =>
+        pt.mode === 'param' && pt.paramId === id ? { mode: 'param', paramId: undefined, value: last } : pt;
+      return {
+        ...s,
+        colorRange: { start: fix(cr.start), center: fix(cr.center), end: fix(cr.end) },
+        paramActions: (s.paramActions || []).filter((a) => a.targetParamId !== id),
+      };
+    }));
+    setParams((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  /* chave do eixo de uma linha, conforme colunas + detalhe */
+  const xKeyOf = useCallback((s: Sheet, r: Row) => {
+    const dims = [...s.cols.filter((p) => fieldOf(p.key).kind === 'dim'),
+      ...(s.detail && fieldOf(s.detail.key).kind === 'dim' ? [s.detail] : [])];
+    return dims.length ? dims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
+  }, []);
+
+  /* RF-82: interação com a marca atualiza os parâmetros ligados ao intervalo de cores */
+  const handleMarkSelect = useCallback((sourceSheet: Sheet, x: string) => {
+    setSelectedMark(x);
+    const rows = data.filter((r) => sourceSheet.filters.every((f) => !f.values.length || f.values.includes(String(r[f.key] ?? ''))))
+      .filter((r) => xKeyOf(sourceSheet, r) === x);
+    const actions = sheets.flatMap((s) => (s.paramActions || []).filter((a) => a.sourceSheetId === sourceSheet.id));
+    if (!actions.length || !rows.length) return;
+    setParams((prev) => prev.map((p) => {
+      const act = actions.find((a) => a.targetParamId === p.id);
+      if (!act) return p;
+      const vals = rows.map((r) => Number(r[act.sourceFieldKey]) || 0);
+      return { ...p, value: aggOfSelection(vals, act.agg) };
+    }));
+  }, [data, sheets, xKeyOf]);
+
+  /* RF-81: limpar seleção — "Manter valor atual" preserva o último valor */
+  const clearSelection = (sourceSheet: Sheet) => {
+    setSelectedMark(null);
+    const actions = sheets.flatMap((s) => (s.paramActions || []).filter((a) => a.sourceSheetId === sourceSheet.id));
+    const toReset = actions.filter((a) => a.onClear === 'reset').map((a) => a.targetParamId);
+    if (toReset.length) setParams((prev) => prev.map((p) => (toReset.includes(p.id) ? { ...p, value: 0 } : p)));
+  };
+
   /* ações de shelves */
   const addToShelf = (target: 'cols' | 'rows', key: string) => {
     if (!sheet) return;
