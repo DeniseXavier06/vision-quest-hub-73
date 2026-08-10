@@ -1022,6 +1022,163 @@ const AnaliseSection = () => {
                 ))}
               </div>
 
+              {/* RF-68 a RF-74: intervalo de cores dinâmico */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Intervalo de cores</div>
+              <div className="p-2 space-y-2">
+                {!sheet.color || fieldOf(sheet.color.key).kind !== 'measure' ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Arraste uma medida contínua para a marca <strong>Cor</strong> para configurar o intervalo.
+                  </p>
+                ) : (
+                  ([
+                    { pt: 'start' as RangePoint, label: 'Início' },
+                    { pt: 'center' as RangePoint, label: 'Centro' },
+                    { pt: 'end' as RangePoint, label: 'Fim' },
+                  ]).map(({ pt, label }) => {
+                    const cr = sheet.colorRange || defaultColorRange();
+                    const cfg = cr[pt];
+                    const setPoint = (patch: Partial<RangePointCfg>) =>
+                      updateSheet(sheet.id, { colorRange: { ...cr, [pt]: { ...cfg, ...patch } } as ColorRange });
+                    const orphan = cfg.mode === 'param' && !params.find((p) => p.id === cfg.paramId);
+                    return (
+                      <div key={pt} className="space-y-1">
+                        <Label className="text-[11px]">{label}</Label>
+                        <select value={cfg.mode} className="w-full h-7 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => setPoint({ mode: e.target.value as RangeMode })}>
+                          <option value="auto">Automático</option>
+                          <option value="custom">Personalizado</option>
+                          <option value="param">Parâmetro</option>
+                        </select>
+                        {cfg.mode === 'custom' && (
+                          <Input type="number" step="0.01" className="h-7 text-[11px]" value={cfg.value ?? ''}
+                            onChange={(e) => setPoint({ value: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                        )}
+                        {cfg.mode === 'param' && (
+                          <>
+                            {/* RF-86: parâmetro excluído → solicitar novo parâmetro */}
+                            {orphan && (
+                              <p className="text-[10px] text-destructive">
+                                Parâmetro excluído. Último valor mantido ({(cfg.value ?? 0).toFixed(2)}). Selecione um novo parâmetro.
+                              </p>
+                            )}
+                            <select value={cfg.paramId ?? ''} className="w-full h-7 text-[11px] rounded border border-border bg-background px-1"
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === '__new') { const np = addParam(); setPoint({ paramId: np.id }); return; }
+                                setPoint({ paramId: v || undefined });
+                              }}>
+                              <option value="">Selecione um parâmetro…</option>
+                              {params.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              <option value="__new">+ Novo parâmetro</option>
+                            </select>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* RF-83: controle do parâmetro com entrada manual */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Parâmetros</div>
+              <div className="p-2 space-y-2">
+                {params.length === 0 && <p className="text-[11px] text-muted-foreground">Nenhum parâmetro criado.</p>}
+                {params.map((p) => (
+                  <div key={p.id} className="space-y-1 rounded border border-border p-1.5">
+                    <div className="flex items-center gap-1">
+                      <Input value={p.name} onChange={(e) => updateParam(p.id, { name: e.target.value })}
+                        className="h-6 text-[11px]" />
+                      <button title="Excluir parâmetro" onClick={() => deleteParam(p.id)}
+                        className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                    <Input type="number" step="0.01" value={p.value}
+                      onChange={(e) => updateParam(p.id, { value: Number(e.target.value) || 0 })}
+                      className="h-6 text-[11px] tabular-nums" />
+                  </div>
+                ))}
+                <Button size="sm" variant="outline" className="h-6 w-full text-[11px]" onClick={() => addParam()}>
+                  <Plus className="w-3 h-3 mr-1" /> Novo parâmetro
+                </Button>
+              </div>
+
+              {/* RF-75 a RF-81: ações de parâmetro */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Ações de parâmetro</div>
+              <ScrollArea className="max-h-72">
+                <div className="p-2 space-y-2">
+                  {(sheet.paramActions || []).length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Crie uma ação para atualizar o intervalo de cores ao clicar nas marcas.
+                    </p>
+                  )}
+                  {(sheet.paramActions || []).map((a) => {
+                    const patch = (up: Partial<ParamAction>) => updateSheet(sheet.id, {
+                      paramActions: (sheet.paramActions || []).map((x) => (x.id === a.id ? { ...x, ...up } : x)),
+                    });
+                    return (
+                      <div key={a.id} className="space-y-1 rounded border border-border p-1.5">
+                        <div className="flex items-center gap-1">
+                          <Input value={a.name} onChange={(e) => patch({ name: e.target.value })} className="h-6 text-[11px]" />
+                          <button title="Excluir ação" className="text-muted-foreground hover:text-destructive"
+                            onClick={() => updateSheet(sheet.id, { paramActions: (sheet.paramActions || []).filter((x) => x.id !== a.id) })}>
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <Label className="text-[10px] text-muted-foreground">Planilha de origem</Label>
+                        <select value={a.sourceSheetId} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ sourceSheetId: e.target.value })}>
+                          {sheets.map((s) => {
+                            const dash = dashboards.find((d) => d.sheetIds.includes(s.id));
+                            return <option key={s.id} value={s.id}>{s.name}{dash ? ` — ${dash.name}` : ''}</option>;
+                          })}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Parâmetro de destino</Label>
+                        <select value={a.targetParamId} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => {
+                            if (e.target.value === '__new') { const np = addParam(); patch({ targetParamId: np.id }); return; }
+                            patch({ targetParamId: e.target.value });
+                          }}>
+                          <option value="">Selecione…</option>
+                          {params.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          <option value="__new">+ Novo parâmetro</option>
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Campo de origem (medida)</Label>
+                        <select value={a.sourceFieldKey} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ sourceFieldKey: e.target.value })}>
+                          {FIELDS.filter((f) => f.kind === 'measure').map((f) => (
+                            <option key={f.key} value={f.key}>{f.label}</option>
+                          ))}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Agregação</Label>
+                        <select value={a.agg} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ agg: e.target.value as ParamAgg })}>
+                          {(['min', 'q1', 'q3', 'max', 'value'] as ParamAgg[]).map((g) => (
+                            <option key={g} value={g}>{PARAM_AGG_LABEL[g]}</option>
+                          ))}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Limpeza da seleção</Label>
+                        <select value={a.onClear} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ onClear: e.target.value as 'keep' | 'reset' })}>
+                          <option value="keep">Manter valor atual</option>
+                          <option value="reset">Redefinir</option>
+                        </select>
+                      </div>
+                    );
+                  })}
+                  <Button size="sm" variant="outline" className="h-6 w-full text-[11px]" onClick={() => {
+                    const target = params[0] || addParam();
+                    const act: ParamAction = {
+                      id: uid(), name: `Ação ${(sheet.paramActions || []).length + 1}`,
+                      sourceSheetId: sheet.id, targetParamId: target.id,
+                      sourceFieldKey: sheet.color && fieldOf(sheet.color.key).kind === 'measure' ? sheet.color.key : 'media',
+                      agg: 'min', onClear: 'keep',
+                    };
+                    updateSheet(sheet.id, { paramActions: [...(sheet.paramActions || []), act] });
+                  }}>
+                    <Plus className="w-3 h-3 mr-1" /> Nova ação de parâmetro
+                  </Button>
+                </div>
+              </ScrollArea>
+
               <div className="px-3 py-2 border-y border-border text-xs font-semibold">Legenda</div>
               <ScrollArea className="max-h-56">
                 <div className="p-2 space-y-2">
