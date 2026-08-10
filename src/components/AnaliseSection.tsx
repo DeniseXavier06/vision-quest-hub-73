@@ -62,6 +62,29 @@ interface Pill { key: string; agg?: Agg }
 interface FilterDef { key: string; values: string[] }
 type MarkSlot = 'color' | 'size' | 'label' | 'detail';
 
+/* Parâmetros (usados pelo intervalo de cores dinâmico) */
+interface Param { id: string; name: string; value: number }
+
+type RangeMode = 'auto' | 'custom' | 'param';
+type RangePoint = 'start' | 'center' | 'end';
+interface RangePointCfg { mode: RangeMode; value?: number; paramId?: string }
+interface ColorRange { start: RangePointCfg; center: RangePointCfg; end: RangePointCfg }
+
+/* Ação de parâmetro: interação com marcas atualiza um parâmetro */
+type ParamAgg = 'min' | 'q1' | 'max' | 'q3' | 'value';
+interface ParamAction {
+  id: string; name: string;
+  sourceSheetId: string;      // planilha de origem (ou planilha de um painel)
+  targetParamId: string;      // parâmetro de destino
+  sourceFieldKey: string;     // medida contínua usada para codificar a cor
+  agg: ParamAgg;
+  onClear: 'keep' | 'reset';  // limpeza da seleção
+}
+
+const defaultColorRange = (): ColorRange => ({
+  start: { mode: 'auto' }, center: { mode: 'auto' }, end: { mode: 'auto' },
+});
+
 interface Sheet {
   id: string; name: string;
   cols: Pill[]; rows: Pill[]; filters: FilterDef[];
@@ -70,6 +93,8 @@ interface Sheet {
   palette?: string;
   seriesColors?: Record<string, string>;
   legend?: Record<string, string>;
+  colorRange?: ColorRange;
+  paramActions?: ParamAction[];
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
 interface StoryPoint { id: string; sheetId: string; caption: string }
@@ -80,7 +105,27 @@ interface Row { [k: string]: string | number }
 const uid = () => Math.random().toString(36).slice(2, 9);
 const newSheet = (n: number): Sheet => ({
   id: uid(), name: `Planilha ${n}`, cols: [], rows: [], filters: [], chart: 'bar', palette: 'default',
+  colorRange: defaultColorRange(), paramActions: [],
 });
+
+const quantile = (vals: number[], q: number) => {
+  if (!vals.length) return 0;
+  const s = [...vals].sort((a, b) => a - b);
+  const pos = (s.length - 1) * q;
+  const lo = Math.floor(pos), hi = Math.ceil(pos);
+  return Number((s[lo] + (s[hi] - s[lo]) * (pos - lo)).toFixed(2));
+};
+const aggOfSelection = (vals: number[], agg: ParamAgg) => {
+  if (!vals.length) return 0;
+  if (agg === 'min') return Number(Math.min(...vals).toFixed(2));
+  if (agg === 'max') return Number(Math.max(...vals).toFixed(2));
+  if (agg === 'q1') return quantile(vals, 0.25);
+  if (agg === 'q3') return quantile(vals, 0.75);
+  return Number((vals.reduce((a, v) => a + v, 0) / vals.length).toFixed(2));
+};
+const PARAM_AGG_LABEL: Record<ParamAgg, string> = {
+  min: 'Mínimo', q1: 'Primeiro quartil', q3: 'Terceiro quartil', max: 'Máximo', value: 'Valor da marca',
+};
 
 const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))', 'hsl(var(--chart-4))', 'hsl(var(--chart-5))'];
 
@@ -225,7 +270,10 @@ const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAg
 
 /* ---------------- Renderização de gráfico ---------------- */
 
-const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; height?: number }) => {
+const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true }: {
+  sheet: Sheet; data: Row[]; height?: number;
+  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean;
+}) => {
   const marks = useMemo(
     () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
     [sheet.color, sheet.size, sheet.label, sheet.detail],
@@ -243,16 +291,39 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
   const colorRamp = useMemo(() => {
     if (!colorIsMeasure) return null;
     const vals = chartData.map((d) => Number(d.__color) || 0);
-    const min = Math.min(...vals), max = Math.max(...vals);
+    const autoMin = Math.min(...vals), autoMax = Math.max(...vals);
+    const cfg = sheet.colorRange || defaultColorRange();
+    const resolve = (p: RangePointCfg, auto: number) => {
+      if (p.mode === 'custom' && typeof p.value === 'number') return p.value;
+      if (p.mode === 'param') {
+        const prm = params.find((x) => x.id === p.paramId);
+        // RF-85: parâmetro excluído → mantém o último valor aplicado
+        if (prm) return prm.value;
+        if (typeof p.value === 'number') return p.value;
+      }
+      return auto;
+    };
+    const min = resolve(cfg.start, autoMin);
+    const max = resolve(cfg.end, autoMax);
+    const mid = resolve(cfg.center, (autoMin + autoMax) / 2);
     return (v: number) => {
-      const t = max === min ? 0.5 : (v - min) / (max - min);
+      let t: number;
+      if (max === min) t = 0.5;
+      else if (v <= mid) t = mid === min ? 0 : ((v - min) / (mid - min)) * 0.5;
+      else t = 0.5 + ((v - mid) / (max - mid || 1)) * 0.5;
+      t = Math.max(0, Math.min(1, t));
       const idx = Math.min(palette.length - 1, Math.round((1 - t) * (palette.length - 1)));
       return palette[idx];
     };
-  }, [colorIsMeasure, chartData, palette]);
+  }, [colorIsMeasure, chartData, palette, sheet.colorRange, params]);
 
   const showLabels = !!sheet.label;
   const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
+  const handleClick = (e: { activeLabel?: string | number } | undefined) => {
+    if (!interactive || !onMarkSelect) return;
+    if (e && e.activeLabel !== undefined) onMarkSelect(String(e.activeLabel));
+  };
+
 
 
   if (!chartData.length) {
@@ -293,7 +364,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
   return (
     <ResponsiveContainer width="100%" height={height}>
       {sheet.chart === 'line' ? (
-        <LineChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <LineChart data={chartData} onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -305,7 +376,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           ))}
         </LineChart>
       ) : sheet.chart === 'area' ? (
-        <AreaChart data={chartData} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <AreaChart data={chartData} onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -322,12 +393,14 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           <Pie data={chartData.map((d) => ({ ...d, x: legendName(String(d.x)) }))} dataKey={series[0]} nameKey="x" outerRadius="70%"
             label={showLabels ? (e: { payload?: Record<string, unknown> }) => String(e.payload?.__label ?? '') : { fontSize: 10 }}>
             {chartData.map((d, i) => (
-              <Cell key={i} fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
+              <Cell key={i} style={{ cursor: interactive && onMarkSelect ? 'pointer' : undefined }}
+                onClick={() => interactive && onMarkSelect?.(String(d.x))}
+                fill={colorRamp ? colorRamp(Number(d.__color) || 0) : colorFor(String(d.x), i)} />
             ))}
           </Pie>
         </PieChart>
       ) : sheet.chart === 'scatter' ? (
-        <ScatterChart margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
+        <ScatterChart onClick={handleClick} margin={{ top: 16, right: 20, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           <XAxis dataKey="x" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} interval={0} />
           <YAxis tick={{ fontSize: 10 }} />
@@ -341,7 +414,7 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
           ))}
         </ScatterChart>
       ) : (
-        <BarChart data={chartData} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
+        <BarChart data={chartData} onClick={handleClick} layout={sheet.chart === 'barh' ? 'vertical' : 'horizontal'} margin={{ top: 16, right: 20, bottom: 40, left: sheet.chart === 'barh' ? 90 : 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
           {sheet.chart === 'barh' ? <>
             <XAxis type="number" tick={{ fontSize: 10 }} />
@@ -371,7 +444,7 @@ type TabRef = { kind: 'sheet' | 'dashboard' | 'story'; id: string };
 
 interface AnaliseRow {
   id: string; nome: string; descricao: string | null; updated_at: string;
-  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[] };
+  workbook: { sheets?: Sheet[]; dashboards?: Dashboard[]; stories?: Story[]; params?: Param[] };
 }
 
 const AnaliseSection = () => {
@@ -382,6 +455,8 @@ const AnaliseSection = () => {
   const [sheets, setSheets] = useState<Sheet[]>([newSheet(1)]);
   const [dashboards, setDashboards] = useState<Dashboard[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
+  const [params, setParams] = useState<Param[]>([]);
+  const [selectedMark, setSelectedMark] = useState<string | null>(null);
   const [active, setActive] = useState<TabRef>({ kind: 'sheet', id: '' });
 
   /* lista de análises salvas */
@@ -405,6 +480,7 @@ const AnaliseSection = () => {
     setSheets(wb.sheets?.length ? wb.sheets : [newSheet(1)]);
     setDashboards(wb.dashboards || []);
     setStories(wb.stories || []);
+    setParams(wb.params || []);
     setActive({ kind: 'sheet', id: '' });
     setCurrentId(a.id);
     setSavingState('idle');
@@ -414,7 +490,7 @@ const AnaliseSection = () => {
     const { data: auth } = await supabase.auth.getUser();
     if (!auth.user) return;
     const nome = newName.trim() || `Análise ${analises.length + 1}`;
-    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [] };
+    const wb = { sheets: [newSheet(1)], dashboards: [], stories: [], params: [] };
     const { data: row } = await supabase.from('analises')
       .insert({ user_id: auth.user.id, nome, workbook: wb as never })
       .select('id, nome, descricao, updated_at, workbook').single();
@@ -450,18 +526,18 @@ const AnaliseSection = () => {
     if (!currentId) return;
     setSavingState('saving');
     const t = setTimeout(async () => {
-      const wb = { sheets, dashboards, stories };
+      const wb = { sheets, dashboards, stories, params };
       await supabase.from('analises').update({ workbook: wb as never }).eq('id', currentId);
       setAnalises((p) => p.map((x) => (x.id === currentId ? { ...x, workbook: wb, updated_at: new Date().toISOString() } : x)));
       setSavingState('saved');
     }, 800);
     return () => clearTimeout(t);
-  }, [sheets, dashboards, stories, currentId]);
+  }, [sheets, dashboards, stories, params, currentId]);
 
   /* backup local */
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories }));
-  }, [sheets, dashboards, stories]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ sheets, dashboards, stories, params }));
+  }, [sheets, dashboards, stories, params]);
 
   useEffect(() => {
     if (!active.id && sheets.length) setActive({ kind: 'sheet', id: sheets[0].id });
@@ -509,6 +585,60 @@ const AnaliseSection = () => {
 
   const dashSheetData = useCallback((s: Sheet) =>
     data.filter((r) => s.filters.every((f) => !f.values.length || f.values.includes(String(r[f.key] ?? '')))), [data]);
+
+  /* ---------- Parâmetros e ações de parâmetro ---------- */
+  const addParam = () => {
+    const p: Param = { id: uid(), name: `Parâmetro ${params.length + 1}`, value: 0 };
+    setParams((prev) => [...prev, p]);
+    return p;
+  };
+  const updateParam = (id: string, patch: Partial<Param>) =>
+    setParams((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  /* RF-85: ao excluir, o último valor é preservado nos pontos que o usavam (e o parâmetro é desvinculado) */
+  const deleteParam = (id: string) => {
+    const last = params.find((p) => p.id === id)?.value ?? 0;
+    setSheets((prev) => prev.map((s) => {
+      const cr = s.colorRange || defaultColorRange();
+      const fix = (pt: RangePointCfg): RangePointCfg =>
+        pt.mode === 'param' && pt.paramId === id ? { mode: 'param', paramId: undefined, value: last } : pt;
+      return {
+        ...s,
+        colorRange: { start: fix(cr.start), center: fix(cr.center), end: fix(cr.end) },
+        paramActions: (s.paramActions || []).filter((a) => a.targetParamId !== id),
+      };
+    }));
+    setParams((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  /* chave do eixo de uma linha, conforme colunas + detalhe */
+  const xKeyOf = useCallback((s: Sheet, r: Row) => {
+    const dims = [...s.cols.filter((p) => fieldOf(p.key).kind === 'dim'),
+      ...(s.detail && fieldOf(s.detail.key).kind === 'dim' ? [s.detail] : [])];
+    return dims.length ? dims.map((d) => String(r[d.key] ?? '')).join(' / ') : 'Total';
+  }, []);
+
+  /* RF-82: interação com a marca atualiza os parâmetros ligados ao intervalo de cores */
+  const handleMarkSelect = useCallback((sourceSheet: Sheet, x: string) => {
+    setSelectedMark(x);
+    const rows = data.filter((r) => sourceSheet.filters.every((f) => !f.values.length || f.values.includes(String(r[f.key] ?? ''))))
+      .filter((r) => xKeyOf(sourceSheet, r) === x);
+    const actions = sheets.flatMap((s) => (s.paramActions || []).filter((a) => a.sourceSheetId === sourceSheet.id));
+    if (!actions.length || !rows.length) return;
+    setParams((prev) => prev.map((p) => {
+      const act = actions.find((a) => a.targetParamId === p.id);
+      if (!act) return p;
+      const vals = rows.map((r) => Number(r[act.sourceFieldKey]) || 0);
+      return { ...p, value: aggOfSelection(vals, act.agg) };
+    }));
+  }, [data, sheets, xKeyOf]);
+
+  /* RF-81: limpar seleção — "Manter valor atual" preserva o último valor */
+  const clearSelection = (sourceSheet: Sheet) => {
+    setSelectedMark(null);
+    const actions = sheets.flatMap((s) => (s.paramActions || []).filter((a) => a.sourceSheetId === sourceSheet.id));
+    const toReset = actions.filter((a) => a.onClear === 'reset').map((a) => a.targetParamId);
+    if (toReset.length) setParams((prev) => prev.map((p) => (toReset.includes(p.id) ? { ...p, value: 0 } : p)));
+  };
 
   /* ações de shelves */
   const addToShelf = (target: 'cols' | 'rows', key: string) => {
@@ -759,7 +889,18 @@ const AnaliseSection = () => {
                     onChange={(e) => updateSheet(sheet.id, { name: e.target.value })}
                     className="border-0 shadow-none px-0 text-base font-heading font-semibold h-8 focus-visible:ring-0"
                   />
-                  <ChartView sheet={sheet} data={sheetData} />
+                  <ChartView sheet={sheet} data={sheetData} params={params}
+                    onMarkSelect={(x) => handleMarkSelect(sheet, x)} />
+                  {(sheet.paramActions || []).length > 0 && (
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <span>
+                        {selectedMark ? <>Marca selecionada: <strong className="text-foreground">{selectedMark}</strong></> : 'Clique em uma marca para atualizar o intervalo de cores'}
+                      </span>
+                      <Button size="sm" variant="outline" className="h-6 text-[11px]" onClick={() => clearSelection(sheet)}>
+                        Limpar seleção
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
               </>
@@ -791,7 +932,8 @@ const AnaliseSection = () => {
                       return (
                         <Card key={id} className="p-3">
                           <p className="text-xs font-semibold mb-2">{s.name}</p>
-                          <ChartView sheet={s} data={dashSheetData(s)} height={260} />
+                          <ChartView sheet={s} data={dashSheetData(s)} height={260} params={params}
+                            onMarkSelect={(x) => handleMarkSelect(s, x)} />
                         </Card>
                       );
                     })}
@@ -803,6 +945,10 @@ const AnaliseSection = () => {
                 <Input value={story.name}
                   onChange={(e) => setStories((prev) => prev.map((s) => s.id === story.id ? { ...s, name: e.target.value } : s))}
                   className="border-0 shadow-none px-0 text-base font-heading font-semibold h-8 focus-visible:ring-0" />
+                <p className="text-[11px] rounded border border-border bg-muted/40 px-2 py-1.5 text-muted-foreground">
+                  Atenção: intervalos de cores dinâmicos não são atualizados dentro de histórias — os pontos usam o último
+                  valor aplicado aos parâmetros. Para interagir com as marcas, abra a planilha ou o painel de origem.
+                </p>
                 <Button size="sm" variant="outline" onClick={() => setStories((prev) => prev.map((s) => s.id === story.id ? {
                   ...s, points: [...s.points, { id: uid(), sheetId: sheets[0]?.id || '', caption: 'Novo ponto da história' }],
                 } : s))}>
@@ -837,7 +983,7 @@ const AnaliseSection = () => {
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
-                        {s && <ChartView sheet={s} data={dashSheetData(s)} height={240} />}
+                        {s && <ChartView sheet={s} data={dashSheetData(s)} height={240} params={params} interactive={false} />}
                       </Card>
                     );
                   })}
@@ -875,6 +1021,163 @@ const AnaliseSection = () => {
                   </button>
                 ))}
               </div>
+
+              {/* RF-68 a RF-74: intervalo de cores dinâmico */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Intervalo de cores</div>
+              <div className="p-2 space-y-2">
+                {!sheet.color || fieldOf(sheet.color.key).kind !== 'measure' ? (
+                  <p className="text-[11px] text-muted-foreground">
+                    Arraste uma medida contínua para a marca <strong>Cor</strong> para configurar o intervalo.
+                  </p>
+                ) : (
+                  ([
+                    { pt: 'start' as RangePoint, label: 'Início' },
+                    { pt: 'center' as RangePoint, label: 'Centro' },
+                    { pt: 'end' as RangePoint, label: 'Fim' },
+                  ]).map(({ pt, label }) => {
+                    const cr = sheet.colorRange || defaultColorRange();
+                    const cfg = cr[pt];
+                    const setPoint = (patch: Partial<RangePointCfg>) =>
+                      updateSheet(sheet.id, { colorRange: { ...cr, [pt]: { ...cfg, ...patch } } as ColorRange });
+                    const orphan = cfg.mode === 'param' && !params.find((p) => p.id === cfg.paramId);
+                    return (
+                      <div key={pt} className="space-y-1">
+                        <Label className="text-[11px]">{label}</Label>
+                        <select value={cfg.mode} className="w-full h-7 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => setPoint({ mode: e.target.value as RangeMode })}>
+                          <option value="auto">Automático</option>
+                          <option value="custom">Personalizado</option>
+                          <option value="param">Parâmetro</option>
+                        </select>
+                        {cfg.mode === 'custom' && (
+                          <Input type="number" step="0.01" className="h-7 text-[11px]" value={cfg.value ?? ''}
+                            onChange={(e) => setPoint({ value: e.target.value === '' ? undefined : Number(e.target.value) })} />
+                        )}
+                        {cfg.mode === 'param' && (
+                          <>
+                            {/* RF-86: parâmetro excluído → solicitar novo parâmetro */}
+                            {orphan && (
+                              <p className="text-[10px] text-destructive">
+                                Parâmetro excluído. Último valor mantido ({(cfg.value ?? 0).toFixed(2)}). Selecione um novo parâmetro.
+                              </p>
+                            )}
+                            <select value={cfg.paramId ?? ''} className="w-full h-7 text-[11px] rounded border border-border bg-background px-1"
+                              onChange={(e) => {
+                                const v = e.target.value;
+                                if (v === '__new') { const np = addParam(); setPoint({ paramId: np.id }); return; }
+                                setPoint({ paramId: v || undefined });
+                              }}>
+                              <option value="">Selecione um parâmetro…</option>
+                              {params.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              <option value="__new">+ Novo parâmetro</option>
+                            </select>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* RF-83: controle do parâmetro com entrada manual */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Parâmetros</div>
+              <div className="p-2 space-y-2">
+                {params.length === 0 && <p className="text-[11px] text-muted-foreground">Nenhum parâmetro criado.</p>}
+                {params.map((p) => (
+                  <div key={p.id} className="space-y-1 rounded border border-border p-1.5">
+                    <div className="flex items-center gap-1">
+                      <Input value={p.name} onChange={(e) => updateParam(p.id, { name: e.target.value })}
+                        className="h-6 text-[11px]" />
+                      <button title="Excluir parâmetro" onClick={() => deleteParam(p.id)}
+                        className="text-muted-foreground hover:text-destructive"><Trash2 className="w-3 h-3" /></button>
+                    </div>
+                    <Input type="number" step="0.01" value={p.value}
+                      onChange={(e) => updateParam(p.id, { value: Number(e.target.value) || 0 })}
+                      className="h-6 text-[11px] tabular-nums" />
+                  </div>
+                ))}
+                <Button size="sm" variant="outline" className="h-6 w-full text-[11px]" onClick={() => addParam()}>
+                  <Plus className="w-3 h-3 mr-1" /> Novo parâmetro
+                </Button>
+              </div>
+
+              {/* RF-75 a RF-81: ações de parâmetro */}
+              <div className="px-3 py-2 border-y border-border text-xs font-semibold">Ações de parâmetro</div>
+              <ScrollArea className="max-h-72">
+                <div className="p-2 space-y-2">
+                  {(sheet.paramActions || []).length === 0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      Crie uma ação para atualizar o intervalo de cores ao clicar nas marcas.
+                    </p>
+                  )}
+                  {(sheet.paramActions || []).map((a) => {
+                    const patch = (up: Partial<ParamAction>) => updateSheet(sheet.id, {
+                      paramActions: (sheet.paramActions || []).map((x) => (x.id === a.id ? { ...x, ...up } : x)),
+                    });
+                    return (
+                      <div key={a.id} className="space-y-1 rounded border border-border p-1.5">
+                        <div className="flex items-center gap-1">
+                          <Input value={a.name} onChange={(e) => patch({ name: e.target.value })} className="h-6 text-[11px]" />
+                          <button title="Excluir ação" className="text-muted-foreground hover:text-destructive"
+                            onClick={() => updateSheet(sheet.id, { paramActions: (sheet.paramActions || []).filter((x) => x.id !== a.id) })}>
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                        <Label className="text-[10px] text-muted-foreground">Planilha de origem</Label>
+                        <select value={a.sourceSheetId} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ sourceSheetId: e.target.value })}>
+                          {sheets.map((s) => {
+                            const dash = dashboards.find((d) => d.sheetIds.includes(s.id));
+                            return <option key={s.id} value={s.id}>{s.name}{dash ? ` — ${dash.name}` : ''}</option>;
+                          })}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Parâmetro de destino</Label>
+                        <select value={a.targetParamId} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => {
+                            if (e.target.value === '__new') { const np = addParam(); patch({ targetParamId: np.id }); return; }
+                            patch({ targetParamId: e.target.value });
+                          }}>
+                          <option value="">Selecione…</option>
+                          {params.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                          <option value="__new">+ Novo parâmetro</option>
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Campo de origem (medida)</Label>
+                        <select value={a.sourceFieldKey} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ sourceFieldKey: e.target.value })}>
+                          {FIELDS.filter((f) => f.kind === 'measure').map((f) => (
+                            <option key={f.key} value={f.key}>{f.label}</option>
+                          ))}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Agregação</Label>
+                        <select value={a.agg} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ agg: e.target.value as ParamAgg })}>
+                          {(['min', 'q1', 'q3', 'max', 'value'] as ParamAgg[]).map((g) => (
+                            <option key={g} value={g}>{PARAM_AGG_LABEL[g]}</option>
+                          ))}
+                        </select>
+                        <Label className="text-[10px] text-muted-foreground">Limpeza da seleção</Label>
+                        <select value={a.onClear} className="w-full h-6 text-[11px] rounded border border-border bg-background px-1"
+                          onChange={(e) => patch({ onClear: e.target.value as 'keep' | 'reset' })}>
+                          <option value="keep">Manter valor atual</option>
+                          <option value="reset">Redefinir</option>
+                        </select>
+                      </div>
+                    );
+                  })}
+                  <Button size="sm" variant="outline" className="h-6 w-full text-[11px]" onClick={() => {
+                    const target = params[0] || addParam();
+                    const act: ParamAction = {
+                      id: uid(), name: `Ação ${(sheet.paramActions || []).length + 1}`,
+                      sourceSheetId: sheet.id, targetParamId: target.id,
+                      sourceFieldKey: sheet.color && fieldOf(sheet.color.key).kind === 'measure' ? sheet.color.key : 'media',
+                      agg: 'min', onClear: 'keep',
+                    };
+                    updateSheet(sheet.id, { paramActions: [...(sheet.paramActions || []), act] });
+                  }}>
+                    <Plus className="w-3 h-3 mr-1" /> Nova ação de parâmetro
+                  </Button>
+                </div>
+              </ScrollArea>
 
               <div className="px-3 py-2 border-y border-border text-xs font-semibold">Legenda</div>
               <ScrollArea className="max-h-56">
