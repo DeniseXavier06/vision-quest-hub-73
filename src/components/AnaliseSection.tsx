@@ -270,7 +270,10 @@ const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAg
 
 /* ---------------- Renderização de gráfico ---------------- */
 
-const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; height?: number }) => {
+const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true }: {
+  sheet: Sheet; data: Row[]; height?: number;
+  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean;
+}) => {
   const marks = useMemo(
     () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
     [sheet.color, sheet.size, sheet.label, sheet.detail],
@@ -288,16 +291,39 @@ const ChartView = ({ sheet, data, height = 340 }: { sheet: Sheet; data: Row[]; h
   const colorRamp = useMemo(() => {
     if (!colorIsMeasure) return null;
     const vals = chartData.map((d) => Number(d.__color) || 0);
-    const min = Math.min(...vals), max = Math.max(...vals);
+    const autoMin = Math.min(...vals), autoMax = Math.max(...vals);
+    const cfg = sheet.colorRange || defaultColorRange();
+    const resolve = (p: RangePointCfg, auto: number) => {
+      if (p.mode === 'custom' && typeof p.value === 'number') return p.value;
+      if (p.mode === 'param') {
+        const prm = params.find((x) => x.id === p.paramId);
+        // RF-85: parâmetro excluído → mantém o último valor aplicado
+        if (prm) return prm.value;
+        if (typeof p.value === 'number') return p.value;
+      }
+      return auto;
+    };
+    const min = resolve(cfg.start, autoMin);
+    const max = resolve(cfg.end, autoMax);
+    const mid = resolve(cfg.center, (autoMin + autoMax) / 2);
     return (v: number) => {
-      const t = max === min ? 0.5 : (v - min) / (max - min);
+      let t: number;
+      if (max === min) t = 0.5;
+      else if (v <= mid) t = mid === min ? 0 : ((v - min) / (mid - min)) * 0.5;
+      else t = 0.5 + ((v - mid) / (max - mid || 1)) * 0.5;
+      t = Math.max(0, Math.min(1, t));
       const idx = Math.min(palette.length - 1, Math.round((1 - t) * (palette.length - 1)));
       return palette[idx];
     };
-  }, [colorIsMeasure, chartData, palette]);
+  }, [colorIsMeasure, chartData, palette, sheet.colorRange, params]);
 
   const showLabels = !!sheet.label;
   const sizeIsMeasure = !!sheet.size && fieldOf(sheet.size.key).kind === 'measure';
+  const handleClick = (e: { activeLabel?: string | number } | undefined) => {
+    if (!interactive || !onMarkSelect) return;
+    if (e && e.activeLabel !== undefined) onMarkSelect(String(e.activeLabel));
+  };
+
 
 
   if (!chartData.length) {
