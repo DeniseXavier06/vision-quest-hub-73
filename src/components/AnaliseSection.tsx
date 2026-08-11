@@ -284,17 +284,17 @@ const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAg
 
 /* ---------------- Renderização de gráfico ---------------- */
 
-const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true }: {
+const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true, sort = 'default' }: {
   sheet: Sheet; data: Row[]; height?: number;
-  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean;
+  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean; sort?: SortMode;
 }) => {
   const marks = useMemo(
     () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
     [sheet.color, sheet.size, sheet.label, sheet.detail],
   );
   const { chartData, series } = useMemo(
-    () => aggregate(data, sheet.cols, sheet.rows, marks),
-    [data, sheet.cols, sheet.rows, marks],
+    () => aggregate(data, sheet.cols, sheet.rows, marks, sort),
+    [data, sheet.cols, sheet.rows, marks, sort],
   );
 
   const palette = paletteOf(sheet.palette);
