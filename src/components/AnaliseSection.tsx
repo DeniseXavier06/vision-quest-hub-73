@@ -18,6 +18,8 @@ import {
   Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2, Palette, Ruler, Tag, Layers,
   ChevronDown, ChevronRight, Copy,
 } from 'lucide-react';
+import StoryBoard, { type Story, type SortMode, defaultFormat } from '@/components/analise/StoryBoard';
+
 
 
 /* ---------------- Modelo de dados ---------------- */
@@ -97,8 +99,7 @@ interface Sheet {
   paramActions?: ParamAction[];
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
-interface StoryPoint { id: string; sheetId: string; caption: string }
-interface Story { id: string; name: string; points: StoryPoint[] }
+
 
 interface Row { [k: string]: string | number }
 
@@ -151,7 +152,7 @@ const aggValue = (vals: number[], agg: Agg) => {
 
 interface Marks { color?: Pill; size?: Pill; label?: Pill; detail?: Pill }
 
-function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}) {
+function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}, sort: SortMode = 'default') {
   const isDim = (p?: Pill) => !!p && fieldOf(p.key).kind === 'dim';
   const colDims = cols.filter((p) => fieldOf(p.key).kind === 'dim');
   const rowDims = rows.filter((p) => fieldOf(p.key).kind === 'dim');
@@ -198,9 +199,19 @@ function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}) {
         : aggValue(b.labels, marks.label.agg || 'avg');
     }
     return out;
-  }).sort((a, b) => String(a.x).localeCompare(String(b.x)));
+  });
 
-  return { chartData: result, series: [...seriesNames] };
+  const names = [...seriesNames];
+  const valOf = (r: Record<string, string | number>) =>
+    names.reduce((acc, n) => acc + (Number(r[n]) || 0), 0);
+  result.sort((a, b) => {
+    if (sort === 'za') return String(b.x).localeCompare(String(a.x));
+    if (sort === 'valAsc') return valOf(a) - valOf(b);
+    if (sort === 'valDesc') return valOf(b) - valOf(a);
+    return String(a.x).localeCompare(String(b.x));
+  });
+
+  return { chartData: result, series: names };
 }
 
 
@@ -270,17 +281,17 @@ const MarkShelf = ({ icon: Icon, title, pill, hint, onDrop, onRemove, onToggleAg
 
 /* ---------------- Renderização de gráfico ---------------- */
 
-const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true }: {
+const ChartView = ({ sheet, data, height = 340, params = [], onMarkSelect, interactive = true, sort = 'default' }: {
   sheet: Sheet; data: Row[]; height?: number;
-  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean;
+  params?: Param[]; onMarkSelect?: (x: string) => void; interactive?: boolean; sort?: SortMode;
 }) => {
   const marks = useMemo(
     () => ({ color: sheet.color, size: sheet.size, label: sheet.label, detail: sheet.detail }),
     [sheet.color, sheet.size, sheet.label, sheet.detail],
   );
   const { chartData, series } = useMemo(
-    () => aggregate(data, sheet.cols, sheet.rows, marks),
-    [data, sheet.cols, sheet.rows, marks],
+    () => aggregate(data, sheet.cols, sheet.rows, marks, sort),
+    [data, sheet.cols, sheet.rows, marks, sort],
   );
 
   const palette = paletteOf(sheet.palette);
@@ -941,54 +952,35 @@ const AnaliseSection = () => {
                 )}
               </div>
             ) : story ? (
-              <div className="flex-1 p-4 space-y-3">
-                <Input value={story.name}
-                  onChange={(e) => setStories((prev) => prev.map((s) => s.id === story.id ? { ...s, name: e.target.value } : s))}
-                  className="border-0 shadow-none px-0 text-base font-heading font-semibold h-8 focus-visible:ring-0" />
-                <p className="text-[11px] rounded border border-border bg-muted/40 px-2 py-1.5 text-muted-foreground">
-                  Atenção: intervalos de cores dinâmicos não são atualizados dentro de histórias — os pontos usam o último
-                  valor aplicado aos parâmetros. Para interagir com as marcas, abra a planilha ou o painel de origem.
-                </p>
-                <Button size="sm" variant="outline" onClick={() => setStories((prev) => prev.map((s) => s.id === story.id ? {
-                  ...s, points: [...s.points, { id: uid(), sheetId: sheets[0]?.id || '', caption: 'Novo ponto da história' }],
-                } : s))}>
-                  <Plus className="w-4 h-4 mr-1" /> Novo ponto
-                </Button>
-                {story.points.length === 0 && (
-                  <div className="h-48 flex items-center justify-center text-sm text-muted-foreground border border-dashed border-border rounded">
-                    Adicione pontos para montar a história
-                  </div>
-                )}
-                <div className="space-y-4">
-                  {story.points.map((p, idx) => {
-                    const s = sheets.find((x) => x.id === p.sheetId);
+              <div className="flex-1 min-w-0">
+                <StoryBoard
+                  story={story}
+                  uid={uid}
+                  onChange={(patch) => setStories((prev) => prev.map((s) => (s.id === story.id ? { ...s, ...patch } : s)))}
+                  sheets={sheets.map((s) => ({ id: s.id, name: s.name, filters: s.filters }))}
+                  dashboards={dashboards}
+                  fieldKeys={FIELDS.map((f) => f.key)}
+                  fieldLabel={(k) => fieldOf(k)?.label || k}
+                  distinct={distinct}
+                  renderChart={(sheetId, opts) => {
+                    const s = sheets.find((x) => x.id === sheetId);
+                    if (!s) return null;
+                    /* RF-43 / RF-44: usa sempre a planilha original, aplicando os filtros do ponto */
+                    const merged = [...s.filters];
+                    for (const ov of opts.filters || []) {
+                      const at = merged.findIndex((f) => f.key === ov.key);
+                      if (at >= 0) merged[at] = ov; else merged.push(ov);
+                    }
+                    const rows = data.filter((r) =>
+                      merged.every((f) => !f.values.length || f.values.includes(String(r[f.key] ?? ''))));
                     return (
-                      <Card key={p.id} className="p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-muted-foreground">#{idx + 1}</span>
-                          <Input value={p.caption} placeholder="Legenda"
-                            onChange={(e) => setStories((prev) => prev.map((st) => st.id === story.id ? {
-                              ...st, points: st.points.map((pt) => pt.id === p.id ? { ...pt, caption: e.target.value } : pt),
-                            } : st))} className="h-8 text-xs" />
-                          <select value={p.sheetId} className="h-8 text-xs rounded border border-border bg-background px-2"
-                            onChange={(e) => setStories((prev) => prev.map((st) => st.id === story.id ? {
-                              ...st, points: st.points.map((pt) => pt.id === p.id ? { ...pt, sheetId: e.target.value } : pt),
-                            } : st))}>
-                            {sheets.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                          </select>
-                          <Button size="icon" variant="ghost" className="h-8 w-8"
-                            onClick={() => setStories((prev) => prev.map((st) => st.id === story.id ? {
-                              ...st, points: st.points.filter((pt) => pt.id !== p.id),
-                            } : st))}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                        {s && <ChartView sheet={s} data={dashSheetData(s)} height={240} params={params} interactive={false} />}
-                      </Card>
+                      <ChartView sheet={s} data={rows} height={opts.height} params={params}
+                        interactive={false} sort={opts.sort || 'default'} />
                     );
-                  })}
-                </div>
+                  }}
+                />
               </div>
+
             ) : null}
           </div>
 
@@ -1273,7 +1265,11 @@ const AnaliseSection = () => {
               <Presentation className="w-3.5 h-3.5 mr-1" /> Painel
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
-              const st: Story = { id: uid(), name: `História ${stories.length + 1}`, points: [] };
+              const st: Story = {
+                id: uid(), name: `História ${stories.length + 1}`, points: [],
+                sizePreset: 'wide', nav: 'caption', showArrows: true,
+                captionWidth: 170, captionHeight: 44, format: defaultFormat(),
+              };
               setStories((prev) => [...prev, st]); setActive({ kind: 'story', id: st.id });
             }}>
               <BookOpen className="w-3.5 h-3.5 mr-1" /> História
