@@ -202,9 +202,19 @@ function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}, s
         : aggValue(b.labels, marks.label.agg || 'avg');
     }
     return out;
-  }).sort((a, b) => String(a.x).localeCompare(String(b.x)));
+  });
 
-  return { chartData: result, series: [...seriesNames] };
+  const names = [...seriesNames];
+  const valOf = (r: Record<string, string | number>) =>
+    names.reduce((acc, n) => acc + (Number(r[n]) || 0), 0);
+  result.sort((a, b) => {
+    if (sort === 'za') return String(b.x).localeCompare(String(a.x));
+    if (sort === 'valAsc') return valOf(a) - valOf(b);
+    if (sort === 'valDesc') return valOf(b) - valOf(a);
+    return String(a.x).localeCompare(String(b.x));
+  });
+
+  return { chartData: result, series: names };
 }
 
 
