@@ -155,7 +155,7 @@ const aggValue = (vals: number[], agg: Agg) => {
 
 interface Marks { color?: Pill; size?: Pill; label?: Pill; detail?: Pill }
 
-function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}) {
+function aggregate(data: Row[], cols: Pill[], rows: Pill[], marks: Marks = {}, sort: SortMode = 'default') {
   const isDim = (p?: Pill) => !!p && fieldOf(p.key).kind === 'dim';
   const colDims = cols.filter((p) => fieldOf(p.key).kind === 'dim');
   const rowDims = rows.filter((p) => fieldOf(p.key).kind === 'dim');
