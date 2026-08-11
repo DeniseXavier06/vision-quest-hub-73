@@ -18,6 +18,11 @@ import {
   Presentation, BookOpen, FileSpreadsheet, Trash2, Loader2, Palette, Ruler, Tag, Layers,
   ChevronDown, ChevronRight, Copy,
 } from 'lucide-react';
+import StoryBoard, {
+  type Story, type StoryPoint, type SortMode, type StoryFilterOverride,
+  newStoryPoint,
+} from '@/components/analise/StoryBoard';
+
 
 
 /* ---------------- Modelo de dados ---------------- */
