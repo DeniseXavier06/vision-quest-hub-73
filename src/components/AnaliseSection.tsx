@@ -97,8 +97,7 @@ interface Sheet {
   paramActions?: ParamAction[];
 }
 interface Dashboard { id: string; name: string; sheetIds: string[] }
-interface StoryPoint { id: string; sheetId: string; caption: string }
-interface Story { id: string; name: string; points: StoryPoint[] }
+
 
 interface Row { [k: string]: string | number }
 
