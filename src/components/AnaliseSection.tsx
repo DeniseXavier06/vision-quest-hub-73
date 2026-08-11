@@ -1265,7 +1265,11 @@ const AnaliseSection = () => {
               <Presentation className="w-3.5 h-3.5 mr-1" /> Painel
             </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => {
-              const st: Story = { id: uid(), name: `História ${stories.length + 1}`, points: [] };
+              const st: Story = {
+                id: uid(), name: `História ${stories.length + 1}`, points: [],
+                sizePreset: 'wide', nav: 'caption', showArrows: true,
+                captionWidth: 170, captionHeight: 44, format: defaultFormat(),
+              };
               setStories((prev) => [...prev, st]); setActive({ kind: 'story', id: st.id });
             }}>
               <BookOpen className="w-3.5 h-3.5 mr-1" /> História
