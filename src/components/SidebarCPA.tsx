@@ -17,6 +17,7 @@ import {
   ClipboardList,
   ShieldCheck,
   LogOut,
+  Presentation,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -34,6 +35,7 @@ const menuItems = [
   { id: 'cronograma', label: 'Cronograma', icon: Calendar },
   { id: 'resultados', label: 'Resultados', icon: BarChart3 },
   { id: 'analise', label: 'Análise', icon: PieChart },
+  { id: 'storytelling', label: 'Storytelling', icon: Presentation },
   { id: 'reunioes', label: 'Reuniões', icon: Users },
   { id: 'relatorios', label: 'Relatórios', icon: FileText },
   { id: 'importacoes', label: 'Importações', icon: FileUp },
