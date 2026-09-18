@@ -28,6 +28,14 @@ import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
+const chartTokenColors = {
+  primary: 'hsl(214, 60%, 35%)',
+  destructive: 'hsl(0, 72%, 51%)',
+  info: 'hsl(200, 65%, 45%)',
+  warning: 'hsl(38, 92%, 50%)',
+  success: 'hsl(152, 60%, 40%)',
+};
+
 type Segment = {
   publico: string;
   short: string;
@@ -156,9 +164,9 @@ const courseChartData = segments.map((segment) => ({
 }));
 
 const getPriorityColor = (priority: Segment['priority']) => {
-  if (priority === 1) return 'hsl(var(--destructive))';
-  if (priority === 2) return 'hsl(var(--warning))';
-  return 'hsl(var(--success))';
+  if (priority === 1) return chartTokenColors.destructive;
+  if (priority === 2) return chartTokenColors.warning;
+  return chartTokenColors.success;
 };
 
 const StorytellingParticipacaoSection = () => {
@@ -246,15 +254,15 @@ const StorytellingParticipacaoSection = () => {
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                <XAxis dataKey="ano" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
-                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
-                <Area type="monotone" dataKey="Alunos presenciais" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.16} strokeWidth={2} />
-                <Area type="monotone" dataKey="Alunos EAD" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores presenciais" stroke="hsl(var(--info))" fill="hsl(var(--info))" fillOpacity={0.1} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores EAD" stroke="hsl(var(--warning))" fill="hsl(var(--warning))" fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Colaboradores" stroke="hsl(var(--success))" fill="hsl(var(--success))" fillOpacity={0.1} strokeWidth={2} />
+                <CartesianGrid stroke="hsl(220, 20%, 90%)" strokeDasharray="3 3" />
+                <XAxis dataKey="ano" stroke="hsl(220, 10%, 45%)" />
+                <YAxis stroke="hsl(220, 10%, 45%)" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(220, 25%, 97%)', borderColor: 'hsl(220, 20%, 90%)', color: 'hsl(220, 40%, 13%)' }} />
+                <Area type="monotone" dataKey="Alunos presenciais" stroke={chartTokenColors.primary} fill={chartTokenColors.primary} fillOpacity={0.16} strokeWidth={2} />
+                <Area type="monotone" dataKey="Alunos EAD" stroke={chartTokenColors.destructive} fill={chartTokenColors.destructive} fillOpacity={0.12} strokeWidth={2} />
+                <Area type="monotone" dataKey="Professores presenciais" stroke={chartTokenColors.info} fill={chartTokenColors.info} fillOpacity={0.1} strokeWidth={2} />
+                <Area type="monotone" dataKey="Professores EAD" stroke={chartTokenColors.warning} fill={chartTokenColors.warning} fillOpacity={0.12} strokeWidth={2} />
+                <Area type="monotone" dataKey="Colaboradores" stroke={chartTokenColors.success} fill={chartTokenColors.success} fillOpacity={0.1} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -267,10 +275,10 @@ const StorytellingParticipacaoSection = () => {
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={courseChartData} margin={{ top: 24, right: 8, left: 0, bottom: 36 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                <XAxis dataKey="publico" stroke="hsl(var(--muted-foreground))" angle={-25} textAnchor="end" interval={0} height={62} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
-                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
+                <CartesianGrid stroke="hsl(220, 20%, 90%)" strokeDasharray="3 3" />
+                <XAxis dataKey="publico" stroke="hsl(220, 10%, 45%)" angle={-25} textAnchor="end" interval={0} height={62} />
+                <YAxis stroke="hsl(220, 10%, 45%)" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(220, 25%, 97%)', borderColor: 'hsl(220, 20%, 90%)', color: 'hsl(220, 40%, 13%)' }} />
                 <Bar dataKey="participacao" radius={[6, 6, 0, 0]}>
                   <LabelList dataKey="participacao" position="top" formatter={(value: number) => percent(value)} className="fill-foreground text-xs" />
                   {courseChartData.map((entry) => (
