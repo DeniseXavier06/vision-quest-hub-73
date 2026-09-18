@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Area,
   AreaChart,
@@ -27,6 +28,18 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+
+const defaultChartColors = {
+  primary: 'currentColor',
+  destructive: 'currentColor',
+  info: 'currentColor',
+  warning: 'currentColor',
+  success: 'currentColor',
+  border: 'currentColor',
+  muted: 'currentColor',
+  background: 'currentColor',
+  foreground: 'currentColor',
+};
 
 type Segment = {
   publico: string;
@@ -155,10 +168,9 @@ const courseChartData = segments.map((segment) => ({
   prioridade: segment.priority,
 }));
 
-const getPriorityColor = (priority: Segment['priority']) => {
-  if (priority === 1) return 'hsl(var(--destructive))';
-  if (priority === 2) return 'hsl(var(--warning))';
-  return 'hsl(var(--success))';
+const resolveTokenColor = (token: string) => {
+  const value = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  return value ? `hsl(${value})` : 'currentColor';
 };
 
 const StorytellingParticipacaoSection = () => {
@@ -168,6 +180,27 @@ const StorytellingParticipacaoSection = () => {
   }, { segment: segments[0], variation: segments[0].p2026 - segments[0].p2025 });
 
   const average2026 = segments.reduce((sum, segment) => sum + segment.p2026, 0) / segments.length;
+  const [chartColors, setChartColors] = useState(defaultChartColors);
+
+  useEffect(() => {
+    setChartColors({
+      primary: resolveTokenColor('--primary'),
+      destructive: resolveTokenColor('--destructive'),
+      info: resolveTokenColor('--info'),
+      warning: resolveTokenColor('--warning'),
+      success: resolveTokenColor('--success'),
+      border: resolveTokenColor('--border'),
+      muted: resolveTokenColor('--muted-foreground'),
+      background: resolveTokenColor('--background'),
+      foreground: resolveTokenColor('--foreground'),
+    });
+  }, []);
+
+  const getPriorityColor = (priority: Segment['priority']) => {
+    if (priority === 1) return chartColors.destructive;
+    if (priority === 2) return chartColors.warning;
+    return chartColors.success;
+  };
 
   const startPresentation = () => {
     const element = document.getElementById('storytelling-participacao');
@@ -246,15 +279,15 @@ const StorytellingParticipacaoSection = () => {
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                <XAxis dataKey="ano" stroke="hsl(var(--muted-foreground))" />
-                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
-                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
-                <Area type="monotone" dataKey="Alunos presenciais" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.16} strokeWidth={2} />
-                <Area type="monotone" dataKey="Alunos EAD" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores presenciais" stroke="hsl(var(--info))" fill="hsl(var(--info))" fillOpacity={0.1} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores EAD" stroke="hsl(var(--warning))" fill="hsl(var(--warning))" fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Colaboradores" stroke="hsl(var(--success))" fill="hsl(var(--success))" fillOpacity={0.1} strokeWidth={2} />
+                <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
+                <XAxis dataKey="ano" stroke={chartColors.muted} />
+                <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
+                <Area type="monotone" dataKey="Alunos presenciais" stroke={chartColors.primary} fill={chartColors.primary} fillOpacity={0.16} strokeWidth={2} />
+                <Area type="monotone" dataKey="Alunos EAD" stroke={chartColors.destructive} fill={chartColors.destructive} fillOpacity={0.12} strokeWidth={2} />
+                <Area type="monotone" dataKey="Professores presenciais" stroke={chartColors.info} fill={chartColors.info} fillOpacity={0.1} strokeWidth={2} />
+                <Area type="monotone" dataKey="Professores EAD" stroke={chartColors.warning} fill={chartColors.warning} fillOpacity={0.12} strokeWidth={2} />
+                <Area type="monotone" dataKey="Colaboradores" stroke={chartColors.success} fill={chartColors.success} fillOpacity={0.1} strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -267,10 +300,10 @@ const StorytellingParticipacaoSection = () => {
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={courseChartData} margin={{ top: 24, right: 8, left: 0, bottom: 36 }}>
-                <CartesianGrid stroke="hsl(var(--border))" strokeDasharray="3 3" />
-                <XAxis dataKey="publico" stroke="hsl(var(--muted-foreground))" angle={-25} textAnchor="end" interval={0} height={62} />
-                <YAxis stroke="hsl(var(--muted-foreground))" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
-                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: 'hsl(var(--background))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--foreground))' }} />
+                <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
+                <XAxis dataKey="publico" stroke={chartColors.muted} angle={-25} textAnchor="end" interval={0} height={62} />
+                <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Bar dataKey="participacao" radius={[6, 6, 0, 0]}>
                   <LabelList dataKey="participacao" position="top" formatter={(value: number) => percent(value)} className="fill-foreground text-xs" />
                   {courseChartData.map((entry) => (
