@@ -15,7 +15,7 @@ import ImportacoesSection from '@/components/ImportacoesSection';
 import AvaliadoresSection from '@/components/AvaliadoresSection';
 import AcessosSection from '@/components/AcessosSection';
 import AnaliseSection from '@/components/AnaliseSection';
-import StorytellingParticipacaoSection from '@/components/StorytellingParticipacaoSection';
+import StorytellingSection from '@/components/StorytellingSection';
 
 
 const Index = () => {
@@ -37,7 +37,7 @@ const Index = () => {
       case 'cronograma': return <CronogramaSection />;
       case 'resultados': return <ResultadosSection />;
       case 'analise': return <AnaliseSection />;
-      case 'storytelling': return <StorytellingParticipacaoSection />;
+      case 'storytelling': return <StorytellingSection />;
       case 'reunioes': return <ReunioesSection />;
       case 'relatorios': return <RelatoriosSection />;
       case 'configuracao': return <ConfiguracaoAmbienteSection />;
