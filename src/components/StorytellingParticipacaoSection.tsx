@@ -63,12 +63,12 @@ const segments: Segment[] = [
     short: 'Alunos Pres.',
     p2024: 72.97,
     p2025: 77.64,
-    p2026: 76.04,
+    p2026: 79.66,
     deadline: '20/09',
     priority: 3,
-    reading: 'Participação elevada, próxima da estabilidade e com possibilidade de recuperação até o encerramento.',
+    reading: 'Participação elevada, superando o resultado de 2025 e consolidando o avanço no triênio.',
     message:
-      'A participação dos alunos presenciais permanece consistente e demonstra o fortalecimento da cultura de avaliação.',
+      'Os alunos presenciais alcançaram o melhor resultado do triênio, demonstrando fortalecimento da cultura de avaliação.',
   },
   {
     publico: 'Alunos EAD',
@@ -93,34 +93,34 @@ const segments: Segment[] = [
     short: 'Prof. Pres.',
     p2024: 67.92,
     p2025: 85.94,
-    p2026: 74.8,
+    p2026: 88.19,
     deadline: '30/09',
-    priority: 2,
-    reading: 'Participação significativa, porém abaixo do desempenho alcançado em 2025.',
+    priority: 3,
+    reading: 'Participação elevada e crescente, com o melhor resultado do triênio.',
     message:
-      'A mobilização das coordenações e lideranças acadêmicas pode recuperar parte do resultado até o encerramento.',
+      'A mobilização das coordenações e lideranças acadêmicas produziu avanço e deve ser mantida.',
   },
   {
     publico: 'Professores EAD',
     short: 'Prof. EAD',
     p2024: 100,
     p2025: 93.23,
-    p2026: 63.41,
+    p2026: 85.37,
     deadline: '30/09',
-    priority: 1,
-    reading: 'Maior queda em relação a 2025 entre os segmentos analisados.',
+    priority: 2,
+    reading: 'Participação elevada, embora ainda abaixo do resultado alcançado em 2025.',
     message:
-      'A participação dos professores EAD requer mobilização imediata e específica das equipes acadêmicas da modalidade.',
+      'Os professores EAD apresentaram recuperação expressiva; a mobilização específica deve continuar para reduzir a diferença em relação a 2025.',
   },
   {
     publico: 'Coordenadores presenciais',
     short: 'Coord. Pres.',
     p2024: 100,
     p2025: 81.82,
-    p2026: 80,
+    p2026: 90,
     deadline: '30/09',
     priority: 3,
-    reading: 'Participação elevada, com papel estratégico na mobilização de estudantes e professores.',
+    reading: 'Participação elevada e em recuperação, superando 2025 e reforçando seu papel estratégico.',
     message:
       'Os coordenadores devem ser usados como força de mobilização nesta reta final da avaliação.',
   },
@@ -141,19 +141,19 @@ const segments: Segment[] = [
     short: 'Colab.',
     p2024: 72.48,
     p2025: 91.45,
-    p2026: 77.55,
+    p2026: 91.16,
     deadline: '30/09',
-    priority: 2,
-    reading: 'Resultado positivo em relação a 2024, mas distante do patamar de 2025.',
+    priority: 3,
+    reading: 'Participação elevada e estável em relação a 2025, mantendo forte adesão no triênio.',
     message:
-      'A atuação das lideranças de cada setor será fundamental para ampliar a adesão antes do encerramento.',
+      'A atuação das lideranças de cada setor sustentou a alta adesão e deve permanecer como prática de mobilização.',
   },
 ];
 
 const trendData = [
   { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48 },
   { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45 },
-  { ano: '2026', 'Alunos presenciais': 76.04, 'Alunos EAD': 18.45, 'Professores presenciais': 74.8, 'Professores EAD': 63.41, Colaboradores: 77.55 },
+  { ano: '2026', 'Alunos presenciais': 79.66, 'Alunos EAD': 18.45, 'Professores presenciais': 88.19, 'Professores EAD': 85.37, Colaboradores: 91.16 },
 ];
 
 const priorityConfig = {
@@ -464,12 +464,12 @@ const StorytellingParticipacaoSection = () => {
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
             <p>
-              A participação na Autoavaliação Institucional apresenta resultados importantes, especialmente entre os alunos presenciais e os coordenadores EAD. Entretanto, os dados de 2026 evidenciam a necessidade de intensificar a mobilização dos alunos EAD, professores EAD, professores presenciais e colaboradores antes do encerramento da coleta.
+              A participação na Autoavaliação Institucional de 2026 apresenta resultados elevados na maioria dos públicos, com crescimento entre alunos e professores presenciais e coordenadores presenciais. Os coordenadores EAD mantêm adesão integral, enquanto os colaboradores permanecem próximos ao patamar de 2025. O principal ponto de atenção continua sendo a participação dos alunos EAD.
             </p>
             <div className="rounded-md border border-primary/30 bg-primary/10 p-4 text-primary">
               <h3 className="font-semibold">Frase-síntese</h3>
               <p className="mt-1">
-                Entre 2024 e 2026, a participação revelou uma comunidade acadêmica envolvida, mas com diferentes níveis de adesão entre os segmentos.
+                Em 2026, a mobilização alcançou ou superou 79% em seis dos sete públicos, mas a baixa adesão dos alunos EAD ainda compromete sua representatividade.
               </p>
             </div>
             <div className="rounded-md border border-border bg-muted/40 p-4">

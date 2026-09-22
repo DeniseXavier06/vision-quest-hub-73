@@ -30,7 +30,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 72.97 },
       { ano: '2025', valor: 77.64 },
-      { ano: '2026', valor: 76.04 },
+      { ano: '2026', valor: 79.66 },
     ],
     blocos: [
       {
@@ -195,7 +195,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 67.92 },
       { ano: '2025', valor: 85.94 },
-      { ano: '2026', valor: 74.8 },
+      { ano: '2026', valor: 88.19 },
     ],
     blocos: [
       {
@@ -274,7 +274,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 100 },
       { ano: '2025', valor: 93.23 },
-      { ano: '2026', valor: 63.41 },
+      { ano: '2026', valor: 85.37 },
     ],
     blocos: [
       {
@@ -352,7 +352,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 100 },
       { ano: '2025', valor: 81.82 },
-      { ano: '2026', valor: 80 },
+      { ano: '2026', valor: 90 },
     ],
     blocos: [
       {
@@ -465,7 +465,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 72.48 },
       { ano: '2025', valor: 91.45 },
-      { ano: '2026', valor: 77.55 },
+      { ano: '2026', valor: 91.16 },
     ],
     blocos: [
       {
