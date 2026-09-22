@@ -107,7 +107,6 @@ const segments: Segment[] = [
     p2025: 93.23,
     p2026: 85.37,
     deadline: '30/09',
-    priority: 1,
     priority: 2,
     reading: 'Participação elevada, embora ainda abaixo do resultado alcançado em 2025.',
     message:
