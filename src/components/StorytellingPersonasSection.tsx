@@ -3,6 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Progress } from '@/components/ui/progress';
 import { Target, UserRound, ListChecks } from 'lucide-react';
+import discentePresencialImage from '@/assets/personas/discente-presencial.jpg';
+import discenteEadImage from '@/assets/personas/discente-ead.jpg';
+import docentePresencialImage from '@/assets/personas/docente-presencial.jpg';
+import docenteEadImage from '@/assets/personas/docente-ead.jpg';
+import coordenadorPresencialImage from '@/assets/personas/coordenador-presencial.jpg';
+import coordenadorEadImage from '@/assets/personas/coordenador-ead.jpg';
+import colaboradorImage from '@/assets/personas/colaborador.jpg';
 
 type Bloco = { titulo: string; dimensao: string; indicadores: string[] };
 
@@ -10,6 +17,7 @@ type Persona = {
   id: string;
   nome: string;
   modalidade: 'Presencial' | 'EAD';
+  imagem: string;
   objetivo: string;
   perfil: string;
   participacao: { ano: string; valor: number | null }[];
@@ -23,6 +31,7 @@ const personas: Persona[] = [
     id: 'discente-presencial',
     nome: 'Discente Presencial',
     modalidade: 'Presencial',
+    imagem: discentePresencialImage,
     objetivo:
       'Captar a percepção do estudante presencial sobre instituição, curso, professor, infraestrutura e o próprio envolvimento acadêmico.',
     perfil:
@@ -30,7 +39,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 72.97 },
       { ano: '2025', valor: 77.64 },
-      { ano: '2026', valor: 79.66 },
+      { ano: '2026', valor: 79.65 },
     ],
     blocos: [
       {
@@ -108,6 +117,7 @@ const personas: Persona[] = [
     id: 'discente-ead',
     nome: 'Discente EAD',
     modalidade: 'EAD',
+    imagem: discenteEadImage,
     objetivo:
       'Medir a experiência do estudante a distância quanto ao AVA (MAR), tutoria, polo, videoaulas e atendimento institucional.',
     perfil:
@@ -115,7 +125,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 33.88 },
       { ano: '2025', valor: 25.04 },
-      { ano: '2026', valor: 18.45 },
+      { ano: '2026', valor: 19.19 },
     ],
     blocos: [
       {
@@ -188,6 +198,7 @@ const personas: Persona[] = [
     id: 'docente-presencial',
     nome: 'Docente Presencial',
     modalidade: 'Presencial',
+    imagem: docentePresencialImage,
     objetivo:
       'Avaliar as condições de trabalho, a gestão institucional, a infraestrutura de ensino, a turma, o coordenador e a própria prática pedagógica.',
     perfil:
@@ -195,7 +206,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 67.92 },
       { ano: '2025', valor: 85.94 },
-      { ano: '2026', valor: 88.19 },
+      { ano: '2026', valor: 89.76 },
     ],
     blocos: [
       {
@@ -267,6 +278,7 @@ const personas: Persona[] = [
     id: 'docente-ead',
     nome: 'Docente EAD',
     modalidade: 'EAD',
+    imagem: docenteEadImage,
     objetivo:
       'Avaliar a produção e mediação do ensino a distância, a articulação com os tutores, o AVA, o polo e a gestão institucional.',
     perfil:
@@ -345,6 +357,7 @@ const personas: Persona[] = [
     id: 'coordenador-presencial',
     nome: 'Coordenador Presencial',
     modalidade: 'Presencial',
+    imagem: coordenadorPresencialImage,
     objetivo:
       'Avaliar a gestão institucional, a infraestrutura, a organização do curso e a própria atuação pedagógica e administrativa.',
     perfil:
@@ -402,6 +415,7 @@ const personas: Persona[] = [
     id: 'coordenador-ead',
     nome: 'Coordenador EAD',
     modalidade: 'EAD',
+    imagem: coordenadorEadImage,
     objetivo:
       'Avaliar a gestão do curso a distância, os polos, o AVA, a atuação dos professores titulares e tutores e a própria gestão acadêmica.',
     perfil:
@@ -458,6 +472,7 @@ const personas: Persona[] = [
     id: 'colaborador',
     nome: 'Colaborador',
     modalidade: 'Presencial',
+    imagem: colaboradorImage,
     objetivo:
       'Avaliar condições de trabalho, gestão, comunicação interna, serviços dos setores, valorização profissional e desempenho individual.',
     perfil:
@@ -559,6 +574,16 @@ const StorytellingPersonasSection = () => {
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {personas.map((persona) => (
           <Card key={persona.id}>
+            <div className="aspect-[4/3] overflow-hidden rounded-t-md bg-muted">
+              <img
+                src={persona.imagem}
+                alt={`${persona.nome} em seu contexto acadêmico`}
+                width={1024}
+                height={768}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            </div>
             <CardHeader className="pb-3">
               <div className="flex items-start justify-between gap-3">
                 <CardTitle className="text-base">{persona.nome}</CardTitle>
