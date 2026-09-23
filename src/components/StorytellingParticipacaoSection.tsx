@@ -15,9 +15,14 @@ import {
 } from 'recharts';
 import {
   AlertTriangle,
+  BookOpen,
+  Briefcase,
   CalendarDays,
   CheckCircle2,
+  GraduationCap,
+  Laptop,
   Megaphone,
+  Monitor,
   Presentation,
   TrendingDown,
   TrendingUp,
@@ -157,6 +162,34 @@ const trendData = [
   { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16, Média: 73.03 },
 ];
 
+const barIconMap: Record<string, typeof GraduationCap> = {
+  'Alunos presenciais': GraduationCap,
+  'Alunos EAD': Laptop,
+  'Professores presenciais': BookOpen,
+  'Professores EAD': Monitor,
+  Colaboradores: Briefcase,
+};
+
+const renderBarLabel = (props: any) => {
+  const { x, y, width, value, fill, dataKey } = props;
+  if (value == null || width == null) return null;
+  const Icon = barIconMap[dataKey as string];
+  return (
+    <g>
+      {Icon && (
+        <foreignObject x={x + width / 2 - 9} y={y - 30} width={18} height={18}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: fill }}>
+            <Icon size={15} />
+          </div>
+        </foreignObject>
+      )}
+      <text x={x + width / 2} y={y - 10} fill={fill} fontSize={10} textAnchor="middle" fontWeight={600}>
+        {percent(value as number)}
+      </text>
+    </g>
+  );
+};
+
 const priorityConfig = {
   1: { label: 'Mobilização imediata', icon: AlertTriangle, className: 'border-destructive/30 bg-destructive/10 text-destructive' },
   2: { label: 'Recuperação', icon: TrendingUp, className: 'border-warning/30 bg-warning/10 text-warning' },
@@ -285,11 +318,21 @@ const StorytellingParticipacaoSection = () => {
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Alunos presenciais" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Alunos EAD" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Professores presenciais" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Professores EAD" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Colaboradores" position="top" content={renderBarLabel} />
+                </Bar>
                 <Line type="monotone" dataKey="Média" stroke={chartColors.foreground} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 4 }} />
               </ComposedChart>
             </ResponsiveContainer>
@@ -318,6 +361,48 @@ const StorytellingParticipacaoSection = () => {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Análise do triênio 2024–2026</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
+          <p>
+            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025, recuando ligeiramente para 73,03% em 2026 — um avanço líquido de cerca de 3,6 pontos percentuais em relação ao início do período, mas com sinal de estabilização no último ano.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-md border border-success/30 bg-success/10 p-4">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <TrendingUp className="h-4 w-4 text-success" />
+                Tendências positivas
+              </h3>
+              <ul className="mt-2 space-y-1.5">
+                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,65%), maior taxa do triênio entre discentes.</li>
+                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 89,76%), o maior avanço absoluto (+21,84 p.p.).</li>
+                <li><strong className="text-foreground">Coordenadores EAD</strong>: adesão integral e ininterrupta (100% nos três anos).</li>
+                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 91,16%), estabilizada em patamar elevado.</li>
+              </ul>
+            </div>
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                Pontos de atenção
+              </h3>
+              <ul className="mt-2 space-y-1.5">
+                <li><strong className="text-foreground">Alunos EAD</strong>: queda contínua e acentuada (33,88% → 19,19%), maior desafio do triênio (–14,69 p.p.).</li>
+                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 85,37% (–14,63 p.p.), exigindo mobilização específica.</li>
+                <li><strong className="text-foreground">Coordenadores presenciais</strong>: recuperação parcial (100% → 81,82% → 90%), ainda abaixo do patamar inicial.</li>
+              </ul>
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-muted/40 p-4">
+            <h3 className="font-semibold text-foreground">Leitura consolidada</h3>
+            <p className="mt-1">
+              O triênio demonstra amadurecimento da cultura de avaliação nos públicos presenciais e entre colaboradores, com seis dos sete segmentos acima de 79% em 2026. Contudo, a modalidade EAD — especialmente os alunos — concentra o principal risco à representatividade dos resultados. A estabilização da média geral em 2026 indica que novos patamares de participação dependerão de estratégias diferenciadas para a EAD, enquanto a manutenção dos avanços presenciais já é uma conquista consolidada.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
