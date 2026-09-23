@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import {
-  Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   LabelList,
+  Legend,
+  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
