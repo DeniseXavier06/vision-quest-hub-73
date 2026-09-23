@@ -63,7 +63,7 @@ const segments: Segment[] = [
     short: 'Alunos Pres.',
     p2024: 72.97,
     p2025: 77.64,
-    p2026: 79.66,
+    p2026: 79.65,
     deadline: '20/09',
     priority: 3,
     reading: 'Participação elevada, superando o resultado de 2025 e consolidando o avanço no triênio.',
@@ -75,10 +75,10 @@ const segments: Segment[] = [
     short: 'Alunos EAD',
     p2024: 33.88,
     p2025: 25.04,
-    p2026: 18.45,
+    p2026: 19.19,
     deadline: '30/09',
     priority: 1,
-    reading: 'Principal ponto de atenção, com redução acumulada no triênio e baixa adesão em 2026.',
+    reading: 'Principal ponto de atenção, apesar da leve recuperação mais recente, com redução acumulada no triênio e baixa adesão em 2026.',
     message:
       'A modalidade EAD é hoje o principal desafio de participação e exige mobilização direta nos canais dos estudantes.',
     actions: [
@@ -93,7 +93,7 @@ const segments: Segment[] = [
     short: 'Prof. Pres.',
     p2024: 67.92,
     p2025: 85.94,
-    p2026: 88.19,
+    p2026: 89.76,
     deadline: '30/09',
     priority: 3,
     reading: 'Participação elevada e crescente, com o melhor resultado do triênio.',
@@ -153,7 +153,7 @@ const segments: Segment[] = [
 const trendData = [
   { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48 },
   { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45 },
-  { ano: '2026', 'Alunos presenciais': 79.66, 'Alunos EAD': 18.45, 'Professores presenciais': 88.19, 'Professores EAD': 85.37, Colaboradores: 91.16 },
+  { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16 },
 ];
 
 const priorityConfig = {
