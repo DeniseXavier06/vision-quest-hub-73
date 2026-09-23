@@ -318,11 +318,21 @@ const StorytellingParticipacaoSection = () => {
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Alunos presenciais" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Alunos EAD" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Professores presenciais" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Professores EAD" position="top" content={renderBarLabel} />
+                </Bar>
+                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]}>
+                  <LabelList dataKey="Colaboradores" position="top" content={renderBarLabel} />
+                </Bar>
                 <Line type="monotone" dataKey="Média" stroke={chartColors.foreground} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 4 }} />
               </ComposedChart>
             </ResponsiveContainer>
