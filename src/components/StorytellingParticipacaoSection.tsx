@@ -364,6 +364,48 @@ const StorytellingParticipacaoSection = () => {
 
       <Card>
         <CardHeader>
+          <CardTitle>Análise do triênio 2024–2026</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
+          <p>
+            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025, recuando ligeiramente para 73,03% em 2026 — um avanço líquido de cerca de 3,6 pontos percentuais em relação ao início do período, mas com sinal de estabilização no último ano.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-md border border-success/30 bg-success/10 p-4">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <TrendingUp className="h-4 w-4 text-success" />
+                Tendências positivas
+              </h3>
+              <ul className="mt-2 space-y-1.5">
+                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,65%), maior taxa do triênio entre discentes.</li>
+                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 89,76%), o maior avanço absoluto (+21,84 p.p.).</li>
+                <li><strong className="text-foreground">Coordenadores EAD</strong>: adesão integral e ininterrupta (100% nos três anos).</li>
+                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 91,16%), estabilizada em patamar elevado.</li>
+              </ul>
+            </div>
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
+                <TrendingDown className="h-4 w-4 text-destructive" />
+                Pontos de atenção
+              </h3>
+              <ul className="mt-2 space-y-1.5">
+                <li><strong className="text-foreground">Alunos EAD</strong>: queda contínua e acentuada (33,88% → 19,19%), maior desafio do triênio (–14,69 p.p.).</li>
+                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 85,37% (–14,63 p.p.), exigindo mobilização específica.</li>
+                <li><strong className="text-foreground">Coordenadores presenciais</strong>: recuperação parcial (100% → 81,82% → 90%), ainda abaixo do patamar inicial.</li>
+              </ul>
+            </div>
+          </div>
+          <div className="rounded-md border border-border bg-muted/40 p-4">
+            <h3 className="font-semibold text-foreground">Leitura consolidada</h3>
+            <p className="mt-1">
+              O triênio demonstra amadurecimento da cultura de avaliação nos públicos presenciais e entre colaboradores, com seis dos sete segmentos acima de 79% em 2026. Contudo, a modalidade EAD — especialmente os alunos — concentra o principal risco à representatividade dos resultados. A estabilização da média geral em 2026 indica que novos patamares de participação dependerão de estratégias diferenciadas para a EAD, enquanto a manutenção dos avanços presenciais já é uma conquista consolidada.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Resumo comparativo</CardTitle>
         </CardHeader>
         <CardContent>
