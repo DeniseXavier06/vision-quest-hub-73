@@ -152,9 +152,9 @@ const segments: Segment[] = [
 ];
 
 const trendData = [
-  { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48 },
-  { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45 },
-  { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16 },
+  { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48, Média: 69.45 },
+  { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45, Média: 74.66 },
+  { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16, Média: 73.03 },
 ];
 
 const priorityConfig = {
