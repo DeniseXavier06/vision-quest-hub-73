@@ -15,9 +15,14 @@ import {
 } from 'recharts';
 import {
   AlertTriangle,
+  BookOpen,
+  Briefcase,
   CalendarDays,
   CheckCircle2,
+  GraduationCap,
+  Laptop,
   Megaphone,
+  Monitor,
   Presentation,
   TrendingDown,
   TrendingUp,
