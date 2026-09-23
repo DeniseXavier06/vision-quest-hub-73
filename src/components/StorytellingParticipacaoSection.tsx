@@ -162,6 +162,34 @@ const trendData = [
   { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16, Média: 73.03 },
 ];
 
+const barIconMap: Record<string, typeof GraduationCap> = {
+  'Alunos presenciais': GraduationCap,
+  'Alunos EAD': Laptop,
+  'Professores presenciais': BookOpen,
+  'Professores EAD': Monitor,
+  Colaboradores: Briefcase,
+};
+
+const renderBarLabel = (props: any) => {
+  const { x, y, width, value, fill, dataKey } = props;
+  if (value == null || width == null) return null;
+  const Icon = barIconMap[dataKey as string];
+  return (
+    <g>
+      {Icon && (
+        <foreignObject x={x + width / 2 - 9} y={y - 30} width={18} height={18}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', color: fill }}>
+            <Icon size={15} />
+          </div>
+        </foreignObject>
+      )}
+      <text x={x + width / 2} y={y - 10} fill={fill} fontSize={10} textAnchor="middle" fontWeight={600}>
+        {percent(value as number)}
+      </text>
+    </g>
+  );
+};
+
 const priorityConfig = {
   1: { label: 'Mobilização imediata', icon: AlertTriangle, className: 'border-destructive/30 bg-destructive/10 text-destructive' },
   2: { label: 'Recuperação', icon: TrendingUp, className: 'border-warning/30 bg-warning/10 text-warning' },
