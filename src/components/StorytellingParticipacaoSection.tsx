@@ -279,17 +279,19 @@ const StorytellingParticipacaoSection = () => {
           </CardHeader>
           <CardContent className="h-[360px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
+              <ComposedChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
                 <XAxis dataKey="ano" stroke={chartColors.muted} />
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
-                <Area type="monotone" dataKey="Alunos presenciais" stroke={chartColors.primary} fill={chartColors.primary} fillOpacity={0.16} strokeWidth={2} />
-                <Area type="monotone" dataKey="Alunos EAD" stroke={chartColors.destructive} fill={chartColors.destructive} fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores presenciais" stroke={chartColors.info} fill={chartColors.info} fillOpacity={0.1} strokeWidth={2} />
-                <Area type="monotone" dataKey="Professores EAD" stroke={chartColors.warning} fill={chartColors.warning} fillOpacity={0.12} strokeWidth={2} />
-                <Area type="monotone" dataKey="Colaboradores" stroke={chartColors.success} fill={chartColors.success} fillOpacity={0.1} strokeWidth={2} />
-              </AreaChart>
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]} />
+                <Line type="monotone" dataKey="Média" stroke={chartColors.foreground} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 4 }} />
+              </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
