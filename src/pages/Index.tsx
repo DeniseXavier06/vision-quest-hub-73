@@ -16,6 +16,7 @@ import AvaliadoresSection from '@/components/AvaliadoresSection';
 import AcessosSection from '@/components/AcessosSection';
 import AnaliseSection from '@/components/AnaliseSection';
 import StorytellingSection from '@/components/StorytellingSection';
+import MedidasDrillSection from '@/components/MedidasDrillSection';
 
 
 const Index = () => {
@@ -37,6 +38,7 @@ const Index = () => {
       case 'cronograma': return <CronogramaSection />;
       case 'resultados': return <ResultadosSection />;
       case 'analise': return <AnaliseSection />;
+      case 'medidas': return <MedidasDrillSection />;
       case 'storytelling': return <StorytellingSection />;
       case 'reunioes': return <ReunioesSection />;
       case 'relatorios': return <RelatoriosSection />;
