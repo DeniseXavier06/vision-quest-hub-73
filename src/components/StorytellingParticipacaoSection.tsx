@@ -69,7 +69,7 @@ const segments: Segment[] = [
     short: 'Alunos Pres.',
     p2024: 72.97,
     p2025: 77.64,
-    p2026: 79.65,
+    p2026: 79.77,
     deadline: '20/09',
     priority: 3,
     reading: 'Participação elevada, superando o resultado de 2025 e consolidando o avanço no triênio.',
@@ -81,7 +81,7 @@ const segments: Segment[] = [
     short: 'Alunos EAD',
     p2024: 33.88,
     p2025: 25.04,
-    p2026: 19.19,
+    p2026: 21.72,
     deadline: '30/09',
     priority: 1,
     reading: 'Principal ponto de atenção, apesar da leve recuperação mais recente, com redução acumulada no triênio e baixa adesão em 2026.',
@@ -99,7 +99,7 @@ const segments: Segment[] = [
     short: 'Prof. Pres.',
     p2024: 67.92,
     p2025: 85.94,
-    p2026: 89.76,
+    p2026: 95.28,
     deadline: '30/09',
     priority: 3,
     reading: 'Participação elevada e crescente, com o melhor resultado do triênio.',
@@ -111,7 +111,7 @@ const segments: Segment[] = [
     short: 'Prof. EAD',
     p2024: 100,
     p2025: 93.23,
-    p2026: 85.37,
+    p2026: 90.24,
     deadline: '30/09',
     priority: 2,
     reading: 'Participação elevada, embora ainda abaixo do resultado alcançado em 2025.',
@@ -123,7 +123,7 @@ const segments: Segment[] = [
     short: 'Coord. Pres.',
     p2024: 100,
     p2025: 81.82,
-    p2026: 90,
+    p2026: 100,
     deadline: '30/09',
     priority: 3,
     reading: 'Participação elevada e em recuperação, superando 2025 e reforçando seu papel estratégico.',
@@ -147,7 +147,7 @@ const segments: Segment[] = [
     short: 'Colab.',
     p2024: 72.48,
     p2025: 91.45,
-    p2026: 91.16,
+    p2026: 97.96,
     deadline: '30/09',
     priority: 3,
     reading: 'Participação elevada e estável em relação a 2025, mantendo forte adesão no triênio.',
@@ -159,7 +159,7 @@ const segments: Segment[] = [
 const trendData = [
   { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48, Média: 69.45 },
   { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45, Média: 74.66 },
-  { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16, Média: 73.03 },
+  { ano: '2026', 'Alunos presenciais': 79.77, 'Alunos EAD': 21.72, 'Professores presenciais': 95.28, 'Professores EAD': 90.24, Colaboradores: 97.96, Média: 76.99 },
 ];
 
 const barIconMap: Record<string, typeof GraduationCap> = {
@@ -368,7 +368,7 @@ const StorytellingParticipacaoSection = () => {
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
           <p>
-            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025, recuando ligeiramente para 73,03% em 2026 — um avanço líquido de cerca de 3,6 pontos percentuais em relação ao início do período, mas com sinal de estabilização no último ano.
+            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025 e alcançou 76,99% em 2026 — um avanço líquido de cerca de 7,5 pontos percentuais no período, com o melhor resultado do triênio no encerramento da avaliação.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-md border border-success/30 bg-success/10 p-4">
@@ -377,10 +377,10 @@ const StorytellingParticipacaoSection = () => {
                 Tendências positivas
               </h3>
               <ul className="mt-2 space-y-1.5">
-                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,65%), maior taxa do triênio entre discentes.</li>
-                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 89,76%), o maior avanço absoluto (+21,84 p.p.).</li>
-                <li><strong className="text-foreground">Coordenadores EAD</strong>: adesão integral e ininterrupta (100% nos três anos).</li>
-                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 91,16%), estabilizada em patamar elevado.</li>
+                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,77%), maior taxa do triênio entre discentes.</li>
+                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 95,28%), o maior avanço absoluto (+27,36 p.p.).</li>
+                <li><strong className="text-foreground">Coordenadores EAD e presenciais</strong>: adesão integral em 2026 (100% nos dois públicos).</li>
+                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 97,96%), maior taxa entre todos os públicos em 2026.</li>
               </ul>
             </div>
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
@@ -389,9 +389,8 @@ const StorytellingParticipacaoSection = () => {
                 Pontos de atenção
               </h3>
               <ul className="mt-2 space-y-1.5">
-                <li><strong className="text-foreground">Alunos EAD</strong>: queda contínua e acentuada (33,88% → 19,19%), maior desafio do triênio (–14,69 p.p.).</li>
-                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 85,37% (–14,63 p.p.), exigindo mobilização específica.</li>
-                <li><strong className="text-foreground">Coordenadores presenciais</strong>: recuperação parcial (100% → 81,82% → 90%), ainda abaixo do patamar inicial.</li>
+                <li><strong className="text-foreground">Alunos EAD</strong>: queda acentuada no triênio (33,88% → 21,72%), apesar da leve recuperação em 2026; segue o maior desafio (–12,16 p.p.).</li>
+                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 90,24% (–9,76 p.p.), ainda exigindo mobilização específica.</li>
               </ul>
             </div>
           </div>
