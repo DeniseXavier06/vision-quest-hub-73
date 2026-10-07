@@ -414,7 +414,7 @@ const StorytellingParticipacaoSection = () => {
                 <TableHead>Público</TableHead>
                 <TableHead>2024</TableHead>
                 <TableHead>2025</TableHead>
-                <TableHead>2026 até o momento</TableHead>
+                <TableHead>2026</TableHead>
                 <TableHead>Variação 2026 x 2025</TableHead>
                 <TableHead>Prazo</TableHead>
               </TableRow>
