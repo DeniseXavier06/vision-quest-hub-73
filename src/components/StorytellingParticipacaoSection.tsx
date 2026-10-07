@@ -19,6 +19,8 @@ import {
   Briefcase,
   CalendarDays,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   Laptop,
   Megaphone,
@@ -236,16 +238,50 @@ const StorytellingParticipacaoSection = () => {
     return chartColors.success;
   };
 
+  const TOTAL_SLIDES = 5 + segments.length + 1;
+  const [presenting, setPresenting] = useState(false);
+  const [slide, setSlide] = useState(0);
+
+  const goTo = (next: number) => setSlide(Math.min(TOTAL_SLIDES - 1, Math.max(0, next)));
+
+  useEffect(() => {
+    if (!presenting) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'ArrowRight') setSlide((current) => Math.min(TOTAL_SLIDES - 1, current + 1));
+      if (event.key === 'ArrowLeft') setSlide((current) => Math.max(0, current - 1));
+    };
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) setPresenting(false);
+    };
+    window.addEventListener('keydown', onKey);
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('fullscreenchange', onFullscreenChange);
+    };
+  }, [presenting, TOTAL_SLIDES]);
+
   const startPresentation = () => {
+    setPresenting(true);
+    setSlide(0);
     const element = document.getElementById('storytelling-participacao');
     if (element?.requestFullscreen) {
       element.requestFullscreen();
     }
   };
 
+  const exitPresentation = () => {
+    setPresenting(false);
+    if (document.fullscreenElement) document.exitFullscreen();
+  };
+
+  const showSlide = (index: number) => cn(presenting && slide !== index && 'hidden');
+  const showSegments = () => cn(presenting && !(slide >= 5 && slide < 5 + segments.length) && 'hidden');
+  const finalSlide = 5 + segments.length;
+
   return (
     <section id="storytelling-participacao" className="space-y-6 bg-background text-foreground">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+      <div className={cn('flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between', showSlide(0))}>
         <div className="space-y-2">
           <Badge variant="secondary" className="w-fit gap-2">
             <Presentation className="h-3.5 w-3.5" />
@@ -266,7 +302,7 @@ const StorytellingParticipacaoSection = () => {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className={cn('grid gap-4 md:grid-cols-3', showSlide(0))}>
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -305,7 +341,7 @@ const StorytellingParticipacaoSection = () => {
         </Card>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+      <div className={cn('grid gap-4 xl:grid-cols-[1.05fr_0.95fr]', showSlide(1))}>
         <Card>
           <CardHeader>
             <CardTitle>Visão geral do triênio</CardTitle>
@@ -362,7 +398,7 @@ const StorytellingParticipacaoSection = () => {
         </Card>
       </div>
 
-      <Card>
+      <Card className={showSlide(2)}>
         <CardHeader>
           <CardTitle>Análise do triênio 2024–2026</CardTitle>
         </CardHeader>
@@ -403,7 +439,7 @@ const StorytellingParticipacaoSection = () => {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className={showSlide(3)}>
         <CardHeader>
           <CardTitle>Resumo comparativo</CardTitle>
         </CardHeader>
@@ -438,7 +474,7 @@ const StorytellingParticipacaoSection = () => {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className={cn('grid gap-4 lg:grid-cols-3', showSlide(4))}>
         {[1, 2, 3].map((priority) => {
           const config = priorityConfig[priority as Segment['priority']];
           const Icon = config.icon;
@@ -466,8 +502,8 @@ const StorytellingParticipacaoSection = () => {
         })}
       </div>
 
-      <div className="space-y-4">
-        {segments.map((segment, index) => {
+      <div className={cn('space-y-4', showSegments())}>
+        {(presenting ? [segments[slide - 5]].filter(Boolean) : segments).map((segment, index) => {
           const variation = segment.p2026 - segment.p2025;
           return (
             <Card key={segment.publico}>
@@ -521,7 +557,7 @@ const StorytellingParticipacaoSection = () => {
         })}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <div className={cn('grid gap-4 lg:grid-cols-[0.9fr_1.1fr]', showSlide(finalSlide))}>
         <Card>
           <CardHeader>
             <CardTitle>Prazos e orientação</CardTitle>
@@ -568,6 +604,18 @@ const StorytellingParticipacaoSection = () => {
           </CardContent>
         </Card>
       </div>
+      {presenting && (
+        <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full border border-border bg-background/95 p-2 shadow-lg">
+          <Button variant="outline" size="icon" onClick={() => goTo(slide - 1)} disabled={slide === 0} aria-label="Retroceder">
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-16 text-center text-sm text-muted-foreground">{slide + 1} / {TOTAL_SLIDES}</span>
+          <Button variant="outline" size="icon" onClick={() => goTo(slide + 1)} disabled={slide === TOTAL_SLIDES - 1} aria-label="Avançar">
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={exitPresentation}>Sair</Button>
+        </div>
+      )}
     </section>
   );
 };
