@@ -147,7 +147,7 @@ const segments: Segment[] = [
     short: 'Colab.',
     p2024: 72.48,
     p2025: 91.45,
-    p2026: 97.96,
+    p2026: 97.95,
     deadline: '30/09',
     priority: 3,
     reading: 'Participação elevada e estável em relação a 2025, mantendo forte adesão no triênio.',
@@ -159,7 +159,7 @@ const segments: Segment[] = [
 const trendData = [
   { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48, Média: 69.45 },
   { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45, Média: 74.66 },
-  { ano: '2026', 'Alunos presenciais': 79.77, 'Alunos EAD': 21.72, 'Professores presenciais': 95.28, 'Professores EAD': 90.24, Colaboradores: 97.96, Média: 76.99 },
+  { ano: '2026', 'Alunos presenciais': 79.77, 'Alunos EAD': 21.72, 'Professores presenciais': 95.28, 'Professores EAD': 90.24, Colaboradores: 97.95, Média: 76.99 },
 ];
 
 const barIconMap: Record<string, typeof GraduationCap> = {
@@ -380,7 +380,7 @@ const StorytellingParticipacaoSection = () => {
                 <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,77%), maior taxa do triênio entre discentes.</li>
                 <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 95,28%), o maior avanço absoluto (+27,36 p.p.).</li>
                 <li><strong className="text-foreground">Coordenadores EAD e presenciais</strong>: adesão integral em 2026 (100% nos dois públicos).</li>
-                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 97,96%), maior taxa entre todos os públicos em 2026.</li>
+                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 97,95%), maior taxa entre todos os públicos em 2026.</li>
               </ul>
             </div>
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">

@@ -480,7 +480,7 @@ const personas: Persona[] = [
     participacao: [
       { ano: '2024', valor: 72.48 },
       { ano: '2025', valor: 91.45 },
-      { ano: '2026', valor: 97.96 },
+      { ano: '2026', valor: 97.95 },
     ],
     blocos: [
       {
