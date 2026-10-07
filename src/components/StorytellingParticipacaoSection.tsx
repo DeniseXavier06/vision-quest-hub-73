@@ -159,7 +159,7 @@ const segments: Segment[] = [
 const trendData = [
   { ano: '2024', 'Alunos presenciais': 72.97, 'Alunos EAD': 33.88, 'Professores presenciais': 67.92, 'Professores EAD': 100, Colaboradores: 72.48, Média: 69.45 },
   { ano: '2025', 'Alunos presenciais': 77.64, 'Alunos EAD': 25.04, 'Professores presenciais': 85.94, 'Professores EAD': 93.23, Colaboradores: 91.45, Média: 74.66 },
-  { ano: '2026', 'Alunos presenciais': 79.65, 'Alunos EAD': 19.19, 'Professores presenciais': 89.76, 'Professores EAD': 85.37, Colaboradores: 91.16, Média: 73.03 },
+  { ano: '2026', 'Alunos presenciais': 79.77, 'Alunos EAD': 21.72, 'Professores presenciais': 95.28, 'Professores EAD': 90.24, Colaboradores: 97.96, Média: 76.99 },
 ];
 
 const barIconMap: Record<string, typeof GraduationCap> = {
@@ -368,7 +368,7 @@ const StorytellingParticipacaoSection = () => {
         </CardHeader>
         <CardContent className="space-y-4 text-sm leading-6 text-muted-foreground">
           <p>
-            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025, recuando ligeiramente para 73,03% em 2026 — um avanço líquido de cerca de 3,6 pontos percentuais em relação ao início do período, mas com sinal de estabilização no último ano.
+            No triênio 2024–2026, a participação na Autoavaliação Institucional evoluiu de forma heterogênea entre os públicos. A média geral passou de 69,45% em 2024 para 74,66% em 2025 e alcançou 76,99% em 2026 — um avanço líquido de cerca de 7,5 pontos percentuais no período, com o melhor resultado do triênio no encerramento da avaliação.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-md border border-success/30 bg-success/10 p-4">
