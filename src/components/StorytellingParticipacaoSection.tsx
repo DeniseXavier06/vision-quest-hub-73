@@ -377,10 +377,10 @@ const StorytellingParticipacaoSection = () => {
                 Tendências positivas
               </h3>
               <ul className="mt-2 space-y-1.5">
-                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,65%), maior taxa do triênio entre discentes.</li>
-                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 89,76%), o maior avanço absoluto (+21,84 p.p.).</li>
-                <li><strong className="text-foreground">Coordenadores EAD</strong>: adesão integral e ininterrupta (100% nos três anos).</li>
-                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 91,16%), estabilizada em patamar elevado.</li>
+                <li><strong className="text-foreground">Alunos presenciais</strong>: crescimento contínuo (72,97% → 79,77%), maior taxa do triênio entre discentes.</li>
+                <li><strong className="text-foreground">Professores presenciais</strong>: salto expressivo (67,92% → 95,28%), o maior avanço absoluto (+27,36 p.p.).</li>
+                <li><strong className="text-foreground">Coordenadores EAD e presenciais</strong>: adesão integral em 2026 (100% nos dois públicos).</li>
+                <li><strong className="text-foreground">Colaboradores</strong>: forte elevação (72,48% → 97,96%), maior taxa entre todos os públicos em 2026.</li>
               </ul>
             </div>
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-4">
@@ -389,9 +389,8 @@ const StorytellingParticipacaoSection = () => {
                 Pontos de atenção
               </h3>
               <ul className="mt-2 space-y-1.5">
-                <li><strong className="text-foreground">Alunos EAD</strong>: queda contínua e acentuada (33,88% → 19,19%), maior desafio do triênio (–14,69 p.p.).</li>
-                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 85,37% (–14,63 p.p.), exigindo mobilização específica.</li>
-                <li><strong className="text-foreground">Coordenadores presenciais</strong>: recuperação parcial (100% → 81,82% → 90%), ainda abaixo do patamar inicial.</li>
+                <li><strong className="text-foreground">Alunos EAD</strong>: queda acentuada no triênio (33,88% → 21,72%), apesar da leve recuperação em 2026; segue o maior desafio (–12,16 p.p.).</li>
+                <li><strong className="text-foreground">Professores EAD</strong>: recuo de 100% para 90,24% (–9,76 p.p.), ainda exigindo mobilização específica.</li>
               </ul>
             </div>
           </div>
