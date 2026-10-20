@@ -743,6 +743,7 @@ export type Database = {
           created_at: string
           curso: string
           dimensao: string
+          disciplina: string | null
           excelente: number
           id: string
           importacao_id: string | null
@@ -750,6 +751,7 @@ export type Database = {
           muito_ruim: number
           nao_se_aplica: number
           nivel: string
+          professor: string | null
           regular: number
           semestre: string
           texto_questao: string
@@ -764,6 +766,7 @@ export type Database = {
           created_at?: string
           curso?: string
           dimensao?: string
+          disciplina?: string | null
           excelente?: number
           id?: string
           importacao_id?: string | null
@@ -771,6 +774,7 @@ export type Database = {
           muito_ruim?: number
           nao_se_aplica?: number
           nivel?: string
+          professor?: string | null
           regular?: number
           semestre?: string
           texto_questao?: string
@@ -785,6 +789,7 @@ export type Database = {
           created_at?: string
           curso?: string
           dimensao?: string
+          disciplina?: string | null
           excelente?: number
           id?: string
           importacao_id?: string | null
@@ -792,6 +797,7 @@ export type Database = {
           muito_ruim?: number
           nao_se_aplica?: number
           nivel?: string
+          professor?: string | null
           regular?: number
           semestre?: string
           texto_questao?: string
