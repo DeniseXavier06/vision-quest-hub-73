@@ -33,7 +33,9 @@ const CAMPO_GRUPO: Record<Grupo, keyof LinhaDocente> = {
   curso: 'curso', dimensao: 'dimensao', area: 'area', professor: 'professor', disciplina: 'disciplina',
 };
 
-const DocentesSection = () => {
+interface Props { perfil?: 'docentes' | 'discentes' }
+const DocentesSection = ({ perfil = 'docentes' }: Props) => {
+  const isDisc = perfil === 'discentes';
   const [rows, setRows] = useState<LinhaDocente[]>([]);
   const [loading, setLoading] = useState(true);
   const [nivel, setNivel] = useState(TODOS);
@@ -51,7 +53,7 @@ const DocentesSection = () => {
         const { data, error } = await supabase
           .from('resultados')
           .select('*')
-          .ilike('nivel', '%professor%')
+          .or(isDisc ? 'nivel.ilike.%aluno%,nivel.ilike.%discente%' : 'nivel.ilike.%professor%')
           .range(from, from + 999);
         if (error || !data?.length) break;
         all = all.concat(data);
@@ -65,7 +67,7 @@ const DocentesSection = () => {
       })));
       setLoading(false);
     })();
-  }, []);
+  }, [isDisc]);
 
   const opcoes = useMemo(() => {
     const uniq = (k: keyof LinhaDocente) => [...new Set(rows.map((r) => String(r[k])).filter(Boolean))].sort();
@@ -173,8 +175,8 @@ const DocentesSection = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xl font-heading font-bold flex items-center gap-2"><GraduationCap className="w-5 h-5 text-primary" />Docentes</h3>
-        <p className="text-sm text-muted-foreground">Resultados dos perfis Professores e Professores EAD. Selecione vários semestres para comparar.</p>
+        <h3 className="text-xl font-heading font-bold flex items-center gap-2"><GraduationCap className="w-5 h-5 text-primary" />{isDisc ? 'Discentes' : 'Docentes'}</h3>
+        <p className="text-sm text-muted-foreground">{isDisc ? 'Resultados dos alunos presenciais e EAD.' : 'Resultados dos perfis Professores e Professores EAD.'} Selecione vários semestres para comparar.</p>
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
@@ -207,10 +209,12 @@ const DocentesSection = () => {
           options={[{ value: TODOS, label: 'Todos os eixos' }, ...opcoes.dimensoes.map((s) => ({ value: s, label: s }))]} />
         <SearchableSelect value={area} onValueChange={setArea} placeholder="Área" className="w-[200px]"
           options={[{ value: TODOS, label: 'Todas as áreas' }, ...opcoes.areas.map((s) => ({ value: s, label: s }))]} />
+        {!isDisc && <>
         <SearchableSelect value={professor} onValueChange={setProfessor} placeholder="Professor" className="w-[200px]"
           options={[{ value: TODOS, label: 'Todos os professores' }, ...opcoes.professores.map((s) => ({ value: s, label: s }))]} />
         <SearchableSelect value={disciplina} onValueChange={setDisciplina} placeholder="Disciplina" className="w-[200px]"
           options={[{ value: TODOS, label: 'Todas as disciplinas' }, ...opcoes.disciplinas.map((s) => ({ value: s, label: s }))]} />
+        </>}
         <Button variant="ghost" size="sm" onClick={() => { setNivel(TODOS); setSemestresSel([]); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setProfessor(TODOS); setDisciplina(TODOS); }}>Limpar filtros</Button>
       </div>
 
@@ -251,7 +255,7 @@ const DocentesSection = () => {
         </CardContent>
       </Card>
 
-      {GRUPOS.map((g) => renderGrafico(g.id, g.rotulo))}
+      {GRUPOS.filter((g) => !isDisc || (g.id !== 'professor' && g.id !== 'disciplina')).map((g) => renderGrafico(g.id, g.rotulo))}
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Questões — média e conceito</CardTitle></CardHeader>

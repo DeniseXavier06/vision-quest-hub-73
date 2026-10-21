@@ -902,7 +902,7 @@ const ResultadosSection = () => {
       {/* Submenus por nível */}
       <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-muted w-fit">
         {([
-          { id: 'discdoc', label: 'Discentes/Docentes' },
+          { id: 'discdoc', label: 'Discentes' },
           { id: 'docentes', label: 'Docentes' },
           { id: 'colaborador', label: 'Colaborador' },
           { id: 'coordenador', label: 'Coordenador' },
@@ -917,8 +917,8 @@ const ResultadosSection = () => {
         ))}
       </div>
 
-      {grupo === 'docentes' ? (
-        <DocentesSection />
+      {grupo === 'docentes' || grupo === 'discdoc' ? (
+        <DocentesSection key={grupo} perfil={grupo === 'docentes' ? 'docentes' : 'discentes'} />
       ) : (<>
 
       {/* Stats Cards */}
