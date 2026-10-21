@@ -22,6 +22,7 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import DocentesSection from '@/components/DocentesSection';
 
 export interface ResultadoRow {
   semestre: string;
@@ -186,7 +187,7 @@ const PAGE_SIZE = 200;
 
 const ResultadosSection = () => {
   const [data, setData] = useState<ResultadoRow[]>([]);
-  const [grupo, setGrupo] = useState<'discdoc' | 'colaborador' | 'coordenador'>('discdoc');
+  const [grupo, setGrupo] = useState<'discdoc' | 'colaborador' | 'coordenador' | 'docentes'>('discdoc');
   const [importacoes, setImportacoes] = useState<Importacao[]>([]);
   const [filterSemestre, setFilterSemestre] = useState('all');
   const [filterNivel, setFilterNivel] = useState('all');
@@ -902,6 +903,7 @@ const ResultadosSection = () => {
       <div className="flex flex-wrap gap-1 p-1 rounded-lg bg-muted w-fit">
         {([
           { id: 'discdoc', label: 'Discentes/Docentes' },
+          { id: 'docentes', label: 'Docentes' },
           { id: 'colaborador', label: 'Colaborador' },
           { id: 'coordenador', label: 'Coordenador' },
         ] as const).map((t) => (
@@ -915,7 +917,9 @@ const ResultadosSection = () => {
         ))}
       </div>
 
-
+      {grupo === 'docentes' ? (
+        <DocentesSection />
+      ) : (<>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -1292,6 +1296,8 @@ const ResultadosSection = () => {
       )}
 
       {/* Data Table removed */}
+
+      </>)}
 
       {/* Import Dialog */}
       <Dialog open={showImportDialog} onOpenChange={(open) => { if (!open) resetImportState(); }}>
