@@ -29,7 +29,7 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(valor: number) => [fmt(valor), 'Média']} />
-        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26}>
+        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false}>
           {dados.map(d => <Cell key={d.nome} fill={cores[d.conceito]} />)}
           <LabelList dataKey="media" position="right" formatter={fmt} />
         </Bar>
