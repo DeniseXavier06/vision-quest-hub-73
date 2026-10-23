@@ -43,6 +43,12 @@
     --info: 200 65% 45%;
     --info-foreground: 0 0% 100%;
 
+    --cpa-excelente: 142 53% 43%;
+    --cpa-bom: 217 89% 61%;
+    --cpa-parcial: 45 97% 50%;
+    --cpa-regular: 5 81% 56%;
+    --cpa-muito-ruim: 1 71% 45%;
+
     --sidebar-background: 220 40% 13%;
     --sidebar-foreground: 220 20% 85%;
     --sidebar-primary: 200 65% 55%;
