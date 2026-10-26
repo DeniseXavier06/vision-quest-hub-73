@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 
 const TODOS = '__todos__';
@@ -107,7 +107,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
             regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media), professor: r.professor || '' })));
           if ((data?.length || 0) < 1000) break;
         }
-        if (!cancelado) setRows(selecionarDiscentes(todas, anos));
+        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anos)));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
     };
@@ -132,10 +132,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
   const grupos = useMemo(() => ({ curso: resumirGrupos(filtrado, 'curso'), dimensao: resumirGrupos(filtrado, 'dimensao'),
-    area: resumirGrupos(filtrado, 'area'), professor: resumirGrupos(filtrado, 'professor') }), [filtrado]);
+    area: resumirGrupos(filtrado, 'area'), professor: resumirGrupos(filtrado, 'professor'), eixo: resumirGrupos(filtrado, 'eixo') }), [filtrado]);
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
   const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
-    area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos) }), [filtrado, trienio]);
+    area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos), eixo: compararAnos(filtrado, 'eixo', anos) }), [filtrado, trienio]);
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
   const prioDims = uniq(prioridades.map(p => p.dimensao));
   const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
@@ -174,8 +174,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           <p className="text-sm text-muted-foreground">Médias calculadas pelas medidas CPA compartilhadas: média das linhas das questões por área, seguida da média das áreas. Respostas não representam pessoas únicas; dados de participação não entram nestas médias.</p>
         </div>
       </section>}
-      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
-      {mostrar(3) && <section className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">Médias por eixo</h3><p className="bg-muted/40 p-5 text-muted-foreground">Os resultados importados não possuem eixo separado de dimensão e área. Nenhuma classificação de eixo foi presumida; as médias disponíveis estão nos gráficos de dimensão e área.</p></section>}
+      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
         <p className="text-muted-foreground">{trienio && `Prioridades com base em ${ultimo}. `}Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>
