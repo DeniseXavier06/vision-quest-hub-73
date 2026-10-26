@@ -28,3 +28,7 @@ describe('triênio discente', () => {
     expect(compararAnos([linha({ semestre: '2024.2', media: 4 }), linha({ media: 3 })], 'curso', ['2024', '2025', '2026'])).toEqual([{ nome: 'Direito', '2024': 4, '2025': null, '2026': 3 }]);
   });
 });
+import { eixoDaArea } from './storytelling-discentes';
+describe('eixos discentes', () => {
+  it.each([['Imagem do curso', 'Eixo 1 - Desenvolvimento Institucional'], ['Atendimento do coordenador aos alunos', 'Eixo 2 - Políticas Acadêmicas'], ['Avaliação da aprendizagem', 'Eixo 3 - Políticas de Gestão'], ['Ambiente Virtual Aprendizagem', 'Eixo 4 - Infraestrutura Física'], ['Sala de aula', 'Eixo 4 - Infraestrutura Física']])('%s → %s', (a, e) => expect(eixoDaArea(a)).toBe(e));
+});
