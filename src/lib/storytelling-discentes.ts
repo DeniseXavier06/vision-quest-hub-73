@@ -7,6 +7,8 @@ export function selecionarDiscentes2026(rows: ResultadoDiscente[]) {
   return rows.filter(r => /^2026(?:[.\-/]|$)/.test(r.semestre.trim()) && /aluno|discente/i.test(r.nivel));
 }
 
+const ORDEM_EIXO = new Map(EIXOS.map(([nome], i) => [nome, i]));
+
 export function resumirGrupos(rows: ResultadoDiscente[], campo: 'curso' | 'dimensao' | 'area' | 'professor' | 'eixo') {
   const grupos = new Map<string, ResultadoDiscente[]>();
   rows.forEach(r => {
@@ -19,7 +21,7 @@ export function resumirGrupos(rows: ResultadoDiscente[], campo: 'curso' | 'dimen
   return [...grupos].map(([nome, grupo]) => {
     const media = mediaHierarquica(grupo);
     return { nome, media, conceito: conceito(media), respostas: totalRespostas(grupo) };
-  }).sort((a, b) => b.media - a.media || a.nome.localeCompare(b.nome));
+  }).sort((a, b) => (campo === 'eixo' ? (ORDEM_EIXO.get(a.nome) ?? 99) - (ORDEM_EIXO.get(b.nome) ?? 99) : b.media - a.media) || a.nome.localeCompare(b.nome));
 }
 
 export function areasParaAcao(rows: ResultadoDiscente[]) {
