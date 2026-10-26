@@ -7,8 +7,6 @@ export function selecionarDiscentes2026(rows: ResultadoDiscente[]) {
   return rows.filter(r => /^2026(?:[.\-/]|$)/.test(r.semestre.trim()) && /aluno|discente/i.test(r.nivel));
 }
 
-const ORDEM_EIXO = new Map(EIXOS.map(([nome], i) => [nome, i]));
-
 export function resumirGrupos(rows: ResultadoDiscente[], campo: 'curso' | 'dimensao' | 'area' | 'professor' | 'eixo') {
   const grupos = new Map<string, ResultadoDiscente[]>();
   rows.forEach(r => {
