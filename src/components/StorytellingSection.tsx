@@ -12,6 +12,7 @@ const StorytellingSection = () => {
         <TabsTrigger value="personas">Por persona</TabsTrigger>
         <TabsTrigger value="cursos">Por curso</TabsTrigger>
         <TabsTrigger value="discentes2026">Discentes/2026</TabsTrigger>
+        <TabsTrigger value="trienioDiscentes">Triênio Discentes</TabsTrigger>
       </TabsList>
       <TabsContent value="participacao">
         <StorytellingParticipacaoSection />
@@ -24,6 +25,9 @@ const StorytellingSection = () => {
       </TabsContent>
       <TabsContent value="discentes2026">
         <StorytellingDiscentesSection />
+      </TabsContent>
+      <TabsContent value="trienioDiscentes">
+        <StorytellingDiscentesSection trienio />
       </TabsContent>
     </Tabs>
   );

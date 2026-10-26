@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, X } from 'lucide-react';
-import { Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, resumirGrupos, selecionarDiscentes2026, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 
 const TODOS = '__todos__';
@@ -41,7 +41,32 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
   </div>;
 }
 
-const StorytellingDiscentesSection = () => {
+function GraficoComparativo({ dados, anos, cores }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[] }) {
+  if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
+  const f = (v: number | null) => v == null ? '—' : fmt(v);
+  return <div className="space-y-4">
+    <ResponsiveContainer width="100%" height={Math.max(320, dados.length * 70)}>
+      <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
+        <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+        <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
+        <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
+        <Tooltip formatter={(v: number) => fmt(v)} /><Legend />
+        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
+      </BarChart>
+    </ResponsiveContainer>
+    <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
+      <TableBody>{dados.map(d => { const ini = d[anos[0]] as number | null, fim = d[anos[anos.length - 1]] as number | null; return <TableRow key={d.nome as string}><TableCell className="font-medium">{d.nome}</TableCell>{anos.map(a => <TableCell key={a} className="text-right">{f(d[a] as number | null)}{d[a] != null && <span className="ml-2"><ConceitoBadge valor={conceito(d[a] as number)} /></span>}</TableCell>)}<TableCell className="text-right">{ini != null && fim != null ? `${fim - ini >= 0 ? '+' : ''}${fmt(fim - ini)}` : '—'}</TableCell></TableRow>; })}</TableBody>
+    </Table>
+  </div>;
+}
+
+const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }) => {
+  const anos = trienio ? ANOS_TRIENIO : ['2026'];
+  const ultimo = anos[anos.length - 1];
+  const [prioDimensao, setPrioDimensao] = useState(TODOS);
+  const [prioArea, setPrioArea] = useState(TODOS);
+  const [prioQuestao, setPrioQuestao] = useState(TODOS);
+  const [coresAnos, setCoresAnos] = useState<string[]>([]);
   const [rows, setRows] = useState<ResultadoDiscente[]>([]);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState(false);
@@ -62,6 +87,7 @@ const StorytellingDiscentesSection = () => {
     setCores(Object.fromEntries(['Excelente', 'Bom', 'Atende Parcialmente', 'Regular', 'Muito Ruim'].map((c, i) =>
       [c, `hsl(${css.getPropertyValue(['--cpa-excelente', '--cpa-bom', '--cpa-parcial', '--cpa-regular', '--cpa-muito-ruim'][i]).trim()})`])));
   }, []);
+  useEffect(() => { const css = getComputedStyle(document.documentElement); setCoresAnos(['--info', '--warning', '--primary'].map(v => `hsl(${css.getPropertyValue(v).trim()})`)); }, []);
 
   useEffect(() => {
     let cancelado = false;
@@ -72,7 +98,7 @@ const StorytellingDiscentesSection = () => {
         for (let from = 0; ; from += 1000) {
           const { data, error } = await supabase.from('resultados')
             .select('id,semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,professor')
-            .like('semestre', '2026%').or('nivel.ilike.%aluno%,nivel.ilike.%discente%')
+            .or(anos.map(a => `semestre.like.${a}%`).join(',')).or('nivel.ilike.%aluno%,nivel.ilike.%discente%')
             .order('id').range(from, from + 999);
           if (cancelado) return;
           if (error) throw error;
@@ -81,13 +107,13 @@ const StorytellingDiscentesSection = () => {
             regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media), professor: r.professor || '' })));
           if ((data?.length || 0) < 1000) break;
         }
-        if (!cancelado) setRows(selecionarDiscentes2026(todas));
+        if (!cancelado) setRows(selecionarDiscentes(todas, anos));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
     };
     carregar();
     return () => { cancelado = true; };
-  }, [tentativa]);
+  }, [tentativa, trienio]);
 
   useEffect(() => {
     if (!apresentando) return;
@@ -101,15 +127,23 @@ const StorytellingDiscentesSection = () => {
     return () => window.removeEventListener('keydown', navegar);
   }, [apresentando]);
 
-  useEffect(() => { setPagina(0); setDetalhe(null); }, [nivel, curso, dimensao, area, conceitoFiltro]);
+  useEffect(() => { setPagina(0); setDetalhe(null); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
   const grupos = useMemo(() => ({ curso: resumirGrupos(filtrado, 'curso'), dimensao: resumirGrupos(filtrado, 'dimensao'),
     area: resumirGrupos(filtrado, 'area'), professor: resumirGrupos(filtrado, 'professor') }), [filtrado]);
-  const prioridades = useMemo(() => areasParaAcao(filtrado), [filtrado]);
-  const prioridadesVisiveis = prioridades.filter(p => conceitoFiltro === TODOS || p.conceito === conceitoFiltro);
-  const selecionada = prioridades.find(p => JSON.stringify([p.nivel, p.curso, p.dimensao, p.area]) === detalhe);
+  const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
+  const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
+    area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos) }), [filtrado, trienio]);
+  const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
+  const prioDims = uniq(prioridades.map(p => p.dimensao));
+  const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
+  const prioQuestoes = uniq(prioridades.filter(p => (prioDimensao === TODOS || p.dimensao === prioDimensao) && (prioArea === TODOS || p.area === prioArea)).flatMap(p => p.evidencias.map(e => e.questao)));
+  const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioDimensao === TODOS || p.dimensao === prioDimensao)
+    && (prioArea === TODOS || p.area === prioArea) && (prioQuestao === TODOS || p.evidencias.some(e => e.questao === prioQuestao)))
+    .map(p => prioQuestao === TODOS ? p : { ...p, evidencias: [...p.evidencias].sort((a, b) => Number(b.questao === prioQuestao) - Number(a.questao === prioQuestao)) });
+  const selecionada = prioridadesVisiveis.find(p => JSON.stringify([p.nivel, p.curso, p.dimensao, p.area]) === detalhe);
   const media = mediaHierarquica(filtrado);
   const mostrar = (i: number) => !apresentando || slide === i;
   const limpar = () => { setNivel(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setConceitoFiltro(TODOS); };
@@ -119,7 +153,7 @@ const StorytellingDiscentesSection = () => {
 
   return <div className={cn('space-y-8', apresentando && 'pb-24')}>
     <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />Discentes / 2026</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
+      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />Discentes / {trienio ? 'Triênio 2024–2026' : '2026'}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
       <Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button>
     </header>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -136,16 +170,21 @@ const StorytellingDiscentesSection = () => {
           <p>Em 2026, a experiência dos discentes alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
           {grupos.curso[0] && <p><strong>Destaque:</strong> {grupos.curso[0].nome} tem a maior média ({fmt(grupos.curso[0].media)}). {grupos.area[0]?.nome} lidera entre as áreas, com {fmt(grupos.area[0]?.media || 0)}.</p>}
           <p><strong>O ponto decisivo:</strong> {prioridades.length ? `${prioridades.length} recortes de área por curso e nível ficaram em Atende Parcialmente, Regular ou Muito Ruim. A média geral não deve ocultar esses pontos de atenção.` : 'nenhuma área por curso e nível ficou nos conceitos prioritários. O acompanhamento das questões continua importante para preservar os resultados.'}</p>
+          {trienio && <p><strong>Evolução da média geral:</strong> {anos.map(a => { const g = filtrado.filter(r => r.semestre.trim().startsWith(a)); return `${a}: ${g.length ? `${fmt(mediaHierarquica(g))} (${conceito(mediaHierarquica(g))})` : 'sem dados'}`; }).join(' · ')}.</p>}
           <p className="text-sm text-muted-foreground">Médias calculadas pelas medidas CPA compartilhadas: média das linhas das questões por área, seguida da média das áreas. Respostas não representam pessoas únicas; dados de participação não entram nestas médias.</p>
         </div>
       </section>}
-      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : <GraficoMedias dados={grupos[campo]} cores={cores} />}</section>)}
+      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
       {mostrar(3) && <section className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">Médias por eixo</h3><p className="bg-muted/40 p-5 text-muted-foreground">Os resultados importados não possuem eixo separado de dimensão e área. Nenhuma classificação de eixo foi presumida; as médias disponíveis estão nos gráficos de dimensão e área.</p></section>}
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
-        <p className="text-muted-foreground">Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>
+        <p className="text-muted-foreground">{trienio && `Prioridades com base em ${ultimo}. `}Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>
         <div className="flex flex-wrap gap-3">{CONCEITOS_PRIORITARIOS.map(c => <div key={c} className="flex items-center gap-2 border-b-2 border-border py-2"><ConceitoBadge valor={c} /><strong>{prioridades.filter(p => p.conceito === c).length}</strong></div>)}</div>
-        <label className="block max-w-xs space-y-1 text-sm"><span>Conceito prioritário</span><SearchableSelect value={conceitoFiltro} onValueChange={setConceitoFiltro} options={[{ value: TODOS, label: 'Todos os conceitos prioritários' }, ...CONCEITOS_PRIORITARIOS.map(c => ({ value: c, label: c }))]} /></label>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <label className="space-y-1 text-sm"><span>Dimensão</span><SearchableSelect value={prioDimensao} onValueChange={v => { setPrioDimensao(v); setPrioArea(TODOS); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todas as dimensões' }, ...prioDims.map(v => ({ value: v, label: v }))]} /></label>
+          <label className="space-y-1 text-sm"><span>Área</span><SearchableSelect value={prioArea} onValueChange={v => { setPrioArea(v); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todas as áreas' }, ...prioAreas.map(v => ({ value: v, label: v }))]} /></label>
+          <label className="space-y-1 text-sm"><span>Questão</span><SearchableSelect value={prioQuestao} onValueChange={setPrioQuestao} options={[{ value: TODOS, label: 'Todas as questões' }, ...prioQuestoes.map(v => ({ value: v, label: v }))]} /></label>
+        <label className="space-y-1 text-sm"><span>Conceito prioritário</span><SearchableSelect value={conceitoFiltro} onValueChange={setConceitoFiltro} options={[{ value: TODOS, label: 'Todos os conceitos prioritários' }, ...CONCEITOS_PRIORITARIOS.map(c => ({ value: c, label: c }))]} /></label></div>
         {!prioridadesVisiveis.length ? <p className="py-8 text-muted-foreground">Nenhuma área neste conceito para os filtros selecionados.</p> : <>
           <Table><TableHeader><TableRow><TableHead>Curso / Nível</TableHead><TableHead>Dimensão / Área</TableHead><TableHead>Média</TableHead><TableHead>Conceito</TableHead><TableHead>Questão com menor média</TableHead><TableHead /></TableRow></TableHeader><TableBody>
             {prioridadesVisiveis.slice(pagina * 12, pagina * 12 + 12).map(p => {

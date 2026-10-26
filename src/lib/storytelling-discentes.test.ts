@@ -19,4 +19,12 @@ describe('história dos resultados discentes de 2026', () => {
     const resultado = areasParaAcao([linha({ media: 2.5 }), linha({ curso: 'Farmácia', media: 5 })]);
     expect(resultado.map(r => [r.curso, r.media, r.evidencias[0]?.media])).toEqual([['Direito', 2.5, 2.5]]);
   });
+});import { compararAnos, selecionarDiscentes } from './storytelling-discentes';
+describe('triênio discente', () => {
+  it('seleciona 2024, 2025 e 2026', () => {
+    expect(selecionarDiscentes([linha({ semestre: '2024.2' }), linha({ semestre: '2023.2' }), linha()], ['2024', '2025', '2026']).map(r => r.semestre)).toEqual(['2024.2', '2026.2']);
+  });
+  it('compara a média de cada ano por curso', () => {
+    expect(compararAnos([linha({ semestre: '2024.2', media: 4 }), linha({ media: 3 })], 'curso', ['2024', '2025', '2026'])).toEqual([{ nome: 'Direito', '2024': 4, '2025': null, '2026': 3 }]);
+  });
 });
