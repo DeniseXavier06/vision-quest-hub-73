@@ -48,3 +48,17 @@ export function areasParaAcao(rows: ResultadoDiscente[]) {
       area: primeira.area, media, conceito: classificacao, evidencias, respostas: totalRespostas(grupo) }];
   }).sort((a, b) => a.media - b.media || a.curso.localeCompare(b.curso));
 }
+export const ANOS_TRIENIO = ['2024', '2025', '2026'];
+export function selecionarDiscentes(rows: ResultadoDiscente[], anos: string[]) {
+  return rows.filter(r => anos.some(a => new RegExp(`^${a}(?:[.\\-/]|$)`).test(r.semestre.trim())) && /aluno|discente/i.test(r.nivel));
+}
+export function compararAnos(rows: ResultadoDiscente[], campo: 'curso' | 'dimensao' | 'area' | 'professor', anos: string[]) {
+  return resumirGrupos(rows, campo).map(({ nome }) => {
+    const o: Record<string, string | number | null> = { nome };
+    anos.forEach(a => {
+      const g = rows.filter(r => r[campo]?.trim() === nome && r.semestre.trim().startsWith(a));
+      o[a] = g.length ? Number(mediaHierarquica(g).toFixed(2)) : null;
+    });
+    return o;
+  });
+}
