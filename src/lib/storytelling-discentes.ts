@@ -19,7 +19,7 @@ export function resumirGrupos(rows: ResultadoDiscente[], campo: 'curso' | 'dimen
   return [...grupos].map(([nome, grupo]) => {
     const media = mediaHierarquica(grupo);
     return { nome, media, conceito: conceito(media), respostas: totalRespostas(grupo) };
-  }).sort((a, b) => (campo === 'eixo' ? (ORDEM_EIXO.get(a.nome) ?? 99) - (ORDEM_EIXO.get(b.nome) ?? 99) : b.media - a.media) || a.nome.localeCompare(b.nome));
+  }).sort((a, b) => (campo === 'eixo' ? ordemEixo(a.nome) - ordemEixo(b.nome) : b.media - a.media) || a.nome.localeCompare(b.nome));
 }
 
 export function areasParaAcao(rows: ResultadoDiscente[]) {
@@ -69,6 +69,7 @@ export const EIXOS: [string, string[]][] = [
   ['Eixo 3 - Políticas de Gestão', ['Organização didático-pedagógica', 'Avaliação da Aprendizagem']],
   ['Eixo 4 - Infraestrutura Física', ['Polo', 'Laboratórios', 'Ambiente Virtual de Aprendizagem', 'Biblioteca', 'Sala de Aula']],
 ];
+export const ordemEixo = (nome: string) => { const i = EIXOS.findIndex(([e]) => e === nome); return i < 0 ? EIXOS.length : i; };
 export function eixoDaArea(area: string) {
   const a = norm(area || '');
   return EIXOS.find(([, areas]) => areas.some(x => norm(x) === a))?.[0] || '';
