@@ -32,3 +32,13 @@ import { eixoDaArea } from './storytelling-discentes';
 describe('eixos discentes', () => {
   it.each([['Imagem do curso', 'Eixo 1 - Desenvolvimento Institucional'], ['Atendimento do coordenador aos alunos', 'Eixo 2 - Políticas Acadêmicas'], ['Avaliação da aprendizagem', 'Eixo 3 - Políticas de Gestão'], ['Ambiente Virtual Aprendizagem', 'Eixo 4 - Infraestrutura Física'], ['Sala de aula', 'Eixo 4 - Infraestrutura Física']])('%s → %s', (a, e) => expect(eixoDaArea(a)).toBe(e));
 });
+import { comEixo, resumirGrupos } from './storytelling-discentes';
+describe('ordem do gráfico por eixo', () => {
+  it('ordena os eixos em sequência, não pela média', () => {
+    const linhas = comEixo([linha({ area: 'Polo', media: 5 }), linha({ area: 'Imagem do Curso', media: 3 }), linha({ area: 'Avaliação da Aprendizagem', media: 3.5 })]);
+    expect(resumirGrupos(linhas, 'eixo').map(g => g.nome)).toEqual(['Eixo 1 - Desenvolvimento Institucional', 'Eixo 3 - Políticas de Gestão', 'Eixo 4 - Infraestrutura Física']);
+  });
+  it('mantém a ordem decrescente de média nos demais gráficos', () => {
+    expect(resumirGrupos([linha({ area: 'Polo', media: 3 }), linha({ area: 'Laboratórios', media: 4.5 })], 'area').map(g => g.nome)).toEqual(['Laboratórios', 'Polo']);
+  });
+});
