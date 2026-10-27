@@ -20,7 +20,7 @@ const classesConceito: Record<string, string> = {
 };
 const ConceitoBadge = ({ valor }: { valor: string }) => <Badge variant="outline" className={cn('whitespace-nowrap', classesConceito[valor])}>{valor}</Badge>;
 
-function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string> }) {
+function GraficoMedias({ dados, cores, onClickBar }: { dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string>; onClickBar?: (nome: string) => void }) {
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
   return <div className="space-y-4">
     <ResponsiveContainer width="100%" height={Math.max(300, dados.length * 48)}>
@@ -29,7 +29,7 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(valor: number) => [fmt(valor), 'Média']} />
-        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false}>
+        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>
           {dados.map(d => <Cell key={d.nome} fill={cores[d.conceito]} />)}
           <LabelList dataKey="media" position="right" formatter={fmt} />
         </Bar>
@@ -41,7 +41,7 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
   </div>;
 }
 
-function GraficoComparativo({ dados, anos, cores }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[] }) {
+function GraficoComparativo({ dados, anos, cores, onClickBar }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[]; onClickBar?: (nome: string) => void }) {
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
   const f = (v: number | null) => v == null ? '—' : fmt(v);
   return <div className="space-y-4">
@@ -51,7 +51,7 @@ function GraficoComparativo({ dados, anos, cores }: { dados: ReturnType<typeof c
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(v: number) => fmt(v)} /><Legend />
-        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
+        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
@@ -81,6 +81,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const [apresentando, setApresentando] = useState(false);
   const [slide, setSlide] = useState(0);
   const [cores, setCores] = useState<Record<string, string>>({});
+  const [drill, setDrill] = useState<{ eixo: string | null; dimensao: string | null }>({ eixo: null, dimensao: null });
 
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
@@ -127,7 +128,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     return () => window.removeEventListener('keydown', navegar);
   }, [apresentando]);
 
-  useEffect(() => { setPagina(0); setDetalhe(null); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
@@ -136,6 +137,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
   const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
     area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos), eixo: compararAnos(filtrado, 'eixo', anos) }), [filtrado, trienio]);
+  const drillNivel: 'eixo' | 'dimensao' | 'area' = drill.dimensao ? 'area' : drill.eixo ? 'dimensao' : 'eixo';
+  const drillRows = useMemo(() => filtrado.filter(r => (!drill.eixo || r.eixo === drill.eixo) && (!drill.dimensao || r.dimensao === drill.dimensao)), [filtrado, drill]);
+  const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
+  const drillClick = (nome: string) => setDrill(d => d.dimensao ? d : d.eixo ? { ...d, dimensao: nome } : { eixo: nome, dimensao: null });
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
   const prioDims = uniq(prioridades.map(p => p.dimensao));
   const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
@@ -174,7 +179,15 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           <p className="text-sm text-muted-foreground">Médias calculadas pelas medidas CPA compartilhadas: média das linhas das questões por área, seguida da média das áreas. Respostas não representam pessoas únicas; dados de participação não entram nestas médias.</p>
         </div>
       </section>}
-      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
+      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'eixo' ? <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <Button variant={drill.eixo ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill({ eixo: null, dimensao: null })}>Todos os eixos</Button>
+          {drill.eixo && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant={drill.dimensao ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill(d => ({ ...d, dimensao: null }))}>{drill.eixo}</Button></>}
+          {drill.dimensao && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant="secondary" size="sm">{drill.dimensao}</Button></>}
+        </div>
+        <p className="text-sm text-muted-foreground">{drill.dimensao ? 'Áreas da dimensão selecionada. Use o caminho acima para voltar.' : drill.eixo ? 'Clique em uma dimensão para ver as áreas.' : 'Clique em um eixo para ver as dimensões.'}</p>
+        {trienio ? <GraficoComparativo dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.dimensao ? undefined : drillClick} /> : <GraficoMedias dados={drillDados.resumo} cores={cores} onClickBar={drill.dimensao ? undefined : drillClick} />}
+      </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
         <p className="text-muted-foreground">{trienio && `Prioridades com base em ${ultimo}. `}Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>
