@@ -137,10 +137,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
   const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
     area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos), eixo: compararAnos(filtrado, 'eixo', anos) }), [filtrado, trienio]);
-  const drillNivel: 'eixo' | 'dimensao' | 'area' = drill.dimensao ? 'area' : drill.eixo ? 'dimensao' : 'eixo';
+  const drillNivel: 'eixo' | 'area' = drill.eixo ? 'area' : 'eixo';
   const drillRows = useMemo(() => filtrado.filter(r => (!drill.eixo || r.eixo === drill.eixo) && (!drill.dimensao || r.dimensao === drill.dimensao)), [filtrado, drill]);
   const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
-  const drillClick = (nome: string) => setDrill(d => d.dimensao ? d : d.eixo ? { ...d, dimensao: nome } : { eixo: nome, dimensao: null });
+  const drillClick = (nome: string) => setDrill(d => d.eixo ? d : { eixo: nome, dimensao: null });
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
   const prioDims = uniq(prioridades.map(p => p.dimensao));
   const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
@@ -182,11 +182,11 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'eixo' ? <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Button variant={drill.eixo ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill({ eixo: null, dimensao: null })}>Todos os eixos</Button>
-          {drill.eixo && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant={drill.dimensao ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill(d => ({ ...d, dimensao: null }))}>{drill.eixo}</Button></>}
-          {drill.dimensao && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant="secondary" size="sm">{drill.dimensao}</Button></>}
+          {drill.eixo && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant="secondary" size="sm" onClick={() => setDrill(d => ({ ...d, dimensao: null }))}>{drill.eixo}</Button></>}
+          
         </div>
-        <p className="text-sm text-muted-foreground">{drill.dimensao ? 'Áreas da dimensão selecionada. Use o caminho acima para voltar.' : drill.eixo ? 'Clique em uma dimensão para ver as áreas.' : 'Clique em um eixo para ver as dimensões.'}</p>
-        {trienio ? <GraficoComparativo dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.dimensao ? undefined : drillClick} /> : <GraficoMedias dados={drillDados.resumo} cores={cores} onClickBar={drill.dimensao ? undefined : drillClick} />}
+        <p className="text-sm text-muted-foreground">{drill.eixo ? 'Áreas do eixo selecionado. Use o caminho acima para voltar.' : 'Clique em um eixo para ver as áreas.'}</p>
+        {trienio ? <GraficoComparativo dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.eixo ? undefined : drillClick} /> : <GraficoMedias dados={drillDados.resumo} cores={cores} onClickBar={drill.eixo ? undefined : drillClick} />}
       </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
