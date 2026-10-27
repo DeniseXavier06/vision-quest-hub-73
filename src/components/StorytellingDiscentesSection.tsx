@@ -81,6 +81,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const [apresentando, setApresentando] = useState(false);
   const [slide, setSlide] = useState(0);
   const [cores, setCores] = useState<Record<string, string>>({});
+  const [drill, setDrill] = useState<{ eixo: string | null; dimensao: string | null }>({ eixo: null, dimensao: null });
 
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
@@ -127,7 +128,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     return () => window.removeEventListener('keydown', navegar);
   }, [apresentando]);
 
-  useEffect(() => { setPagina(0); setDetalhe(null); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
