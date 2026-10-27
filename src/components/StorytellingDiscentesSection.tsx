@@ -20,7 +20,7 @@ const classesConceito: Record<string, string> = {
 };
 const ConceitoBadge = ({ valor }: { valor: string }) => <Badge variant="outline" className={cn('whitespace-nowrap', classesConceito[valor])}>{valor}</Badge>;
 
-function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string> }) {
+function GraficoMedias({ dados, cores, onClickBar }: { dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string>; onClickBar?: (nome: string) => void }) {
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
   return <div className="space-y-4">
     <ResponsiveContainer width="100%" height={Math.max(300, dados.length * 48)}>
@@ -29,7 +29,7 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(valor: number) => [fmt(valor), 'Média']} />
-        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false}>
+        <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>
           {dados.map(d => <Cell key={d.nome} fill={cores[d.conceito]} />)}
           <LabelList dataKey="media" position="right" formatter={fmt} />
         </Bar>
@@ -41,7 +41,7 @@ function GraficoMedias({ dados, cores }: { dados: ReturnType<typeof resumirGrupo
   </div>;
 }
 
-function GraficoComparativo({ dados, anos, cores }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[] }) {
+function GraficoComparativo({ dados, anos, cores, onClickBar }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[]; onClickBar?: (nome: string) => void }) {
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
   const f = (v: number | null) => v == null ? '—' : fmt(v);
   return <div className="space-y-4">
@@ -51,7 +51,7 @@ function GraficoComparativo({ dados, anos, cores }: { dados: ReturnType<typeof c
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(v: number) => fmt(v)} /><Legend />
-        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
+        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
