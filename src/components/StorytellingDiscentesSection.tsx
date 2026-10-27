@@ -137,6 +137,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
   const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
     area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos), eixo: compararAnos(filtrado, 'eixo', anos) }), [filtrado, trienio]);
+  const drillNivel: 'eixo' | 'dimensao' | 'area' = drill.dimensao ? 'area' : drill.eixo ? 'dimensao' : 'eixo';
+  const drillRows = useMemo(() => filtrado.filter(r => (!drill.eixo || r.eixo === drill.eixo) && (!drill.dimensao || r.dimensao === drill.dimensao)), [filtrado, drill]);
+  const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
+  const drillClick = (nome: string) => setDrill(d => d.dimensao ? d : d.eixo ? { ...d, dimensao: nome } : { eixo: nome, dimensao: null });
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
   const prioDims = uniq(prioridades.map(p => p.dimensao));
   const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
