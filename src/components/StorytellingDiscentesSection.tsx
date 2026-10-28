@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
 import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -70,9 +70,11 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const [cursoDrill, setCursoDrill] = useState<{ curso: string | null; dimensao: string | null }>({ curso: null, dimensao: null });
   const anos = trienio ? ANOS_TRIENIO : ['2026'];
   const ultimo = anos[anos.length - 1];
+  const [prioCurso, setPrioCurso] = useState(TODOS);
   const [prioDimensao, setPrioDimensao] = useState(TODOS);
   const [prioArea, setPrioArea] = useState(TODOS);
   const [prioQuestao, setPrioQuestao] = useState(TODOS);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
   const [questaoImpacto, setQuestaoImpacto] = useState<string | null>(null);
   const [coresAnos, setCoresAnos] = useState<string[]>([]);
   const [rows, setRows] = useState<ResultadoDiscente[]>([]);
@@ -147,7 +149,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     return () => { document.body.style.overflow = anterior; };
   }, [apresentando]);
 
-  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
@@ -165,10 +167,12 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
   const drillClick = (nome: string) => setDrill(d => d.eixo ? d : { eixo: nome, dimensao: null });
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
-  const prioDims = uniq(prioridades.map(p => p.dimensao));
-  const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
-  const prioQuestoes = uniq(prioridades.filter(p => (prioDimensao === TODOS || p.dimensao === prioDimensao) && (prioArea === TODOS || p.area === prioArea)).flatMap(p => p.evidencias.map(e => e.questao)));
-  const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioDimensao === TODOS || p.dimensao === prioDimensao)
+  const prioCursos = uniq(prioridades.map(p => p.curso));
+  const prioDims = uniq(prioridades.filter(p => prioCurso === TODOS || p.curso === prioCurso).map(p => p.dimensao));
+  const prioAreas = uniq(prioridades.filter(p => (prioCurso === TODOS || p.curso === prioCurso) && (prioDimensao === TODOS || p.dimensao === prioDimensao)).map(p => p.area));
+  const prioQuestoes = uniq(prioridades.filter(p => (prioCurso === TODOS || p.curso === prioCurso) && (prioDimensao === TODOS || p.dimensao === prioDimensao) && (prioArea === TODOS || p.area === prioArea)).flatMap(p => p.evidencias.map(e => e.questao)));
+  const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioCurso === TODOS || p.curso === prioCurso)
+    && (prioDimensao === TODOS || p.dimensao === prioDimensao)
     && (prioArea === TODOS || p.area === prioArea) && (prioQuestao === TODOS || p.evidencias.some(e => e.questao === prioQuestao)))
     .map(p => prioQuestao === TODOS ? p : { ...p, evidencias: [...p.evidencias].sort((a, b) => Number(b.questao === prioQuestao) - Number(a.questao === prioQuestao)) });
   const impacto = cursosPorQuestao(prioridadesVisiveis).filter(q => prioQuestao === TODOS || q.questao === prioQuestao);
@@ -186,6 +190,17 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       toast({ title: 'PowerPoint gerado', description: 'Todas as informações do recorte foram incluídas, com detalhes por curso e questões prioritárias.' });
     } catch { toast({ title: 'Não foi possível gerar o PowerPoint', description: 'Tente novamente.', variant: 'destructive' }); }
     finally { setExportando(false); }
+  };
+
+  const exportarPdf = async () => {
+    setExportandoPdf(true);
+    try {
+      const { baixarPdfPlanoAcao } = await import('@/lib/storytelling-pdf');
+      const recorte = [prioCurso, prioDimensao, prioArea].filter(v => v !== TODOS).join(' · ') || 'Todos os cursos';
+      baixarPdfPlanoAcao(prioridadesVisiveis, `Recorte: ${recorte} · Base: ${trienio ? ultimo : '2026'}`);
+      toast({ title: 'PDF gerado', description: 'Prioridades por curso, área e questões para o plano de ação.' });
+    } catch { toast({ title: 'Não foi possível gerar o PDF', description: 'Tente novamente.', variant: 'destructive' }); }
+    finally { setExportandoPdf(false); }
   };
 
   if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados discentes de 2026…</div>;
@@ -253,8 +268,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
         <p className="text-muted-foreground">{trienio && `Prioridades com base em ${ultimo}. `}Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>
-        <div className="flex flex-wrap gap-3">{CONCEITOS_PRIORITARIOS.map(c => <div key={c} className="flex items-center gap-2 border-b-2 border-border py-2"><ConceitoBadge valor={c} /><strong>{prioridades.filter(p => p.conceito === c).length}</strong></div>)}</div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="flex flex-wrap items-center gap-3">{CONCEITOS_PRIORITARIOS.map(c => <div key={c} className="flex items-center gap-2 border-b-2 border-border py-2"><ConceitoBadge valor={c} /><strong>{prioridades.filter(p => p.conceito === c).length}</strong></div>)}
+          <Button variant="outline" size="sm" className="ml-auto" onClick={exportarPdf} disabled={exportandoPdf || !prioridadesVisiveis.length}>{exportandoPdf ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileDown className="mr-2 h-4 w-4" />}Gerar PDF{prioCurso !== TODOS ? ' do curso' : ''}</Button></div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <label className="space-y-1 text-sm"><span>Curso</span><SearchableSelect value={prioCurso} onValueChange={v => { setPrioCurso(v); setPrioDimensao(TODOS); setPrioArea(TODOS); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todos os cursos' }, ...prioCursos.map(v => ({ value: v, label: v }))]} /></label>
           <label className="space-y-1 text-sm"><span>Dimensão</span><SearchableSelect value={prioDimensao} onValueChange={v => { setPrioDimensao(v); setPrioArea(TODOS); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todas as dimensões' }, ...prioDims.map(v => ({ value: v, label: v }))]} /></label>
           <label className="space-y-1 text-sm"><span>Área</span><SearchableSelect value={prioArea} onValueChange={v => { setPrioArea(v); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todas as áreas' }, ...prioAreas.map(v => ({ value: v, label: v }))]} /></label>
           <label className="space-y-1 text-sm"><span>Questão</span><SearchableSelect value={prioQuestao} onValueChange={setPrioQuestao} options={[{ value: TODOS, label: 'Todas as questões' }, ...prioQuestoes.map(v => ({ value: v, label: v }))]} /></label>
