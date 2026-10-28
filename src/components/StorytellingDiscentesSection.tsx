@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { areasParaAcao, cursosPorQuestao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 
 const TODOS = '__todos__';
@@ -73,6 +73,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const [prioDimensao, setPrioDimensao] = useState(TODOS);
   const [prioArea, setPrioArea] = useState(TODOS);
   const [prioQuestao, setPrioQuestao] = useState(TODOS);
+  const [questaoImpacto, setQuestaoImpacto] = useState<string | null>(null);
   const [coresAnos, setCoresAnos] = useState<string[]>([]);
   const [rows, setRows] = useState<ResultadoDiscente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -170,6 +171,8 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioDimensao === TODOS || p.dimensao === prioDimensao)
     && (prioArea === TODOS || p.area === prioArea) && (prioQuestao === TODOS || p.evidencias.some(e => e.questao === prioQuestao)))
     .map(p => prioQuestao === TODOS ? p : { ...p, evidencias: [...p.evidencias].sort((a, b) => Number(b.questao === prioQuestao) - Number(a.questao === prioQuestao)) });
+  const impacto = cursosPorQuestao(prioridadesVisiveis).filter(q => prioQuestao === TODOS || q.questao === prioQuestao);
+  const questaoAberta = impacto.find(q => q.questao === questaoImpacto);
   const selecionada = prioridadesVisiveis.find(p => JSON.stringify([p.nivel, p.curso, p.dimensao, p.area]) === detalhe);
   const media = mediaHierarquica(filtrado);
   const mostrar = (i: number) => !apresentando || slide === i;
@@ -237,6 +240,28 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           <label className="space-y-1 text-sm"><span>Área</span><SearchableSelect value={prioArea} onValueChange={v => { setPrioArea(v); setPrioQuestao(TODOS); }} options={[{ value: TODOS, label: 'Todas as áreas' }, ...prioAreas.map(v => ({ value: v, label: v }))]} /></label>
           <label className="space-y-1 text-sm"><span>Questão</span><SearchableSelect value={prioQuestao} onValueChange={setPrioQuestao} options={[{ value: TODOS, label: 'Todas as questões' }, ...prioQuestoes.map(v => ({ value: v, label: v }))]} /></label>
         <label className="space-y-1 text-sm"><span>Conceito prioritário</span><SearchableSelect value={conceitoFiltro} onValueChange={setConceitoFiltro} options={[{ value: TODOS, label: 'Todos os conceitos prioritários' }, ...CONCEITOS_PRIORITARIOS.map(c => ({ value: c, label: c }))]} /></label></div>
+        {impacto.length > 0 && <div className="space-y-3 rounded-lg border p-4">
+          <h4 className="font-semibold">Cursos impactados por questão</h4>
+          <p className="text-sm text-muted-foreground">Clique numa questão para ver a lista de cursos.</p>
+          <ResponsiveContainer width="100%" height={Math.max(160, Math.min(impacto.length, 15) * 40)}>
+            <BarChart data={impacto.slice(0, 15)} layout="vertical" margin={{ left: 0, right: 40, top: 4, bottom: 4 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} />
+              <YAxis dataKey="questao" type="category" width={260} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 42 ? s.slice(0, 41) + '…' : s} />
+              <Tooltip formatter={(v: number) => [v, 'Cursos']} />
+              <Bar dataKey="quantidade" name="Cursos" radius={[0, 4, 4, 0]} maxBarSize={24} isAnimationActive={false} style={{ cursor: 'pointer' }} onClick={(d: { questao?: string }) => d?.questao && setQuestaoImpacto(q => q === d.questao ? null : d.questao!)}>
+                {impacto.slice(0, 15).map(q => <Cell key={q.questao} fill={q.questao === questaoImpacto ? cores['Regular'] : cores['Atende Parcialmente']} />)}
+                <LabelList dataKey="quantidade" position="right" />
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="divide-y rounded-md border">{impacto.map(q => <div key={q.questao}>
+            <button type="button" className="flex w-full items-center justify-between gap-3 p-3 text-left text-sm hover:bg-muted" onClick={() => setQuestaoImpacto(a => a === q.questao ? null : q.questao)}>
+              <span>{q.questao}</span><Badge variant="secondary">{q.quantidade} {q.quantidade === 1 ? 'curso' : 'cursos'}</Badge>
+            </button>
+            {questaoAberta?.questao === q.questao && <ul className="space-y-1 bg-muted/40 px-6 py-3 text-sm">{q.cursos.map(c => <li key={c.curso + c.nivel} className="flex justify-between gap-3"><span><strong>{c.curso}</strong> <span className="text-muted-foreground">· {c.nivel}</span></span><span className="flex items-center gap-2">{fmt(c.media)}<ConceitoBadge valor={conceito(c.media)} /></span></li>)}</ul>}
+          </div>)}</div>
+        </div>}
         {!prioridadesVisiveis.length ? <p className="py-8 text-muted-foreground">Nenhuma área neste conceito para os filtros selecionados.</p> : <>
           <Table><TableHeader><TableRow><TableHead>Curso / Nível</TableHead><TableHead>Dimensão / Área</TableHead><TableHead>Média</TableHead><TableHead>Conceito</TableHead><TableHead>Questão com menor média</TableHead><TableHead /></TableRow></TableHeader><TableBody>
             {prioridadesVisiveis.slice(pagina * 12, pagina * 12 + 12).map(p => {
