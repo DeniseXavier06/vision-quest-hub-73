@@ -1,4 +1,5 @@
 # Architecture rules
+- Suggestions use a separate table and an atomic import function linked to import history, environment and profile; reuse the upload form in configuration and import history so suggestions never affect quantitative results or evaluator sessions.
 - Student result storytelling uses the shared CPA measures in `src/lib/medidas.ts`; keep its filtering and priority aggregation in a tested pure helper so every view uses the same concepts and averages.
 - Read existing `resultados` fields for storytelling without inventing missing professor or axis classifications; show unavailable breakdowns explicitly.
 - Student storytelling course drill-down and PowerPoint exports reuse pure CPA aggregations; exports include every filtered group and priority question, paginated for legibility rather than limited to the visible page.

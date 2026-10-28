@@ -454,36 +454,50 @@ export type Database = {
       }
       importacoes: {
         Row: {
+          ambiente_id: string | null
           created_at: string
           id: string
           nome_arquivo: string
           observacoes: string | null
           perfil: string
           periodo: string
+          tipo: string
           total_registros: number
           updated_at: string
         }
         Insert: {
+          ambiente_id?: string | null
           created_at?: string
           id?: string
           nome_arquivo: string
           observacoes?: string | null
           perfil: string
           periodo: string
+          tipo?: string
           total_registros?: number
           updated_at?: string
         }
         Update: {
+          ambiente_id?: string | null
           created_at?: string
           id?: string
           nome_arquivo?: string
           observacoes?: string | null
           perfil?: string
           periodo?: string
+          tipo?: string
           total_registros?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "importacoes_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mapeamentos_campos: {
         Row: {
@@ -910,6 +924,84 @@ export type Database = {
         }
         Relationships: []
       }
+      sugestoes: {
+        Row: {
+          ambiente_id: string
+          area: string
+          codigo_prova: string
+          codigo_questao: string
+          codigo_turma: string
+          coordenador_avaliado: string
+          created_at: string
+          dimensao: string
+          disciplina_avaliada: string
+          id: string
+          importacao_id: string
+          nivel: string
+          nome_curso: string
+          nome_prova: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+          professor_avaliado: string
+          sugestao: string
+          texto_questao: string
+        }
+        Insert: {
+          ambiente_id: string
+          area?: string
+          codigo_prova?: string
+          codigo_questao?: string
+          codigo_turma?: string
+          coordenador_avaliado?: string
+          created_at?: string
+          dimensao?: string
+          disciplina_avaliada?: string
+          id?: string
+          importacao_id: string
+          nivel?: string
+          nome_curso?: string
+          nome_prova?: string
+          perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+          professor_avaliado?: string
+          sugestao: string
+          texto_questao?: string
+        }
+        Update: {
+          ambiente_id?: string
+          area?: string
+          codigo_prova?: string
+          codigo_questao?: string
+          codigo_turma?: string
+          coordenador_avaliado?: string
+          created_at?: string
+          dimensao?: string
+          disciplina_avaliada?: string
+          id?: string
+          importacao_id?: string
+          nivel?: string
+          nome_curso?: string
+          nome_prova?: string
+          perfil?: Database["public"]["Enums"]["perfil_avaliacao"]
+          professor_avaliado?: string
+          sugestao?: string
+          texto_questao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sugestoes_ambiente_id_fkey"
+            columns: ["ambiente_id"]
+            isOneToOne: false
+            referencedRelation: "ambientes_avaliacao"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sugestoes_importacao_id_fkey"
+            columns: ["importacao_id"]
+            isOneToOne: false
+            referencedRelation: "importacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       turmas: {
         Row: {
           ativo: boolean
@@ -1026,6 +1118,15 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      importar_sugestoes: {
+        Args: {
+          p_ambiente: string
+          p_arquivo: string
+          p_linhas: Json
+          p_perfil: Database["public"]["Enums"]["perfil_avaliacao"]
+        }
+        Returns: string
       }
       resultados_discentes_agregados: {
         Args: { anos: string[] }
