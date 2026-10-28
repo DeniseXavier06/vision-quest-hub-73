@@ -167,10 +167,12 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
   const drillClick = (nome: string) => setDrill(d => d.eixo ? d : { eixo: nome, dimensao: null });
   const uniq = (l: string[]) => [...new Set(l.filter(Boolean))].sort();
-  const prioDims = uniq(prioridades.map(p => p.dimensao));
-  const prioAreas = uniq(prioridades.filter(p => prioDimensao === TODOS || p.dimensao === prioDimensao).map(p => p.area));
-  const prioQuestoes = uniq(prioridades.filter(p => (prioDimensao === TODOS || p.dimensao === prioDimensao) && (prioArea === TODOS || p.area === prioArea)).flatMap(p => p.evidencias.map(e => e.questao)));
-  const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioDimensao === TODOS || p.dimensao === prioDimensao)
+  const prioCursos = uniq(prioridades.map(p => p.curso));
+  const prioDims = uniq(prioridades.filter(p => prioCurso === TODOS || p.curso === prioCurso).map(p => p.dimensao));
+  const prioAreas = uniq(prioridades.filter(p => (prioCurso === TODOS || p.curso === prioCurso) && (prioDimensao === TODOS || p.dimensao === prioDimensao)).map(p => p.area));
+  const prioQuestoes = uniq(prioridades.filter(p => (prioCurso === TODOS || p.curso === prioCurso) && (prioDimensao === TODOS || p.dimensao === prioDimensao) && (prioArea === TODOS || p.area === prioArea)).flatMap(p => p.evidencias.map(e => e.questao)));
+  const prioridadesVisiveis = prioridades.filter(p => (conceitoFiltro === TODOS || p.conceito === conceitoFiltro) && (prioCurso === TODOS || p.curso === prioCurso)
+    && (prioDimensao === TODOS || p.dimensao === prioDimensao)
     && (prioArea === TODOS || p.area === prioArea) && (prioQuestao === TODOS || p.evidencias.some(e => e.questao === prioQuestao)))
     .map(p => prioQuestao === TODOS ? p : { ...p, evidencias: [...p.evidencias].sort((a, b) => Number(b.questao === prioQuestao) - Number(a.questao === prioQuestao)) });
   const impacto = cursosPorQuestao(prioridadesVisiveis).filter(q => prioQuestao === TODOS || q.questao === prioQuestao);
