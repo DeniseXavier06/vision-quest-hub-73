@@ -7,8 +7,6 @@ import {
   PieChart,
   Users,
   FileText,
-  ChevronLeft,
-  ChevronRight,
   GraduationCap,
   UserCog,
   Building2,
