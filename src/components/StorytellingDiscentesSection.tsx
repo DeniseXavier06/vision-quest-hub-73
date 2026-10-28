@@ -70,9 +70,11 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const [cursoDrill, setCursoDrill] = useState<{ curso: string | null; dimensao: string | null }>({ curso: null, dimensao: null });
   const anos = trienio ? ANOS_TRIENIO : ['2026'];
   const ultimo = anos[anos.length - 1];
+  const [prioCurso, setPrioCurso] = useState(TODOS);
   const [prioDimensao, setPrioDimensao] = useState(TODOS);
   const [prioArea, setPrioArea] = useState(TODOS);
   const [prioQuestao, setPrioQuestao] = useState(TODOS);
+  const [exportandoPdf, setExportandoPdf] = useState(false);
   const [questaoImpacto, setQuestaoImpacto] = useState<string | null>(null);
   const [coresAnos, setCoresAnos] = useState<string[]>([]);
   const [rows, setRows] = useState<ResultadoDiscente[]>([]);
@@ -147,7 +149,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     return () => { document.body.style.overflow = anterior; };
   }, [apresentando]);
 
-  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
