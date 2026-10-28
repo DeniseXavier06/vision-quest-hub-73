@@ -62,6 +62,7 @@ function GraficoComparativo({ dados, anos, cores, onClickBar }: { dados: ReturnT
   </div>;
 }
 
+const CACHE = new Map<string, Promise<ResultadoDiscente[]>>();
 const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }) => {
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -101,19 +102,22 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     const carregar = async () => {
       setLoading(true); setErro(false);
       try {
-        const todas: ResultadoDiscente[] = [];
-        for (let from = 0; ; from += 1000) {
-          const { data, error } = await supabase.from('resultados')
-            .select('id,semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,professor')
-            .or(anos.map(a => `semestre.like.${a}%`).join(',')).or('nivel.ilike.%aluno%,nivel.ilike.%discente%')
-            .order('id').range(from, from + 999);
-          if (cancelado) return;
-          if (error) throw error;
-          todas.push(...(data || []).map(r => ({ semestre: r.semestre, nivel: r.nivel, curso: r.curso, dimensao: r.dimensao, area: r.area,
+        const chave = anos.join(',');
+        if (!CACHE.has(chave)) CACHE.set(chave, (async () => {
+          const base = () => supabase.from('resultados')
+            .select('id,semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,professor', { count: 'exact' })
+            .or(anos.map(a => `semestre.like.${a}%`).join(',')).or('nivel.ilike.%aluno%,nivel.ilike.%discente%');
+          const primeira = await base().order('id').range(0, 999);
+          if (primeira.error) throw primeira.error;
+          const total = primeira.count || 0;
+          const resto = await Promise.all(Array.from({ length: Math.max(0, Math.ceil(total / 1000) - 1) }, (_, i) => base().order('id').range((i + 1) * 1000, (i + 2) * 1000 - 1)));
+          const erro = resto.find(r => r.error); if (erro) throw erro.error;
+          return [primeira, ...resto].flatMap(r => r.data || []).map(r => ({ semestre: r.semestre, nivel: r.nivel, curso: r.curso, dimensao: r.dimensao, area: r.area,
             textoQuestao: r.texto_questao, excelente: r.excelente, bom: r.bom, atendeParcialmente: r.atende_parcialmente,
-            regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media), professor: r.professor || '' })));
-          if ((data?.length || 0) < 1000) break;
-        }
+            regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media), professor: r.professor || '' })) as ResultadoDiscente[];
+        })().catch(e => { CACHE.delete(chave); throw e; }));
+        const todas = await CACHE.get(chave)!;
+        if (cancelado) return;
         if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anos)));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
