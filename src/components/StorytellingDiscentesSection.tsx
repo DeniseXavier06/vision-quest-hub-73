@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, X } from 'lucide-react';
+import { useEffect, useMemo, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
+import { useToast } from '@/hooks/use-toast';
+import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
 import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -7,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { areasParaAcao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 
 const TODOS = '__todos__';
@@ -36,7 +38,7 @@ function GraficoMedias({ dados, cores, onClickBar }: { dados: ReturnType<typeof 
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead><TableHead className="text-right">Média</TableHead><TableHead>Conceito</TableHead></TableRow></TableHeader>
-      <TableBody>{dados.map(d => <TableRow key={d.nome}><TableCell className="font-medium">{d.nome}</TableCell><TableCell className="text-right">{fmt(d.media)}</TableCell><TableCell><ConceitoBadge valor={d.conceito} /></TableCell></TableRow>)}</TableBody>
+      <TableBody>{dados.map(d => <TableRow key={d.nome}><TableCell className="font-medium">{onClickBar ? <Button variant="ghost" className="h-auto whitespace-normal text-left" onClick={() => onClickBar(String(d.nome))}>{d.nome}<ChevronRight className="ml-2 h-4 w-4 shrink-0" /></Button> : d.nome}</TableCell><TableCell className="text-right">{fmt(d.media)}</TableCell><TableCell><ConceitoBadge valor={d.conceito} /></TableCell></TableRow>)}</TableBody>
     </Table>
   </div>;
 }
@@ -55,12 +57,16 @@ function GraficoComparativo({ dados, anos, cores, onClickBar }: { dados: ReturnT
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
-      <TableBody>{dados.map(d => { const ini = d[anos[0]] as number | null, fim = d[anos[anos.length - 1]] as number | null; return <TableRow key={d.nome as string}><TableCell className="font-medium">{d.nome}</TableCell>{anos.map(a => <TableCell key={a} className="text-right">{f(d[a] as number | null)}{d[a] != null && <span className="ml-2"><ConceitoBadge valor={conceito(d[a] as number)} /></span>}</TableCell>)}<TableCell className="text-right">{ini != null && fim != null ? `${fim - ini >= 0 ? '+' : ''}${fmt(fim - ini)}` : '—'}</TableCell></TableRow>; })}</TableBody>
+      <TableBody>{dados.map(d => { const ini = d[anos[0]] as number | null, fim = d[anos[anos.length - 1]] as number | null; return <TableRow key={d.nome as string}><TableCell className="font-medium">{onClickBar ? <Button variant="ghost" className="h-auto whitespace-normal text-left" onClick={() => onClickBar(String(d.nome))}>{d.nome}<ChevronRight className="ml-2 h-4 w-4 shrink-0" /></Button> : d.nome}</TableCell>{anos.map(a => <TableCell key={a} className="text-right">{f(d[a] as number | null)}{d[a] != null && <span className="ml-2"><ConceitoBadge valor={conceito(d[a] as number)} /></span>}</TableCell>)}<TableCell className="text-right">{ini != null && fim != null ? `${fim - ini >= 0 ? '+' : ''}${fmt(fim - ini)}` : '—'}</TableCell></TableRow>; })}</TableBody>
     </Table>
   </div>;
 }
 
 const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }) => {
+  const { toast } = useToast();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [exportando, setExportando] = useState(false);
+  const [cursoDrill, setCursoDrill] = useState<{ curso: string | null; dimensao: string | null }>({ curso: null, dimensao: null });
   const anos = trienio ? ANOS_TRIENIO : ['2026'];
   const ultimo = anos[anos.length - 1];
   const [prioDimensao, setPrioDimensao] = useState(TODOS);
@@ -128,7 +134,15 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     return () => window.removeEventListener('keydown', navegar);
   }, [apresentando]);
 
-  useEffect(() => { setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { containerRef.current?.scrollTo({ top: 0 }); }, [slide, apresentando]);
+  useEffect(() => {
+    if (!apresentando) return;
+    const anterior = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = anterior; };
+  }, [apresentando]);
+
+  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioDimensao, prioArea, prioQuestao]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
   const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
     (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
@@ -137,6 +151,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
   const comparativos = useMemo(() => ({ curso: compararAnos(filtrado, 'curso', anos), dimensao: compararAnos(filtrado, 'dimensao', anos),
     area: compararAnos(filtrado, 'area', anos), professor: compararAnos(filtrado, 'professor', anos), eixo: compararAnos(filtrado, 'eixo', anos) }), [filtrado, trienio]);
+  const cursoCampo = cursoDrill.dimensao ? 'area' : cursoDrill.curso ? 'dimensao' : 'curso';
+  const cursoRows = useMemo(() => recorteCurso(filtrado, cursoDrill.curso, cursoDrill.dimensao), [filtrado, cursoDrill]);
+  const cursoDados = useMemo(() => ({ resumo: resumirGrupos(cursoRows, cursoCampo), comparativo: compararAnos(cursoRows, cursoCampo, anos) }), [cursoRows, cursoCampo, trienio]);
+  const expandirCurso = (nome: string) => setCursoDrill(d => d.curso ? { ...d, dimensao: nome } : { curso: nome, dimensao: null });
   const drillNivel: 'eixo' | 'area' = drill.eixo ? 'area' : 'eixo';
   const drillRows = useMemo(() => filtrado.filter(r => (!drill.eixo || r.eixo === drill.eixo) && (!drill.dimensao || r.dimensao === drill.dimensao)), [filtrado, drill]);
   const drillDados = useMemo(() => ({ resumo: resumirGrupos(drillRows, drillNivel), comparativo: compararAnos(drillRows, drillNivel, anos) }), [drillRows, drillNivel, trienio]);
@@ -153,18 +171,28 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const mostrar = (i: number) => !apresentando || slide === i;
   const limpar = () => { setNivel(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setConceitoFiltro(TODOS); };
 
+  const exportar = async () => {
+    setExportando(true);
+    try {
+      const { baixarPowerPointDiscentes } = await import('@/lib/storytelling-pptx');
+      await baixarPowerPointDiscentes(filtrado, anos, [nivel, curso, dimensao, area].filter(v => v !== TODOS));
+      toast({ title: 'PowerPoint gerado', description: 'Todas as informações do recorte foram incluídas, com detalhes por curso e questões prioritárias.' });
+    } catch { toast({ title: 'Não foi possível gerar o PowerPoint', description: 'Tente novamente.', variant: 'destructive' }); }
+    finally { setExportando(false); }
+  };
+
   if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados discentes de 2026…</div>;
   if (erro) return <div role="alert" className="space-y-3 py-12 text-center"><p>Não foi possível carregar os resultados de 2026.</p><Button variant="outline" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button></div>;
 
-  return <div className={cn('space-y-8', apresentando && 'pb-24')}>
+  const conteudo = <div ref={containerRef} role={apresentando ? 'dialog' : undefined} aria-modal={apresentando ? true : undefined} aria-label={apresentando ? 'Apresentação dos resultados discentes' : undefined} className={cn('space-y-8', apresentando && 'fixed inset-0 z-[100] overflow-y-auto bg-background px-6 pt-6 pb-28 sm:px-12 sm:pt-10')}>
     <header className="flex flex-wrap items-center justify-between gap-4">
       <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />Discentes / {trienio ? 'Triênio 2024–2026' : '2026'}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
-      <Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button>
+      <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={exportar} disabled={exportando || !filtrado.length}>{exportando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}Gerar PowerPoint</Button><Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button></div>
     </header>
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    {!apresentando && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {(['nivel', 'curso', 'dimensao', 'area'] as const).map((campo, i) => <label key={campo} className="space-y-1 text-sm"><span className="font-medium">{['Nível', 'Curso', 'Dimensão', 'Área'][i]}</span><SearchableSelect value={[nivel, curso, dimensao, area][i]} onValueChange={[setNivel, setCurso, setDimensao, setArea][i]} options={[{ value: TODOS, label: ['Todos os níveis', 'Todos os cursos', 'Todas as dimensões', 'Todas as áreas'][i] }, ...opcoes(campo).map(v => ({ value: v, label: v }))]} /></label>)}
-    </div>
-    {(nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
+    </div>}
+    {!apresentando && (nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
     {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado discente de 2026 encontrado para este recorte.</p> : <>
       {mostrar(0) && <section className="space-y-6">
         <h3 className="text-xl font-bold">O que os discentes revelam?</h3>
@@ -179,7 +207,15 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           <p className="text-sm text-muted-foreground">Médias calculadas pelas medidas CPA compartilhadas: média das linhas das questões por área, seguida da média das áreas. Respostas não representam pessoas únicas; dados de participação não entram nestas médias.</p>
         </div>
       </section>}
-      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'eixo' ? <div className="space-y-3">
+      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'curso' ? <div className={cn('space-y-4', cursoDrill.curso && 'border-l-4 border-primary bg-muted/30 p-4 sm:p-6')}>
+        <nav aria-label="Expansão das médias do curso" className="flex flex-wrap items-center gap-2">
+          <Button variant={cursoDrill.curso ? 'outline' : 'secondary'} size="sm" onClick={() => setCursoDrill({ curso: null, dimensao: null })}>Cursos</Button>
+          {cursoDrill.curso && <><ChevronRight className="h-4 w-4" /><Button variant={cursoDrill.dimensao ? 'outline' : 'secondary'} size="sm" className="h-auto whitespace-normal text-left" onClick={() => setCursoDrill(d => ({ ...d, dimensao: null }))}>{cursoDrill.curso}</Button></>}
+          {cursoDrill.dimensao && <><ChevronRight className="h-4 w-4" /><Badge variant="secondary" className="whitespace-normal">{cursoDrill.dimensao}</Badge></>}
+        </nav>
+        <h4 className="text-xl font-bold text-primary">{cursoDrill.dimensao ? `Áreas · ${cursoDrill.dimensao}` : cursoDrill.curso ? `Dimensões · ${cursoDrill.curso}` : 'Cursos'}</h4>
+        {trienio ? <GraficoComparativo dados={cursoDados.comparativo} anos={anos} cores={coresAnos} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} /> : <GraficoMedias dados={cursoDados.resumo} cores={cores} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} />}
+      </div> : campo === 'eixo' ? <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Button variant={drill.eixo ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill({ eixo: null, dimensao: null })}>Todos os eixos</Button>
           {drill.eixo && <><ChevronRight className="h-4 w-4 text-muted-foreground" /><Button variant="secondary" size="sm" onClick={() => setDrill(d => ({ ...d, dimensao: null }))}>{drill.eixo}</Button></>}
@@ -210,8 +246,9 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       </section>}
       {mostrar(7) && <section className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">Da escuta à ação</h3><ol className="list-decimal space-y-3 pl-5 leading-7"><li><strong>Priorizar:</strong> começar pelas áreas Muito Ruim e Regular, preservando o recorte por curso e nível.</li><li><strong>Investigar:</strong> usar as questões com menor média para validar causas com alunos e equipes, sem atribuir causalidade apenas ao indicador.</li><li><strong>Pactuar:</strong> registrar ação, responsáveis, prazo, meta e evidências de conclusão no menu Ações.</li><li><strong>Acompanhar:</strong> verificar as melhorias e comparar o indicador no próximo ciclo avaliativo.</li></ol><p className="border-l-4 border-primary pl-4 text-lg font-medium">O resultado não encerra a avaliação: transforma a percepção dos discentes em compromissos de melhoria por curso.</p></section>}
     </>}
-    {apresentando && <nav aria-label="Navegação da apresentação discente" className="sticky bottom-4 z-20 flex flex-wrap items-center justify-center gap-3 rounded-md border bg-background p-3 shadow-sm"><Button variant="outline" size="icon" aria-label="Retroceder slide" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><ChevronLeft className="h-5 w-5" /></Button><span className="text-sm">{slide + 1} / {titulos.length}</span><span className="hidden text-sm font-medium sm:inline">{titulos[slide]}</span><Button variant="outline" size="icon" aria-label="Avançar slide" disabled={slide === titulos.length - 1} onClick={() => setSlide(s => s + 1)}><ChevronRight className="h-5 w-5" /></Button><Button variant="ghost" onClick={() => setApresentando(false)}>Sair</Button></nav>}
+    {apresentando && <nav aria-label="Navegação da apresentação discente" className="fixed bottom-0 left-0 right-0 z-[101] flex flex-wrap items-center justify-center gap-3 rounded-md border bg-background p-3 shadow-sm"><Button variant="outline" size="icon" aria-label="Retroceder slide" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><ChevronLeft className="h-5 w-5" /></Button><span className="text-sm">{slide + 1} / {titulos.length}</span><span className="hidden text-sm font-medium sm:inline">{titulos[slide]}</span><Button variant="outline" size="icon" aria-label="Avançar slide" disabled={slide === titulos.length - 1} onClick={() => setSlide(s => s + 1)}><ChevronRight className="h-5 w-5" /></Button><Button variant="ghost" onClick={() => setApresentando(false)}>Sair</Button></nav>}
   </div>;
+  return apresentando ? createPortal(conteudo, document.body) : conteudo;
 };
 
 export default StorytellingDiscentesSection;
