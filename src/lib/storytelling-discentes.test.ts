@@ -55,3 +55,10 @@ describe('ordem do gráfico por eixo', () => {
     expect(resumirGrupos([linha({ area: 'Polo', media: 3 }), linha({ area: 'Laboratórios', media: 4.5 })], 'area').map(g => g.nome)).toEqual(['Laboratórios', 'Polo']);
   });
 });
+import { cursosPorQuestao } from './storytelling-discentes';
+describe('cursos impactados por questão', () => {
+  it('conta cursos distintos com a questão em conceito prioritário', () => {
+    const r = cursosPorQuestao(areasParaAcao([linha({ media: 3 }), linha({ curso: 'Farmácia', media: 2.5 }), linha({ curso: 'Farmácia', area: 'Biblioteca', media: 3.5 })]));
+    expect(r.map(q => [q.questao, q.quantidade, q.cursos.map(c => c.curso)])).toEqual([['Avaliação da aprendizagem', 2, ['Farmácia', 'Direito']]]);
+  });
+});

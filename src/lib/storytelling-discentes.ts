@@ -79,3 +79,18 @@ export const comEixo = (rows: ResultadoDiscente[]) => rows.map(r => ({ ...r, eix
 export function recorteCurso(rows: ResultadoDiscente[], curso: string | null, dimensao: string | null) {
   return rows.filter(r => (!curso || r.curso.trim() === curso) && (!dimensao || r.dimensao.trim() === dimensao));
 }
+
+type Prioridade = ReturnType<typeof areasParaAcao>[number];
+/** Cursos impactados por questão: conta cursos distintos cuja questão ficou em conceito prioritário. */
+export function cursosPorQuestao(prioridades: Prioridade[]) {
+  const mapa = new Map<string, Map<string, { curso: string; nivel: string; media: number }>>();
+  prioridades.forEach(p => p.evidencias.forEach(e => {
+    if (!CONCEITOS_PRIORITARIOS.includes(conceito(e.media))) return;
+    const m = mapa.get(e.questao) || new Map();
+    const k = `${p.curso}|${p.nivel}`;
+    if (!m.has(k) || m.get(k)!.media > e.media) m.set(k, { curso: p.curso, nivel: p.nivel, media: e.media });
+    mapa.set(e.questao, m);
+  }));
+  return [...mapa].map(([questao, m]) => ({ questao, quantidade: m.size, cursos: [...m.values()].sort((a, b) => a.media - b.media) }))
+    .sort((a, b) => b.quantidade - a.quantidade || a.questao.localeCompare(b.questao));
+}
