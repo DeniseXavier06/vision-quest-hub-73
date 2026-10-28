@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
@@ -8,8 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, cursosPorQuestao, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { corMedia, conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
+import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 
 const TODOS = '__todos__';
@@ -231,6 +231,25 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
         <p className="text-sm text-muted-foreground">{drill.eixo ? 'Áreas do eixo selecionado. Use o caminho acima para voltar.' : 'Clique em um eixo para ver as áreas.'}</p>
         {trienio ? <GraficoComparativo dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.eixo ? undefined : drillClick} /> : <GraficoMedias dados={drillDados.resumo} cores={cores} onClickBar={drill.eixo ? undefined : drillClick} />}
       </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
+      {!trienio && !apresentando && (() => { const m = matrizEixoCurso(filtrado); const sig = (v: number | null) => v == null ? '–' : fmt(v);
+        const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
+        const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
+        return m.eixos.length ? <section className="space-y-3 border-t pt-6">
+        <h3 className="text-xl font-bold">Resultado dos alunos avaliando a instituição – 2026</h3>
+        <div className="overflow-x-auto"><table className="w-full border-collapse text-xs">
+          <thead><tr className="bg-primary text-primary-foreground"><th className="border p-2">Eixo</th><th className="border p-2">Área</th>
+            {m.cursos.map(c => <th key={c} className="h-40 border p-1 align-bottom"><span className="inline-block whitespace-nowrap [writing-mode:vertical-rl] rotate-180 uppercase">{c}</span></th>)}
+            <th className="border bg-foreground p-1 align-bottom text-background"><span className="inline-block [writing-mode:vertical-rl] rotate-180">MÉDIA DAS ÁREAS</span></th>
+            <th className="border bg-secondary p-1 align-bottom text-secondary-foreground"><span className="inline-block [writing-mode:vertical-rl] rotate-180">MÉDIA DO EIXO</span></th></tr></thead>
+          <tbody>{m.eixos.map(e => e.areas.map((a, i) => <tr key={e.eixo + a.area} className={cn(i === 0 && 'border-t-2 border-t-foreground')}>
+            {i === 0 && <td rowSpan={e.areas.length} className="border bg-muted p-2 text-center font-bold">{e.eixo}</td>}
+            <td className="border p-2">{a.area}</td>{a.porCurso.map((v, j) => <Fragment key={j}>{cel(v)}</Fragment>)}{cel(a.media, 'bg-foreground/90')}
+            {i === 0 && <td rowSpan={e.areas.length} className="border bg-secondary text-center font-bold" style={{ color: e.media == null ? undefined : corMedia(e.media) }}>{sig(e.media)}</td>}</tr>))}
+            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">MÉDIA</td>{m.mediaCursos.map((v, j) => <Fragment key={j}>{cel(v)}</Fragment>)}{cel(m.mediaGeral)}<td className="border" /></tr>
+            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">CONCEITO</td>{m.mediaCursos.map((v, j) => <td key={j} className="border text-center" style={{ color: v == null ? undefined : corMedia(v) }}>{v == null ? '–' : ab[conceito(v)]}</td>)}<td colSpan={2} className="border text-center">{m.mediaGeral == null ? '–' : ab[conceito(m.mediaGeral)]}</td></tr></tbody>
+        </table></div>
+        <p className="text-xs text-muted-foreground">E = Excelente · B = Bom · AP = Atende Parcialmente · R = Regular · MR = Muito Ruim</p>
+      </section> : null; })()}
       {mostrar(6) && <section className="space-y-5 border-t pt-6">
         <h3 className="flex items-center gap-2 text-xl font-bold"><AlertTriangle className="h-5 w-5 text-warning" />Prioridades para os planos de ação</h3>
         <p className="text-muted-foreground">{trienio && `Prioridades com base em ${ultimo}. `}Áreas analisadas separadamente por curso, nível e dimensão, da menor para a maior média.</p>

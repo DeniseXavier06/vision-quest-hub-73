@@ -94,3 +94,19 @@ export function cursosPorQuestao(prioridades: Prioridade[]) {
   return [...mapa].map(([questao, m]) => ({ questao, quantidade: m.size, cursos: [...m.values()].sort((a, b) => a.media - b.media) }))
     .sort((a, b) => b.quantidade - a.quantidade || a.questao.localeCompare(b.questao));
 }
+
+/** Matriz eixo × área × curso no modelo de relatório institucional. */
+export function matrizEixoCurso(rows: ResultadoDiscente[]) {
+  const linhas = comEixo(rows).filter(r => r.eixo);
+  const cursos = [...new Set(linhas.map(r => r.curso.trim()))].sort((a, b) => a.localeCompare(b));
+  const media = (g: ResultadoDiscente[]) => g.length ? mediaHierarquica(g) : null;
+  const eixos = EIXOS.map(([eixo]) => {
+    const doEixo = linhas.filter(r => r.eixo === eixo);
+    const areas = [...new Set(doEixo.map(r => r.area.trim()))].map(area => {
+      const g = doEixo.filter(r => r.area.trim() === area);
+      return { area, porCurso: cursos.map(c => media(g.filter(r => r.curso.trim() === c))), media: media(g) };
+    });
+    return { eixo, areas, media: media(doEixo) };
+  }).filter(e => e.areas.length);
+  return { cursos, eixos, mediaCursos: cursos.map(c => media(linhas.filter(r => r.curso.trim() === c))), mediaGeral: media(linhas) };
+}

@@ -62,3 +62,11 @@ describe('cursos impactados por questão', () => {
     expect(r.map(q => [q.questao, q.quantidade, q.cursos.map(c => c.curso)])).toEqual([['Avaliação da aprendizagem', 2, ['Farmácia', 'Direito']]]);
   });
 });
+import { matrizEixoCurso } from './storytelling-discentes';
+describe('tabela eixo × curso', () => {
+  it('calcula média por área e curso, deixando vazio o curso sem dados', () => {
+    const m = matrizEixoCurso([linha({ area: 'Biblioteca', media: 4 }), linha({ curso: 'Farmácia', area: 'Polo', media: 3 })]);
+    expect(m.cursos).toEqual(['Direito', 'Farmácia']);
+    expect(m.eixos[0].areas.map(a => [a.area, a.porCurso])).toEqual([['Biblioteca', [4, null]], ['Polo', [null, 3]]]);
+  });
+});
