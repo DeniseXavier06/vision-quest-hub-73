@@ -5,6 +5,7 @@
 - [x] Evidenciar áreas e questões prioritárias para os planos de ação.
 - [x] Testar regras de seleção e conferir a história com dados reais.
 - [x] Ordenar o gráfico de médias por eixo em sequência (Eixo 1 ao 4).
-- [ ] Expandir Curso → Dimensões → Áreas nas duas histórias discentes.
-- [ ] Destacar e verificar o modo Apresentar fora do painel.
-- [ ] Gerar e validar PowerPoint completo das duas histórias.
+- [x] Expandir Curso → Dimensões → Áreas nas duas histórias discentes.
+- [x] Destacar e verificar o modo Apresentar fora do painel.
+- [x] Gerar e validar PowerPoint completo das duas histórias.
+- [x] Empilhar os gráficos da visão geral (um abaixo do outro, em largura total).
