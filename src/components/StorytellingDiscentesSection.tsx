@@ -107,17 +107,15 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       try {
         const chave = anos.join(',');
         if (!CACHE.has(chave)) CACHE.set(chave, (async () => {
-          const base = () => supabase.from('resultados')
-            .select('id,semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,professor', { count: 'exact' })
-            .or(anos.map(a => `semestre.like.${a}%`).join(',')).or('nivel.ilike.%aluno%,nivel.ilike.%discente%');
-          const primeira = await base().order('id').range(0, 999);
-          if (primeira.error) throw primeira.error;
-          const total = primeira.count || 0;
-          const resto = await Promise.all(Array.from({ length: Math.max(0, Math.ceil(total / 1000) - 1) }, (_, i) => base().order('id').range((i + 1) * 1000, (i + 2) * 1000 - 1)));
-          const erro = resto.find(r => r.error); if (erro) throw erro.error;
-          return [primeira, ...resto].flatMap(r => r.data || []).map(r => ({ semestre: r.semestre, nivel: r.nivel, curso: r.curso, dimensao: r.dimensao, area: r.area,
-            textoQuestao: r.texto_questao, excelente: r.excelente, bom: r.bom, atendeParcialmente: r.atende_parcialmente,
-            regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media), professor: r.professor || '' })) as ResultadoDiscente[];
+          // Agregação no banco (mesma média simples via peso): ~16x menos linhas e uma única requisição.
+          const { data, error } = await supabase.rpc('resultados_discentes_agregados', { anos });
+          if (error) throw error;
+          return ((data as unknown as (string | number)[][]) || []).map(([semestre, nivel, curso, dimensao, area, textoQuestao, professor,
+            excelente, bom, atendeParcialmente, regular, muitoRuim, naoSeAplica, total, somaMedia, n]) => ({
+            semestre: String(semestre), nivel: String(nivel), curso: String(curso || ''), dimensao: String(dimensao || ''), area: String(area || ''),
+            textoQuestao: String(textoQuestao || ''), professor: String(professor || ''), excelente: Number(excelente), bom: Number(bom),
+            atendeParcialmente: Number(atendeParcialmente), regular: Number(regular), muitoRuim: Number(muitoRuim), naoSeAplica: Number(naoSeAplica),
+            total: Number(total), media: Number(somaMedia) / Number(n), peso: Number(n) })) as ResultadoDiscente[];
         })().catch(e => { CACHE.delete(chave); throw e; }));
         const todas = await CACHE.get(chave)!;
         if (cancelado) return;

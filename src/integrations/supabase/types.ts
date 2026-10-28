@@ -1027,6 +1027,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      resultados_discentes_agregados: {
+        Args: { anos: string[] }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user"

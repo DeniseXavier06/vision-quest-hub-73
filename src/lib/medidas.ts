@@ -15,6 +15,8 @@ export interface LinhaResultado {
   naoSeAplica: number;
   total: number;
   media: number;
+  /** Quantidade de linhas originais agregadas nesta linha (padrão 1). */
+  peso?: number;
 }
 
 export const CONCEITO_CORES: Record<string, string> = {
@@ -42,8 +44,13 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /** Média de Questão = média simples das linhas da questão. */
 export function mediaQuestoes(rows: LinhaResultado[]): number {
-  const v = rows.map((r) => Number(r.media)).filter((n) => !isNaN(n));
-  return v.length ? round2(v.reduce((a, b) => a + b, 0) / v.length) : 0;
+  let soma = 0, n = 0;
+  rows.forEach((r) => {
+    const m = Number(r.media), p = r.peso ?? 1;
+    if (isNaN(m)) return;
+    soma += m * p; n += p;
+  });
+  return n ? round2(soma / n) : 0;
 }
 
 /** Média Hierárquica (igual ao Power BI): média das questões por área, depois média das áreas. */
