@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from 'react';
+import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
 import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
@@ -243,10 +243,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
             <th className="border bg-secondary p-1 align-bottom text-secondary-foreground"><span className="inline-block [writing-mode:vertical-rl] rotate-180">MÉDIA DO EIXO</span></th></tr></thead>
           <tbody>{m.eixos.map(e => e.areas.map((a, i) => <tr key={e.eixo + a.area} className={cn(i === 0 && 'border-t-2 border-t-foreground')}>
             {i === 0 && <td rowSpan={e.areas.length} className="border bg-muted p-2 text-center font-bold">{e.eixo}</td>}
-            <td className="border p-2">{a.area}</td>{a.porCurso.map((v, j) => <td key={j} className="contents">{cel(v)}</td>)}{cel(a.media, 'bg-foreground/90')}
+            <td className="border p-2">{a.area}</td>{a.porCurso.map((v, j) => <Fragment key={j}>{cel(v)}</Fragment>)}{cel(a.media, 'bg-foreground/90')}
             {i === 0 && <td rowSpan={e.areas.length} className="border bg-secondary text-center font-bold" style={{ color: e.media == null ? undefined : corMedia(e.media) }}>{sig(e.media)}</td>}</tr>))}
-            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">MÉDIA</td>{m.mediaCursos.map((v, j) => <td key={j} className="contents">{cel(v)}</td>)}<td colSpan={2} className="contents">{cel(m.mediaGeral)}</td></tr>
-            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">CONCEITO</td>{m.mediaCursos.map((v, j) => <td key={j} className="border text-center" style={{ color: v == null ? undefined : corMedia(v) }}>{v == null ? '–' : ab[conceito(v)]}</td>)}<td className="border text-center">{m.mediaGeral == null ? '–' : ab[conceito(m.mediaGeral)]}</td></tr></tbody>
+            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">MÉDIA</td>{m.mediaCursos.map((v, j) => <Fragment key={j}>{cel(v)}</Fragment>)}{cel(m.mediaGeral)}<td className="border" /></tr>
+            <tr className="bg-primary/15 font-bold"><td colSpan={2} className="border p-2 text-right">CONCEITO</td>{m.mediaCursos.map((v, j) => <td key={j} className="border text-center" style={{ color: v == null ? undefined : corMedia(v) }}>{v == null ? '–' : ab[conceito(v)]}</td>)}<td colSpan={2} className="border text-center">{m.mediaGeral == null ? '–' : ab[conceito(m.mediaGeral)]}</td></tr></tbody>
         </table></div>
         <p className="text-xs text-muted-foreground">E = Excelente · B = Bom · AP = Atende Parcialmente · R = Regular · MR = Muito Ruim</p>
       </section> : null; })()}
