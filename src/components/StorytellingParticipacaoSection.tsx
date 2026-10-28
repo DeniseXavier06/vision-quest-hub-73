@@ -341,7 +341,7 @@ const StorytellingParticipacaoSection = () => {
         </Card>
       </div>
 
-      <div className={cn('grid gap-4 xl:grid-cols-[1.05fr_0.95fr]', showSlide(1))}>
+      <div className={cn('grid gap-4 grid-cols-1', showSlide(1))}>
         <Card>
           <CardHeader>
             <CardTitle>Visão geral do triênio</CardTitle>
