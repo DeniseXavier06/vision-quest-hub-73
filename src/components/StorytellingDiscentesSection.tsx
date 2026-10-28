@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, ChevronLeft, ChevronRight, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
 import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -190,6 +190,17 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       toast({ title: 'PowerPoint gerado', description: 'Todas as informações do recorte foram incluídas, com detalhes por curso e questões prioritárias.' });
     } catch { toast({ title: 'Não foi possível gerar o PowerPoint', description: 'Tente novamente.', variant: 'destructive' }); }
     finally { setExportando(false); }
+  };
+
+  const exportarPdf = async () => {
+    setExportandoPdf(true);
+    try {
+      const { baixarPdfPlanoAcao } = await import('@/lib/storytelling-pdf');
+      const recorte = [prioCurso, prioDimensao, prioArea].filter(v => v !== TODOS).join(' · ') || 'Todos os cursos';
+      baixarPdfPlanoAcao(prioridadesVisiveis, `Recorte: ${recorte} · Base: ${trienio ? ultimo : '2026'}`);
+      toast({ title: 'PDF gerado', description: 'Prioridades por curso, área e questões para o plano de ação.' });
+    } catch { toast({ title: 'Não foi possível gerar o PDF', description: 'Tente novamente.', variant: 'destructive' }); }
+    finally { setExportandoPdf(false); }
   };
 
   if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados discentes de 2026…</div>;
