@@ -75,3 +75,7 @@ export function eixoDaArea(area: string) {
   return EIXOS.find(([, areas]) => areas.some(x => norm(x) === a))?.[0] || '';
 }
 export const comEixo = (rows: ResultadoDiscente[]) => rows.map(r => ({ ...r, eixo: eixoDaArea(r.area) }));
+
+export function recorteCurso(rows: ResultadoDiscente[], curso: string | null, dimensao: string | null) {
+  return rows.filter(r => (!curso || r.curso.trim() === curso) && (!dimensao || r.dimensao.trim() === dimensao));
+}

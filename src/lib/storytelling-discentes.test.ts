@@ -33,6 +33,19 @@ describe('eixos discentes', () => {
   it.each([['Imagem do curso', 'Eixo 1 - Desenvolvimento Institucional'], ['Atendimento do coordenador aos alunos', 'Eixo 2 - Políticas Acadêmicas'], ['Avaliação da aprendizagem', 'Eixo 3 - Políticas de Gestão'], ['Ambiente Virtual Aprendizagem', 'Eixo 4 - Infraestrutura Física'], ['Sala de aula', 'Eixo 4 - Infraestrutura Física']])('%s → %s', (a, e) => expect(eixoDaArea(a)).toBe(e));
 });
 import { comEixo, resumirGrupos } from './storytelling-discentes';
+import { recorteCurso } from './storytelling-discentes';
+describe('expansão de cursos', () => {
+  const dados = [linha({ dimensao: 'Curso', area: 'Biblioteca', media: 3 }), linha({ dimensao: 'Professor', area: 'Ensino', media: 4 }), linha({ curso: 'Farmácia', dimensao: 'Curso', area: 'Biblioteca', media: 5 })];
+  it('expande apenas as dimensões do curso clicado com suas médias', () => {
+    expect(resumirGrupos(recorteCurso(dados, 'Direito', null), 'dimensao').map(d => [d.nome, d.media])).toEqual([['Professor', 4], ['Curso', 3]]);
+  });
+  it('expande apenas as áreas da dimensão do curso clicado', () => {
+    expect(resumirGrupos(recorteCurso(dados, 'Direito', 'Curso'), 'area').map(d => [d.nome, d.media])).toEqual([['Biblioteca', 3]]);
+  });
+  it('preserva o comparativo por ano no detalhe', () => {
+    expect(compararAnos(recorteCurso([...dados, linha({ semestre: '2024.2', area: 'Biblioteca', media: 2 })], 'Direito', 'Curso'), 'area', ['2024', '2025', '2026'])).toEqual([{ nome: 'Biblioteca', '2024': 2, '2025': null, '2026': 3 }]);
+  });
+});
 describe('ordem do gráfico por eixo', () => {
   it('ordena os eixos em sequência, não pela média', () => {
     const linhas = comEixo([linha({ area: 'Polo', media: 5 }), linha({ area: 'Imagem do Curso', media: 3 }), linha({ area: 'Avaliação da Aprendizagem', media: 3.5 })]);
