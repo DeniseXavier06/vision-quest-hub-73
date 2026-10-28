@@ -70,3 +70,14 @@ describe('tabela eixo × curso', () => {
     expect(m.eixos[0].areas.map(a => [a.area, a.porCurso])).toEqual([['Biblioteca', [4, null]], ['Polo', [null, 3]]]);
   });
 });
+
+import { mediaQuestoes as mq } from './medidas';
+describe('linhas agregadas com peso', () => {
+  it('reproduzem a média simples das linhas originais', () => {
+    const base = { semestre: '2026.1', nivel: 'Aluno', curso: 'C', dimensao: 'D', area: 'A', textoQuestao: 'Q', excelente: 0, bom: 0, atendeParcialmente: 0, regular: 0, muitoRuim: 0, naoSeAplica: 0, total: 1 };
+    const originais = [5, 4, 3, 2].map(media => ({ ...base, media }));
+    const agregadas = [{ ...base, media: 4, peso: 3 }, { ...base, media: 2, peso: 1 }];
+    expect(mq(agregadas)).toBe(mq(originais));
+    expect(mq(agregadas)).toBe(3.5);
+  });
+});
