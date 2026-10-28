@@ -255,7 +255,7 @@ const ResultadosSection = () => {
   }, []);
 
   const fetchImportacoes = useCallback(async () => {
-    const { data } = await supabase.from('importacoes').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('importacoes').select('*').eq('tipo', 'avaliacoes').order('created_at', { ascending: false });
     if (data) setImportacoes(data as Importacao[]);
   }, []);
 

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { Tables } from '@/integrations/supabase/types';
+import SugestoesImportacao from '@/components/SugestoesImportacao';
 
 type Semestre = Tables<'semestres_letivos'>;
 type Dimensao = Tables<'dimensoes_avaliacao'>;
@@ -581,6 +582,7 @@ const AmbientesTab = () => {
 
 // ─── Importação Tab ───
 const ImportacaoTab = () => {
+  const [tipoImportacao, setTipoImportacao] = useState('avaliacoes');
   const [ambientes, setAmbientes] = useState<Ambiente[]>([]);
   const [selectedAmbiente, setSelectedAmbiente] = useState('');
   const [selectedPerfil, setSelectedPerfil] = useState('');
@@ -786,6 +788,8 @@ const ImportacaoTab = () => {
 
   return (
     <div className="space-y-4">
+      <div className="max-w-xs space-y-1"><Label>Tipo de importação</Label><Select value={tipoImportacao} onValueChange={setTipoImportacao}><SelectTrigger aria-label="Tipo de importação"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="avaliacoes">Avaliações</SelectItem><SelectItem value="sugestoes">Sugestões</SelectItem></SelectContent></Select></div>
+      {tipoImportacao === 'sugestoes' ? <SugestoesImportacao /> : <>
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><FileSpreadsheet className="w-4 h-4" />Importar Base de Dados</CardTitle></CardHeader>
         <CardContent className="space-y-4">
@@ -865,6 +869,7 @@ const ImportacaoTab = () => {
           </CardContent>
         </Card>
       )}
+      </>}
     </div>
   );
 };
