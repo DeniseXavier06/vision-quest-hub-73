@@ -204,7 +204,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       {mostrar(0) && <section className="space-y-6">
         <h3 className="text-xl font-bold">O que os discentes revelam?</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[['Média geral', fmt(media)], ['Conceito geral', conceito(media)], ['Respostas favoráveis', `${fmt(percFavoravel(filtrado))}%`], ['Respostas às questões', totalRespostas(filtrado).toLocaleString('pt-BR')]].map(([titulo, valor]) => <div key={titulo} className="border-l-4 border-primary bg-muted/40 p-4"><p className="text-sm text-muted-foreground">{titulo}</p><p className="mt-2 text-xl font-bold">{valor}</p></div>)}
+          {[['Média geral', fmt(media)], ['Conceito geral', conceito(media)], ['Respostas favoráveis', `${fmt(percFavoravel(filtrado))}%`], ['Respostas às questões', totalRespostas(filtrado).toLocaleString('pt-BR')]].map(([titulo, valor]) => <div key={titulo} className="border-l-4 bg-muted/40 p-4" style={{ borderColor: titulo.startsWith('Média') || titulo.startsWith('Conceito') ? corMedia(media) : undefined }}><p className="text-sm text-muted-foreground">{titulo}</p><p className="mt-2 text-xl font-bold" style={titulo.startsWith('Média') || titulo.startsWith('Conceito') ? { color: corMedia(media) } : undefined}>{valor}</p></div>)}
         </div>
         <div className="space-y-3 text-base leading-7">
           <p>Em 2026, a experiência dos discentes alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
