@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { corMedia, conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
 import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
+import { SugestoesDiscentes } from '@/components/SugestoesDiscentes';
 
 const TODOS = '__todos__';
 const titulos = ['O que os discentes revelam?', 'Médias por curso', 'Médias por dimensão', 'Médias por eixo', 'Médias por professor', 'Médias por área', 'Prioridades para os planos de ação', 'Da escuta à ação'];
