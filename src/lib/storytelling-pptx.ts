@@ -13,8 +13,7 @@ export function criarPowerPointDiscentes(rows: ResultadoDiscente[], anos: string
   pptx.author = 'CPA UniRios';
   pptx.subject = 'Autoavaliação institucional — resultados discentes';
   pptx.title = `Discentes ${anos.join('–')}`;
-  pptx.lang = 'pt-BR';
-  pptx.theme = { headFontFace: 'Trebuchet MS', bodyFontFace: 'Calibri', lang: 'pt-BR' };
+  pptx.theme = { headFontFace: 'Trebuchet MS', bodyFontFace: 'Calibri' };
   let numero = 0;
   const slideBase = (titulo: string, contexto = '', dark = false) => {
     const slide = pptx.addSlide();
