@@ -341,12 +341,12 @@ const StorytellingParticipacaoSection = () => {
         </Card>
       </div>
 
-      <div className={cn('grid gap-4 xl:grid-cols-[1.05fr_0.95fr]', showSlide(1))}>
+      <div className={cn('grid gap-4 grid-cols-1', showSlide(1))}>
         <Card>
           <CardHeader>
             <CardTitle>Visão geral do triênio</CardTitle>
           </CardHeader>
-          <CardContent className="h-[360px]">
+          <CardContent className="h-[460px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
@@ -379,7 +379,7 @@ const StorytellingParticipacaoSection = () => {
           <CardHeader>
             <CardTitle>Participação 2026 por público</CardTitle>
           </CardHeader>
-          <CardContent className="h-[360px]">
+          <CardContent className="h-[420px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={courseChartData} margin={{ top: 24, right: 8, left: 0, bottom: 36 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
