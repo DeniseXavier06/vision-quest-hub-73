@@ -395,7 +395,7 @@ const StorytellingParticipacaoSection = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={courseChartData} margin={{ top: 24, right: 8, left: 0, bottom: 36 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
-                <XAxis dataKey="publico" stroke={chartColors.muted} angle={-25} textAnchor="end" interval={0} height={62} />
+                <XAxis dataKey="publico" stroke={chartColors.muted} angle={-25} textAnchor="end" interval={0} tickFormatter={(v: string) => pub.cfg.series[v]?.nome ?? v} height={62} />
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Bar dataKey="participacao" radius={[6, 6, 0, 0]}>
