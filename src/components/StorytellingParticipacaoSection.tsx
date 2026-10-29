@@ -343,8 +343,8 @@ const StorytellingParticipacaoSection = () => {
 
       <div className={cn('grid gap-4 grid-cols-1', showSlide(1))}>
         <Card>
-          <CardHeader>
-            <CardTitle>Visão geral do triênio</CardTitle>
+          <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+            <CardTitle>{tri.cfg.titulo}</CardTitle><ChartCustomizer ctl={tri} />
           </CardHeader>
           <CardContent className="h-[460px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -353,31 +353,31 @@ const StorytellingParticipacaoSection = () => {
                 <XAxis dataKey="ano" stroke={chartColors.muted} />
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Bar dataKey="Alunos presenciais" fill={chartColors.primary} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Alunos presenciais" position="top" content={renderBarLabel} />
+                {tri.cfg.legenda && <Legend wrapperStyle={{ fontSize: 12 }} {...legendProps(tri.cfg)} />}
+                <Bar dataKey="Alunos presenciais" name={tri.cfg.series['Alunos presenciais'].nome} fill={tri.cfg.series['Alunos presenciais'].cor} radius={[4, 4, 0, 0]}>
+                  {tri.cfg.rotulos && <LabelList dataKey="Alunos presenciais" position="top" content={renderBarLabel} />}
                 </Bar>
-                <Bar dataKey="Alunos EAD" fill={chartColors.destructive} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Alunos EAD" position="top" content={renderBarLabel} />
+                <Bar dataKey="Alunos EAD" name={tri.cfg.series['Alunos EAD'].nome} fill={tri.cfg.series['Alunos EAD'].cor} radius={[4, 4, 0, 0]}>
+                  {tri.cfg.rotulos && <LabelList dataKey="Alunos EAD" position="top" content={renderBarLabel} />}
                 </Bar>
-                <Bar dataKey="Professores presenciais" fill={chartColors.info} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Professores presenciais" position="top" content={renderBarLabel} />
+                <Bar dataKey="Professores presenciais" name={tri.cfg.series['Professores presenciais'].nome} fill={tri.cfg.series['Professores presenciais'].cor} radius={[4, 4, 0, 0]}>
+                  {tri.cfg.rotulos && <LabelList dataKey="Professores presenciais" position="top" content={renderBarLabel} />}
                 </Bar>
-                <Bar dataKey="Professores EAD" fill={chartColors.warning} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Professores EAD" position="top" content={renderBarLabel} />
+                <Bar dataKey="Professores EAD" name={tri.cfg.series['Professores EAD'].nome} fill={tri.cfg.series['Professores EAD'].cor} radius={[4, 4, 0, 0]}>
+                  {tri.cfg.rotulos && <LabelList dataKey="Professores EAD" position="top" content={renderBarLabel} />}
                 </Bar>
-                <Bar dataKey="Colaboradores" fill={chartColors.success} radius={[4, 4, 0, 0]}>
-                  <LabelList dataKey="Colaboradores" position="top" content={renderBarLabel} />
+                <Bar dataKey="Colaboradores" name={tri.cfg.series['Colaboradores'].nome} fill={tri.cfg.series['Colaboradores'].cor} radius={[4, 4, 0, 0]}>
+                  {tri.cfg.rotulos && <LabelList dataKey="Colaboradores" position="top" content={renderBarLabel} />}
                 </Bar>
-                <Line type="monotone" dataKey="Média" stroke={chartColors.foreground} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="Média" name={tri.cfg.series['Média'].nome} stroke={tri.cfg.series['Média'].cor} strokeWidth={2.5} strokeDasharray="6 4" dot={{ r: 4 }} />
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Participação 2026 por público</CardTitle>
+          <CardHeader className="flex-row items-center justify-between gap-2 space-y-0">
+            <CardTitle>{pub.cfg.titulo}</CardTitle><ChartCustomizer ctl={pub} />
           </CardHeader>
           <CardContent className="h-[420px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -387,9 +387,9 @@ const StorytellingParticipacaoSection = () => {
                 <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Bar dataKey="participacao" radius={[6, 6, 0, 0]}>
-                  <LabelList dataKey="participacao" position="top" formatter={(value: number) => percent(value)} className="fill-foreground text-xs" />
+                  {pub.cfg.rotulos && <LabelList dataKey="participacao" position="top" formatter={(value: number) => percent(value)} className="fill-foreground text-xs" />}
                   {courseChartData.map((entry) => (
-                    <Cell key={entry.publico} fill={getPriorityColor(entry.prioridade)} />
+                    <Cell key={entry.publico} fill={pub.cfg.series[entry.publico]?.cor ?? getPriorityColor(entry.prioridade)} />
                   ))}
                 </Bar>
               </BarChart>
