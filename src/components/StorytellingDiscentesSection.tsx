@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { corMedia, conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
 import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
+import { ChartCustomizer, legendProps, useChartCustom } from '@/components/ChartCustomizer';
 import { SugestoesDiscentes } from '@/components/SugestoesDiscentes';
 
 const TODOS = '__todos__';
@@ -23,18 +24,23 @@ const classesConceito: Record<string, string> = {
 };
 const ConceitoBadge = ({ valor }: { valor: string }) => <Badge variant="outline" className={cn('whitespace-nowrap', classesConceito[valor])}>{valor}</Badge>;
 
-function GraficoMedias({ dados, cores, onClickBar }: { dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string>; onClickBar?: (nome: string) => void }) {
+function GraficoMedias({ id, dados, cores, onClickBar }: { id: string; dados: ReturnType<typeof resumirGrupos>; cores: Record<string, string>; onClickBar?: (nome: string) => void }) {
+  const ctl = useChartCustom(id, { series: Object.entries(cores).map(([k, c]) => ({ key: k, nome: k, cor: c })), legenda: false });
+  const { cfg } = ctl;
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
+  const presentes = Object.keys(cores).filter(k => dados.some(d => d.conceito === k));
   return <div className="space-y-4">
+    <div className="flex items-center justify-between gap-2">{cfg.titulo ? <h4 className="font-heading text-base font-semibold">{cfg.titulo}</h4> : <span />}<ChartCustomizer ctl={ctl} /></div>
     <ResponsiveContainer width="100%" height={Math.max(300, dados.length * 48)}>
       <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(valor: number) => [fmt(valor), 'Média']} />
+        {cfg.legenda && <Legend {...legendProps(cfg)} payload={presentes.map(k => ({ value: cfg.series[k].nome, type: 'square', color: cfg.series[k].cor, id: k }))} />}
         <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>
-          {dados.map(d => <Cell key={d.nome} fill={cores[d.conceito]} />)}
-          <LabelList dataKey="media" position="right" formatter={fmt} />
+          {dados.map(d => <Cell key={d.nome} fill={cfg.series[d.conceito]?.cor ?? cores[d.conceito]} />)}
+          {cfg.rotulos && <LabelList dataKey="media" position="right" formatter={fmt} />}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -44,17 +50,20 @@ function GraficoMedias({ dados, cores, onClickBar }: { dados: ReturnType<typeof 
   </div>;
 }
 
-function GraficoComparativo({ dados, anos, cores, onClickBar }: { dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[]; onClickBar?: (nome: string) => void }) {
+function GraficoComparativo({ id, dados, anos, cores, onClickBar }: { id: string; dados: ReturnType<typeof compararAnos>; anos: string[]; cores: string[]; onClickBar?: (nome: string) => void }) {
+  const ctl = useChartCustom(id, { series: anos.map((a, i) => ({ key: a, nome: a, cor: cores[i] })) });
+  const { cfg } = ctl;
   if (!dados.length) return <p className="py-12 text-center text-muted-foreground">Sem resultados disponíveis para este recorte.</p>;
   const f = (v: number | null) => v == null ? '—' : fmt(v);
   return <div className="space-y-4">
+    <div className="flex items-center justify-between gap-2">{cfg.titulo ? <h4 className="font-heading text-base font-semibold">{cfg.titulo}</h4> : <span />}<ChartCustomizer ctl={ctl} /></div>
     <ResponsiveContainer width="100%" height={Math.max(320, dados.length * 70)}>
       <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
         <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
         <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
-        <Tooltip formatter={(v: number) => fmt(v)} /><Legend />
-        {anos.map((a, i) => <Bar key={a} dataKey={a} name={a} fill={cores[i]} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}><LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} /></Bar>)}
+        <Tooltip formatter={(v: number) => fmt(v)} />{cfg.legenda && <Legend {...legendProps(cfg)} />}
+        {anos.map(a => <Bar key={a} dataKey={a} name={cfg.series[a].nome} fill={cfg.series[a].cor} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>{cfg.rotulos && <LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} />}</Bar>)}
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
@@ -235,7 +244,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           {cursoDrill.dimensao && <><ChevronRight className="h-4 w-4" /><Badge variant="secondary" className="whitespace-normal">{cursoDrill.dimensao}</Badge></>}
         </nav>
         <h4 className="text-xl font-bold text-primary">{cursoDrill.dimensao ? `Áreas · ${cursoDrill.dimensao}` : cursoDrill.curso ? `Dimensões · ${cursoDrill.curso}` : 'Cursos'}</h4>
-        {trienio ? <GraficoComparativo dados={cursoDados.comparativo} anos={anos} cores={coresAnos} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} /> : <GraficoMedias dados={cursoDados.resumo} cores={cores} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} />}
+        {trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-curso`} dados={cursoDados.comparativo} anos={anos} cores={coresAnos} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-curso`} dados={cursoDados.resumo} cores={cores} onClickBar={cursoDrill.dimensao ? undefined : expandirCurso} />}
       </div> : campo === 'eixo' ? <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <Button variant={drill.eixo ? 'ghost' : 'secondary'} size="sm" onClick={() => setDrill({ eixo: null, dimensao: null })}>Todos os eixos</Button>
@@ -243,8 +252,8 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
           
         </div>
         <p className="text-sm text-muted-foreground">{drill.eixo ? 'Áreas do eixo selecionado. Use o caminho acima para voltar.' : 'Clique em um eixo para ver as áreas.'}</p>
-        {trienio ? <GraficoComparativo dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.eixo ? undefined : drillClick} /> : <GraficoMedias dados={drillDados.resumo} cores={cores} onClickBar={drill.eixo ? undefined : drillClick} />}
-      </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias dados={grupos[campo]} cores={cores} />)}</section>)}
+        {trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-eixo`} dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.eixo ? undefined : drillClick} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-eixo`} dados={drillDados.resumo} cores={cores} onClickBar={drill.eixo ? undefined : drillClick} />}
+      </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={grupos[campo]} cores={cores} />)}</section>)}
       {!trienio && !apresentando && (() => { const m = matrizEixoCurso(filtrado); const sig = (v: number | null) => v == null ? '–' : fmt(v);
         const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
         const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
