@@ -1,3 +1,4 @@
+import { ChartCustomizer, legendProps, useChartCustom } from '@/components/ChartCustomizer';
 import { useEffect, useState } from 'react';
 import {
   Bar,
@@ -237,6 +238,17 @@ const StorytellingParticipacaoSection = () => {
     if (priority === 2) return chartColors.warning;
     return chartColors.success;
   };
+
+  const tri = useChartCustom('sp-trienio', { titulo: 'Visão geral do triênio', series: [
+    { key: 'Alunos presenciais', nome: 'Alunos presenciais', cor: chartColors.primary },
+    { key: 'Alunos EAD', nome: 'Alunos EAD', cor: chartColors.destructive },
+    { key: 'Professores presenciais', nome: 'Professores presenciais', cor: chartColors.info },
+    { key: 'Professores EAD', nome: 'Professores EAD', cor: chartColors.warning },
+    { key: 'Colaboradores', nome: 'Colaboradores', cor: chartColors.success },
+    { key: 'Média', nome: 'Média', cor: chartColors.foreground },
+  ] });
+  const pub = useChartCustom('sp-publico-2026', { titulo: 'Participação 2026 por público', legenda: false,
+    series: courseChartData.map((c) => ({ key: c.publico, nome: c.publico, cor: getPriorityColor(c.prioridade) })) });
 
   const TOTAL_SLIDES = 5 + segments.length + 1;
   const [presenting, setPresenting] = useState(false);
