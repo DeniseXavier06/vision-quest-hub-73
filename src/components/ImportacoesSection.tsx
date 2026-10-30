@@ -8,6 +8,7 @@ import { FileSpreadsheet } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import AvaliacoesImportacao from '@/components/AvaliacoesImportacao';
 import SugestoesImportacao from '@/components/SugestoesImportacao';
 import { toast } from 'sonner';
 
@@ -22,6 +23,7 @@ const ImportacoesSection = () => {
   const [loading, setLoading] = useState(false);
   const [filtroTipo, setFiltroTipo] = useState('__all__');
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [avalOpen, setAvalOpen] = useState(false);
   const [detalhes, setDetalhes] = useState<Tables<'sugestoes'>[]>([]);
   const [detalheOpen, setDetalheOpen] = useState(false);
   const [detalheLoading, setDetalheLoading] = useState(false);
@@ -64,7 +66,7 @@ const ImportacoesSection = () => {
         <h2 className="text-2xl font-heading font-bold text-foreground">Importações</h2>
         <p className="text-muted-foreground text-sm mt-1">Histórico de importações realizadas</p>
         </div>
-        <Button onClick={() => setUploadOpen(true)} className="gap-2"><FileSpreadsheet className="h-4 w-4" />Importar Sugestões</Button>
+        <div className="flex gap-2"><Button onClick={() => setAvalOpen(true)} className="gap-2"><FileSpreadsheet className="h-4 w-4" />Importar Avaliações</Button><Button variant="outline" onClick={() => setUploadOpen(true)} className="gap-2"><FileSpreadsheet className="h-4 w-4" />Importar Sugestões</Button></div>
       </div>
 
       <Card>
@@ -144,6 +146,7 @@ const ImportacoesSection = () => {
           </Table>
         </CardContent>
       </Card>
+      <Dialog open={avalOpen} onOpenChange={setAvalOpen}><DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Importar Avaliações</DialogTitle></DialogHeader><AvaliacoesImportacao onImported={() => { setAvalOpen(false); void fetchImportacoes(); }} /></DialogContent></Dialog>
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}><DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Importar Sugestões</DialogTitle></DialogHeader><SugestoesImportacao onImported={() => { setUploadOpen(false); void fetchImportacoes(); }} /></DialogContent></Dialog>
       <Dialog open={detalheOpen} onOpenChange={setDetalheOpen}><DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto"><DialogHeader><DialogTitle>Sugestões importadas</DialogTitle></DialogHeader>{detalheLoading ? <p>Carregando...</p> : <div className="overflow-x-auto"><Table><TableHeader><TableRow>{['Curso / Nível', 'Dimensão / Área', 'Turma / Prova', 'Questão', 'Disciplina / Professor / Coordenador', 'Sugestão'].map(c => <TableHead key={c}>{c}</TableHead>)}</TableRow></TableHeader><TableBody>{detalhes.map(s => <TableRow key={s.id}><TableCell>{s.nome_curso}<br />{s.nivel}</TableCell><TableCell>{s.dimensao}<br />{s.area}</TableCell><TableCell>{s.codigo_turma}<br />{s.codigo_prova} · {s.nome_prova}</TableCell><TableCell>{s.codigo_questao} · {s.texto_questao}</TableCell><TableCell>{[s.disciplina_avaliada, s.professor_avaliado, s.coordenador_avaliado].filter(Boolean).join(' / ') || '—'}</TableCell><TableCell className="min-w-64 whitespace-pre-wrap">{s.sugestao}</TableCell></TableRow>)}</TableBody></Table></div>}</DialogContent></Dialog>
     </div>

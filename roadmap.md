@@ -9,3 +9,5 @@
 - [x] Destacar e verificar o modo Apresentar fora do painel.
 - [x] Gerar e validar PowerPoint completo das duas histórias.
 - [x] Empilhar os gráficos da visão geral (um abaixo do outro, em largura total).- [x] Mapear importação de colaboradores (NOME_SECAO, NUMERO_QUESTAO etc.)
+
+- [x] Botão Importar Avaliações em Importações com mapeamento de colaboradores
