@@ -11,3 +11,4 @@
 - [x] Empilhar os gráficos da visão geral (um abaixo do outro, em largura total).- [x] Mapear importação de colaboradores (NOME_SECAO, NUMERO_QUESTAO etc.)
 
 - [x] Botão Importar Avaliações em Importações com mapeamento de colaboradores
+- [x] Storytelling Colaboradores/2026 por seção e dimensão

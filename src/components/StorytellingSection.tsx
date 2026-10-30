@@ -2,6 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import StorytellingParticipacaoSection from '@/components/StorytellingParticipacaoSection';
 import StorytellingPersonasSection from '@/components/StorytellingPersonasSection';
 import StorytellingCursosSection from '@/components/StorytellingCursosSection';
+import StorytellingColaboradoresSection from '@/components/StorytellingColaboradoresSection';
 import StorytellingDiscentesSection from '@/components/StorytellingDiscentesSection';
 
 const StorytellingSection = () => {
@@ -13,6 +14,7 @@ const StorytellingSection = () => {
         <TabsTrigger value="cursos">Por curso</TabsTrigger>
         <TabsTrigger value="discentes2026">Discentes/2026</TabsTrigger>
         <TabsTrigger value="trienioDiscentes">Triênio Discentes</TabsTrigger>
+        <TabsTrigger value="colaboradores2026">Colaboradores/2026</TabsTrigger>
       </TabsList>
       <TabsContent value="participacao">
         <StorytellingParticipacaoSection />
@@ -28,6 +30,9 @@ const StorytellingSection = () => {
       </TabsContent>
       <TabsContent value="trienioDiscentes">
         <StorytellingDiscentesSection trienio />
+      </TabsContent>
+      <TabsContent value="colaboradores2026">
+        <StorytellingColaboradoresSection />
       </TabsContent>
     </Tabs>
   );
