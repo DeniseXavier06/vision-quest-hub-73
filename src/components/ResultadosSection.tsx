@@ -219,13 +219,15 @@ const ResultadosSection = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     const COLS = 'semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,conceito,tipo_avaliacao,created_at';
+    // Discentes/Docentes carregam um resumo próprio; aqui só Colaborador e Coordenador.
+    const FILTRO = 'nivel.ilike.%colabora%,nivel.ilike.%coordena%,tipo_avaliacao.ilike.%colabora%,tipo_avaliacao.ilike.%coordena%';
     const PAGE = 1000;
-    const { count } = await supabase.from('resultados').select('id', { count: 'exact', head: true });
+    const { count } = await supabase.from('resultados').select('id', { count: 'exact', head: true }).or(FILTRO);
     const paginas = Math.ceil((count || 0) / PAGE);
     const allRows: any[] = [];
     for (let i = 0; i < paginas; i += 8) {
       const lote = await Promise.all(Array.from({ length: Math.min(8, paginas - i) }, (_, j) =>
-        supabase.from('resultados').select(COLS).order('id').range((i + j) * PAGE, (i + j + 1) * PAGE - 1)));
+        supabase.from('resultados').select(COLS).or(FILTRO).order('id').range((i + j) * PAGE, (i + j + 1) * PAGE - 1)));
       lote.forEach(({ data: rows, error }) => { if (error) console.error('Fetch error:', error); else allRows.push(...(rows || [])); });
     }
     allRows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
