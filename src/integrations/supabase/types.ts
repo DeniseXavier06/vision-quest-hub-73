@@ -1132,6 +1132,7 @@ export type Database = {
         Args: { anos: string[] }
         Returns: Json
       }
+      resultados_perfil_agregados: { Args: { perfil: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user"

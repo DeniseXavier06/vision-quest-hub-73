@@ -218,21 +218,17 @@ const ResultadosSection = () => {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    let allRows: any[] = [];
-    let from = 0;
+    const COLS = 'semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media,conceito,tipo_avaliacao,created_at';
     const PAGE = 1000;
-    while (true) {
-      const { data: rows, error } = await supabase
-        .from('resultados')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .range(from, from + PAGE - 1);
-      if (error) { console.error('Fetch error:', error); break; }
-      if (!rows || rows.length === 0) break;
-      allRows = allRows.concat(rows);
-      if (rows.length < PAGE) break;
-      from += PAGE;
+    const { count } = await supabase.from('resultados').select('id', { count: 'exact', head: true });
+    const paginas = Math.ceil((count || 0) / PAGE);
+    const allRows: any[] = [];
+    for (let i = 0; i < paginas; i += 8) {
+      const lote = await Promise.all(Array.from({ length: Math.min(8, paginas - i) }, (_, j) =>
+        supabase.from('resultados').select(COLS).order('id').range((i + j) * PAGE, (i + j + 1) * PAGE - 1)));
+      lote.forEach(({ data: rows, error }) => { if (error) console.error('Fetch error:', error); else allRows.push(...(rows || [])); });
     }
+    allRows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
     setData(allRows.map((r: any) => ({
       semestre: r.semestre,
       nivel: r.nivel,

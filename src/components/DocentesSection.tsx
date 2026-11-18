@@ -19,6 +19,7 @@ interface LinhaDocente extends LinhaResultado {
 }
 
 const TODOS = '__todos__';
+const CACHE = new Map<string, Promise<LinhaDocente[]>>();
 const CORES_SEMESTRE = ['#4285f4', '#34a853', '#fbbc04', '#ea4335', '#6c5ce7', '#2d8a9e'];
 
 type Grupo = 'curso' | 'dimensao' | 'area' | 'professor' | 'disciplina';
@@ -47,26 +48,22 @@ const DocentesSection = ({ perfil = 'docentes' }: Props) => {
   const [disciplina, setDisciplina] = useState(TODOS);
 
   useEffect(() => {
-    (async () => {
-      let all: any[] = [];
-      for (let from = 0; ; from += 1000) {
-        const { data, error } = await supabase
-          .from('resultados')
-          .select('*')
-          .or(isDisc ? 'nivel.ilike.%aluno%,nivel.ilike.%discente%' : 'nivel.ilike.%professor%')
-          .range(from, from + 999);
-        if (error || !data?.length) break;
-        all = all.concat(data);
-        if (data.length < 1000) break;
-      }
-      setRows(all.map((r) => ({
-        semestre: r.semestre, nivel: r.nivel, curso: r.curso, dimensao: r.dimensao, area: r.area,
-        textoQuestao: r.texto_questao, excelente: r.excelente, bom: r.bom, atendeParcialmente: r.atende_parcialmente,
-        regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media),
-        professor: r.professor || '', disciplina: r.disciplina || '',
-      })));
-      setLoading(false);
-    })();
+    let cancel = false;
+    const chave = isDisc ? 'discentes' : 'docentes';
+    if (!CACHE.has(chave)) CACHE.set(chave, (async () => {
+      const { data, error } = await supabase.rpc('resultados_perfil_agregados' as any, { perfil: chave });
+      if (error) throw error;
+      return ((data as unknown as any[][]) || []).map(([semestre, nivel, curso, dimensao, area, textoQuestao, professor, disciplina,
+        excelente, bom, atendeParcialmente, regular, muitoRuim, naoSeAplica, total, somaMedia, n]) => ({
+        semestre: String(semestre), nivel: String(nivel), curso: String(curso || ''), dimensao: String(dimensao || ''), area: String(area || ''),
+        textoQuestao: String(textoQuestao || ''), professor: String(professor || ''), disciplina: String(disciplina || ''),
+        excelente: Number(excelente), bom: Number(bom), atendeParcialmente: Number(atendeParcialmente), regular: Number(regular),
+        muitoRuim: Number(muitoRuim), naoSeAplica: Number(naoSeAplica), total: Number(total),
+        media: Number(somaMedia) / Number(n), peso: Number(n) })) as LinhaDocente[];
+    })().catch((e) => { CACHE.delete(chave); throw e; }));
+    setLoading(true);
+    CACHE.get(chave)!.then((r) => { if (!cancel) { setRows(r); setLoading(false); } }).catch(() => { if (!cancel) setLoading(false); });
+    return () => { cancel = true; };
   }, [isDisc]);
 
   const opcoes = useMemo(() => {
