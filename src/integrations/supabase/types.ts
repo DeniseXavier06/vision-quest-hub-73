@@ -1112,6 +1112,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      avaliacao_enviar: {
+        Args: { p_respostas: Json; p_token: string }
+        Returns: undefined
+      }
+      avaliacao_login: {
+        Args: { p_ambiente: string; p_matricula: string; p_senha: string }
+        Returns: Json
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1128,6 +1136,7 @@ export type Database = {
         }
         Returns: string
       }
+      is_staff: { Args: never; Returns: boolean }
       resultados_discentes_agregados: {
         Args: { anos: string[] }
         Returns: Json

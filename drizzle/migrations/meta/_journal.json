@@ -29,6 +29,13 @@
       "when": 1795021952404,
       "tag": "0003_resultados_perfil_agregados",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1795022573933,
+      "tag": "0004_tighten_open_rls",
+      "breakpoints": true
     }
   ]
 }

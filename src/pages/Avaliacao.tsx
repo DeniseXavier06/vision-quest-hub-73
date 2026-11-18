@@ -70,30 +70,22 @@ const Avaliacao = () => {
       return;
     }
 
-    const { data: avaliador } = await supabase
-      .from('avaliadores_sessao')
-      .select('*')
-      .eq('ambiente_id', selectedAmbiente)
-      .eq('matricula', matricula.trim())
-      .maybeSingle();
+    const { data: login } = await supabase.rpc('avaliacao_login', {
+      p_ambiente: selectedAmbiente, p_matricula: matricula.trim(), p_senha: senha,
+    });
+    const avaliador = login as { erro?: string; token: string; nome: string; curso: string; perfil: string } | null;
 
-    if (!avaliador) {
-      toast({ title: 'Matrícula não encontrada neste ambiente', variant: 'destructive' });
+    if (!avaliador || avaliador.erro === 'credenciais') {
+      toast({ title: 'Matrícula ou senha inválida', description: 'A senha é o seu CPF.', variant: 'destructive' });
       return;
     }
 
-    const senhaEsperada = (avaliador.cpf || '').replace(/\s/g, '');
-    if (senha.replace(/[\s.\-]/g, '') !== senhaEsperada.replace(/[\s.\-]/g, '')) {
-      toast({ title: 'Senha incorreta', description: 'A senha é o seu CPF.', variant: 'destructive' });
-      return;
-    }
-
-    if (avaliador.completado) {
+    if (avaliador.erro === 'completado') {
       toast({ title: 'Você já respondeu esta avaliação', variant: 'destructive' });
       return;
     }
 
-    setSessao({ id: avaliador.id, token: avaliador.token });
+    setSessao({ id: avaliador.token, token: avaliador.token });
     setNome(avaliador.nome);
     setCurso(avaliador.curso);
     setPerfil(avaliador.perfil);
@@ -151,22 +143,13 @@ const Avaliacao = () => {
     if (!sessao) return;
     setSaving(true);
     try {
-      const rows = Object.entries(respostas).map(([questao_id, nota]) => {
-        const q = allQuestoes.find(qq => qq.id === questao_id)!;
-        return {
-          sessao_id: sessao.id,
-          ambiente_id: selectedAmbiente,
-          dimensao_id: q.dimensao_id,
-          questao_id,
-          nota,
-          observacao: observacoes[questao_id] || '',
-        };
-      });
+      const rows = Object.entries(respostas).map(([questao_id, nota]) => ({
+        questao_id, nota, observacao: observacoes[questao_id] || '',
+      }));
 
-      const { error } = await supabase.from('respostas_avaliacao').insert(rows);
+      const { error } = await supabase.rpc('avaliacao_enviar', { p_token: sessao.token, p_respostas: rows });
       if (error) throw error;
 
-      await supabase.from('avaliadores_sessao').update({ completado: true }).eq('id', sessao.id);
       setStep('concluido');
       toast({ title: 'Avaliação enviada com sucesso!' });
     } catch {
