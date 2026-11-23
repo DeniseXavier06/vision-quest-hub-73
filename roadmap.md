@@ -12,3 +12,6 @@
 
 - [x] Botão Importar Avaliações em Importações com mapeamento de colaboradores
 - [x] Storytelling Colaboradores/2026 por seção e dimensão
+- [x] Personalizar gráficos: tamanho da fonte dos rótulos
+- [x] Exportar imagem: "Resultado dos alunos avaliando a instituição – 2026"
+- [x] Análise de sentimentos nas Sugestões dos discentes – 2026

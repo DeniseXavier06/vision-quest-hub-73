@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X, ImageDown } from 'lucide-react';
 import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, seleci
 import { cn } from '@/lib/utils';
 import { ChartCustomizer, legendProps, useChartCustom } from '@/components/ChartCustomizer';
 import { SugestoesDiscentes } from '@/components/SugestoesDiscentes';
+import { toPng } from 'html-to-image';
 
 const TODOS = '__todos__';
 const titulos = ['O que os discentes revelam?', 'Médias por curso', 'Médias por dimensão', 'Médias por eixo', 'Médias por professor', 'Médias por área', 'Prioridades para os planos de ação', 'Da escuta à ação'];
@@ -34,13 +35,13 @@ function GraficoMedias({ id, dados, cores, onClickBar }: { id: string; dados: Re
     <ResponsiveContainer width="100%" height={Math.max(300, dados.length * 48)}>
       <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
-        <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
+        <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: cfg.fonte }} />
+        <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: cfg.fonte }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(valor: number) => [fmt(valor), 'Média']} />
         {cfg.legenda && <Legend {...legendProps(cfg)} payload={presentes.map(k => ({ value: cfg.series[k].nome, type: 'square', color: cfg.series[k].cor, id: k }))} />}
         <Bar dataKey="media" name="Média" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>
           {dados.map(d => <Cell key={d.nome} fill={cfg.series[d.conceito]?.cor ?? cores[d.conceito]} />)}
-          {cfg.rotulos && <LabelList dataKey="media" position="right" formatter={fmt} />}
+          {cfg.rotulos && <LabelList dataKey="media" position="right" formatter={fmt} fontSize={cfg.fonte} />}
         </Bar>
       </BarChart>
     </ResponsiveContainer>
@@ -60,10 +61,10 @@ function GraficoComparativo({ id, dados, anos, cores, onClickBar }: { id: string
     <ResponsiveContainer width="100%" height={Math.max(320, dados.length * 70)}>
       <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
-        <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
+        <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: cfg.fonte }} />
+        <YAxis dataKey="nome" type="category" width={155} tick={{ fontSize: cfg.fonte }} tickFormatter={(s: string) => s.length > 24 ? s.slice(0, 23) + '…' : s} />
         <Tooltip formatter={(v: number) => fmt(v)} />{cfg.legenda && <Legend {...legendProps(cfg)} />}
-        {anos.map(a => <Bar key={a} dataKey={a} name={cfg.series[a].nome} fill={cfg.series[a].cor} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>{cfg.rotulos && <LabelList dataKey={a} position="right" formatter={fmt} fontSize={10} />}</Bar>)}
+        {anos.map(a => <Bar key={a} dataKey={a} name={cfg.series[a].nome} fill={cfg.series[a].cor} radius={[0, 4, 4, 0]} maxBarSize={18} isAnimationActive={false} style={onClickBar ? { cursor: 'pointer' } : undefined} onClick={onClickBar ? (d: { nome?: string }) => d?.nome && onClickBar(d.nome) : undefined}>{cfg.rotulos && <LabelList dataKey={a} position="right" formatter={fmt} fontSize={cfg.fonte} />}</Bar>)}
       </BarChart>
     </ResponsiveContainer>
     <Table><TableHeader><TableRow><TableHead>Indicador</TableHead>{anos.map(a => <TableHead key={a} className="text-right">{a}</TableHead>)}<TableHead className="text-right">Variação {anos[0]}–{anos[anos.length - 1]}</TableHead></TableRow></TableHeader>
@@ -77,6 +78,13 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const [exportando, setExportando] = useState(false);
+  const matrizRef = useRef<HTMLDivElement>(null);
+  const exportarMatriz = async () => {
+    const el = matrizRef.current; if (!el) return;
+    const tabela = el.firstElementChild as HTMLElement;
+    const url = await toPng(tabela, { pixelRatio: 2, width: tabela.scrollWidth, height: tabela.scrollHeight, backgroundColor: getComputedStyle(document.body).backgroundColor, style: { margin: '0' } });
+    const a = document.createElement('a'); a.href = url; a.download = 'resultado-alunos-instituicao-2026.png'; a.click();
+  };
   const [cursoDrill, setCursoDrill] = useState<{ curso: string | null; dimensao: string | null }>({ curso: null, dimensao: null });
   const anos = trienio ? ANOS_TRIENIO : ['2026'];
   const ultimo = anos[anos.length - 1];
@@ -258,8 +266,9 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
         const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
         const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
         return m.eixos.length ? <section className="space-y-3 border-t pt-6">
-        <h3 className="text-xl font-bold">Resultado dos alunos avaliando a instituição – 2026</h3>
-        <div className="overflow-x-auto"><table className="w-full border-collapse text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xl font-bold">Resultado dos alunos avaliando a instituição – 2026</h3>
+          <Button variant="outline" size="sm" className="gap-1" onClick={exportarMatriz}><ImageDown className="h-4 w-4" />Exportar imagem</Button></div>
+        <div ref={matrizRef} className="overflow-x-auto bg-background p-2"><table className="w-full border-collapse text-xs">
           <thead><tr className="bg-primary text-primary-foreground"><th className="border p-2">Eixo</th><th className="border p-2">Área</th>
             {m.cursos.map(c => <th key={c} className="h-40 border p-1 align-bottom"><span className="inline-block whitespace-nowrap [writing-mode:vertical-rl] rotate-180 uppercase">{c}</span></th>)}
             <th className="border bg-foreground p-1 align-bottom text-background"><span className="inline-block [writing-mode:vertical-rl] rotate-180">MÉDIA DAS ÁREAS</span></th>

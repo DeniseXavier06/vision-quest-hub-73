@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 export type SerieCfg = { key: string; nome: string; cor: string };
 export type ChartCfg = {
   titulo: string; rotulos: boolean; legenda: boolean;
-  legendaPos: 'top' | 'bottom' | 'right'; series: Record<string, { nome: string; cor: string }>;
+  legendaPos: 'top' | 'bottom' | 'right'; fonte: number; series: Record<string, { nome: string; cor: string }>;
 };
 
 const PREFIX = 'chart-custom:';
@@ -38,6 +38,7 @@ export function useChartCustom(id: string, defaults: { titulo?: string; series: 
     rotulos: saved.rotulos ?? defaults.rotulos ?? true,
     legenda: saved.legenda ?? defaults.legenda ?? true,
     legendaPos: saved.legendaPos ?? 'bottom',
+    fonte: saved.fonte ?? 11,
     series,
   };
   const update = (p: Partial<ChartCfg>) => setSaved(s => ({ ...s, ...p }));
@@ -56,6 +57,12 @@ export function ChartCustomizer({ ctl }: { ctl: ReturnType<typeof useChartCustom
       </PopoverTrigger>
       <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto space-y-3" align="end">
         <div className="space-y-1"><Label>Título</Label><Input value={cfg.titulo} onChange={e => update({ titulo: e.target.value })} /></div>
+        <div className="flex items-center justify-between"><Label>Tamanho da fonte</Label>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" aria-label="Diminuir fonte" onClick={() => update({ fonte: Math.max(8, cfg.fonte - 1) })}>A-</Button>
+            <span className="w-8 text-center text-sm">{cfg.fonte}</span>
+            <Button variant="outline" size="sm" className="h-7 w-7 p-0" aria-label="Aumentar fonte" onClick={() => update({ fonte: Math.min(24, cfg.fonte + 1) })}>A+</Button>
+          </div></div>
         <div className="flex items-center justify-between"><Label>Rótulos de dados</Label><Switch checked={cfg.rotulos} onCheckedChange={v => update({ rotulos: v })} /></div>
         <div className="flex items-center justify-between"><Label>Legenda</Label><Switch checked={cfg.legenda} onCheckedChange={v => update({ legenda: v })} /></div>
         {cfg.legenda && <div className="space-y-1"><Label>Posição da legenda</Label>

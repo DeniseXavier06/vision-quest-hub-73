@@ -362,10 +362,10 @@ const StorytellingParticipacaoSection = () => {
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={trendData} margin={{ top: 10, right: 12, left: 0, bottom: 0 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
-                <XAxis dataKey="ano" stroke={chartColors.muted} />
-                <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <XAxis dataKey="ano" stroke={chartColors.muted} tick={{ fontSize: tri.cfg.fonte }} />
+                <YAxis stroke={chartColors.muted} tick={{ fontSize: tri.cfg.fonte }} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
-                {tri.cfg.legenda && <Legend wrapperStyle={{ fontSize: 12 }} {...legendProps(tri.cfg)} />}
+                {tri.cfg.legenda && <Legend wrapperStyle={{ fontSize: tri.cfg.fonte }} {...legendProps(tri.cfg)} />}
                 <Bar dataKey="Alunos presenciais" name={tri.cfg.series['Alunos presenciais'].nome} fill={tri.cfg.series['Alunos presenciais'].cor} radius={[4, 4, 0, 0]}>
                   {tri.cfg.rotulos && <LabelList dataKey="Alunos presenciais" position="top" content={renderBarLabel} />}
                 </Bar>
@@ -395,8 +395,8 @@ const StorytellingParticipacaoSection = () => {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={courseChartData} margin={{ top: 24, right: 8, left: 0, bottom: 36 }}>
                 <CartesianGrid stroke={chartColors.border} strokeDasharray="3 3" />
-                <XAxis dataKey="publico" stroke={chartColors.muted} angle={-25} textAnchor="end" interval={0} tickFormatter={(v: string) => pub.cfg.series[v]?.nome ?? v} height={62} />
-                <YAxis stroke={chartColors.muted} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                <XAxis dataKey="publico" stroke={chartColors.muted} tick={{ fontSize: pub.cfg.fonte }} angle={-25} textAnchor="end" interval={0} tickFormatter={(v: string) => pub.cfg.series[v]?.nome ?? v} height={62} />
+                <YAxis stroke={chartColors.muted} tick={{ fontSize: pub.cfg.fonte }} tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                 <Tooltip formatter={(value: number) => percent(value)} contentStyle={{ background: chartColors.background, borderColor: chartColors.border, color: chartColors.foreground }} />
                 <Bar dataKey="participacao" radius={[6, 6, 0, 0]}>
                   {pub.cfg.rotulos && <LabelList dataKey="participacao" position="top" formatter={(value: number) => percent(value)} className="fill-foreground text-xs" />}

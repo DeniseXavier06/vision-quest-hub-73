@@ -31,13 +31,13 @@ function Grafico({ id, titulo, dados }: { id: string; titulo: string; dados: Ret
       <ResponsiveContainer width="100%" height={Math.max(260, dados.length * 46)}>
         <BarChart data={dados} layout="vertical" margin={{ left: 0, right: 50, top: 8, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-          <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
-          <YAxis dataKey="nome" type="category" width={200} tick={{ fontSize: 11 }} tickFormatter={(s: string) => s.length > 32 ? s.slice(0, 31) + '…' : s} />
+          <XAxis type="number" domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} tick={{ fontSize: cfg.fonte }} />
+          <YAxis dataKey="nome" type="category" width={200} tick={{ fontSize: cfg.fonte }} tickFormatter={(s: string) => s.length > 32 ? s.slice(0, 31) + '…' : s} />
           <Tooltip formatter={(v: number) => [fmt(v), 'Média']} />
           {cfg.legenda && <Legend {...legendProps(cfg)} payload={presentes.map(k => ({ value: cfg.series[k].nome, type: 'square', color: cfg.series[k].cor, id: k }))} />}
           <Bar dataKey="media" radius={[0, 4, 4, 0]} maxBarSize={26} isAnimationActive={false}>
             {dados.map(d => <Cell key={d.nome} fill={cfg.series[d.conceito]?.cor ?? CONCEITO_CORES[d.conceito]} />)}
-            {cfg.rotulos && <LabelList dataKey="media" position="right" formatter={fmt} />}
+            {cfg.rotulos && <LabelList dataKey="media" position="right" formatter={fmt} fontSize={cfg.fonte} />}
           </Bar>
         </BarChart>
       </ResponsiveContainer>}
