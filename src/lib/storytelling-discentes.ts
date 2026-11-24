@@ -49,8 +49,8 @@ export function areasParaAcao(rows: ResultadoDiscente[]) {
   }).sort((a, b) => a.media - b.media || a.curso.localeCompare(b.curso));
 }
 export const ANOS_TRIENIO = ['2024', '2025', '2026'];
-export function selecionarDiscentes(rows: ResultadoDiscente[], anos: string[]) {
-  return rows.filter(r => anos.some(a => new RegExp(`^${a}(?:[.\\-/]|$)`).test(r.semestre.trim())) && /aluno|discente/i.test(r.nivel));
+export function selecionarDiscentes(rows: ResultadoDiscente[], anos: string[], nivel: RegExp = /aluno|discente/i) {
+  return rows.filter(r => anos.some(a => new RegExp(`^${a}(?:[.\\-/]|$)`).test(r.semestre.trim())) && nivel.test(r.nivel));
 }
 export function compararAnos(rows: ResultadoDiscente[], campo: 'curso' | 'dimensao' | 'area' | 'professor' | 'eixo', anos: string[]) {
   return resumirGrupos(rows, campo).map(({ nome }) => {

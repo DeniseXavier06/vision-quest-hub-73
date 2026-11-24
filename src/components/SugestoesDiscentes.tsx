@@ -11,7 +11,7 @@ const COR: Record<Sentimento, string> = { positivo: 'border-success/40 text-succ
 type Sug = { id: string; nome_curso: string; nivel: string; dimensao: string; area: string; texto_questao: string; sugestao: string };
 const TODOS = '__todos__';
 
-export function SugestoesDiscentes() {
+export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'professor' }) {
   const [rows, setRows] = useState<Sug[]>([]);
   const [loading, setLoading] = useState(true);
   const [curso, setCurso] = useState(TODOS);
@@ -22,9 +22,9 @@ export function SugestoesDiscentes() {
 
   useEffect(() => {
     supabase.from('sugestoes').select('id,nome_curso,nivel,dimensao,area,texto_questao,sugestao,ambientes_avaliacao!inner(semestres_letivos!inner(nome))')
-      .eq('perfil', 'aluno').ilike('ambientes_avaliacao.semestres_letivos.nome', '%2026%').limit(5000)
-      .then(({ data }) => { setRows((data ?? []) as unknown as Sug[]); setLoading(false); });
-  }, []);
+      .eq('perfil', perfil).ilike('ambientes_avaliacao.semestres_letivos.nome', '%2026%').limit(5000)
+      .then(({ data }) => { const vistos = new Set<string>(); setRows(((data ?? []) as unknown as Sug[]).filter(r => { const k = [r.nome_curso, r.nivel, r.dimensao, r.area, r.texto_questao, r.sugestao.trim()].join('|'); if (vistos.has(k)) return false; vistos.add(k); return true; })); setLoading(false); });
+  }, [perfil]);
 
   const opts = (vals: string[]) => [{ value: TODOS, label: 'Todos' }, ...[...new Set(vals.filter(Boolean))].sort().map(v => ({ value: v, label: v }))];
   const porCurso = rows.filter(r => curso === TODOS || r.nome_curso === curso);
@@ -34,7 +34,7 @@ export function SugestoesDiscentes() {
   const visiveis = useMemo(() => sent ? recorte.filter(r => classificarSentimento(r.sugestao) === sent) : recorte, [recorte, sent]);
 
   return <section className="space-y-4 border-t pt-6">
-    <h3 className="text-xl font-bold">Sugestões dos discentes – 2026</h3>
+    <h3 className="text-xl font-bold">Sugestões dos {perfil === 'professor' ? 'docentes' : 'discentes'} – 2026</h3>
     <div className="grid gap-3 sm:grid-cols-3">
       <SearchableSelect value={curso} onValueChange={v => { setCurso(v); setDimensao(TODOS); setArea(TODOS); }} options={opts(rows.map(r => r.nome_curso))} placeholder="Curso" />
       <SearchableSelect value={dimensao} onValueChange={v => { setDimensao(v); setArea(TODOS); }} options={opts(porCurso.map(r => r.dimensao))} placeholder="Dimensão" />

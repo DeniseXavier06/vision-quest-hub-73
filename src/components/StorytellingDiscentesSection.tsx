@@ -74,7 +74,9 @@ function GraficoComparativo({ id, dados, anos, cores, onClickBar }: { id: string
 }
 
 const CACHE = new Map<string, Promise<ResultadoDiscente[]>>();
-const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }) => {
+const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }: { trienio?: boolean; publico?: 'discentes' | 'docentes' }) => {
+  const isDoc = publico === 'docentes';
+  const rotulo = isDoc ? 'docentes' : 'discentes';
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const [exportando, setExportando] = useState(false);
@@ -123,10 +125,10 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     const carregar = async () => {
       setLoading(true); setErro(false);
       try {
-        const chave = anos.join(',');
+        const chave = publico + ':' + anos.join(',');
         if (!CACHE.has(chave)) CACHE.set(chave, (async () => {
           // Agregação no banco (mesma média simples via peso): ~16x menos linhas e uma única requisição.
-          const { data, error } = await supabase.rpc('resultados_discentes_agregados', { anos });
+          const { data, error } = await supabase.rpc('resultados_publico_agregados', { anos, publico });
           if (error) throw error;
           return ((data as unknown as (string | number)[][]) || []).map(([semestre, nivel, curso, dimensao, area, textoQuestao, professor,
             excelente, bom, atendeParcialmente, regular, muitoRuim, naoSeAplica, total, somaMedia, n]) => ({
@@ -137,13 +139,13 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
         })().catch(e => { CACHE.delete(chave); throw e; }));
         const todas = await CACHE.get(chave)!;
         if (cancelado) return;
-        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anos)));
+        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anos, isDoc ? /professor|docente/i : undefined)));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
     };
     carregar();
     return () => { cancelado = true; };
-  }, [tentativa, trienio]);
+  }, [tentativa, trienio, publico]);
 
   useEffect(() => {
     if (!apresentando) return;
@@ -219,26 +221,26 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
     finally { setExportandoPdf(false); }
   };
 
-  if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados discentes de 2026…</div>;
+  if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados {rotulo} de 2026…</div>;
   if (erro) return <div role="alert" className="space-y-3 py-12 text-center"><p>Não foi possível carregar os resultados de 2026.</p><Button variant="outline" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button></div>;
 
   const conteudo = <div ref={containerRef} role={apresentando ? 'dialog' : undefined} aria-modal={apresentando ? true : undefined} aria-label={apresentando ? 'Apresentação dos resultados discentes' : undefined} className={cn('space-y-8', apresentando && 'fixed inset-0 z-[100] overflow-y-auto bg-background px-6 pt-6 pb-28 sm:px-12 sm:pt-10')}>
     <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />Discentes / {trienio ? 'Triênio 2024–2026' : '2026'}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
+      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />{isDoc ? 'Docentes' : 'Discentes'} / {trienio ? 'Triênio 2024–2026' : '2026'}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={exportar} disabled={exportando || !filtrado.length}>{exportando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}Gerar PowerPoint</Button><Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button></div>
     </header>
     {!apresentando && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {(['nivel', 'curso', 'dimensao', 'area'] as const).map((campo, i) => <label key={campo} className="space-y-1 text-sm"><span className="font-medium">{['Nível', 'Curso', 'Dimensão', 'Área'][i]}</span><SearchableSelect value={[nivel, curso, dimensao, area][i]} onValueChange={[setNivel, setCurso, setDimensao, setArea][i]} options={[{ value: TODOS, label: ['Todos os níveis', 'Todos os cursos', 'Todas as dimensões', 'Todas as áreas'][i] }, ...opcoes(campo).map(v => ({ value: v, label: v }))]} /></label>)}
     </div>}
     {!apresentando && (nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
-    {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado discente de 2026 encontrado para este recorte.</p> : <>
+    {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado {isDoc ? 'docente' : 'discente'} de 2026 encontrado para este recorte.</p> : <>
       {mostrar(0) && <section className="space-y-6">
-        <h3 className="text-xl font-bold">O que os discentes revelam?</h3>
+        <h3 className="text-xl font-bold">O que os {rotulo} revelam?</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[['Média geral', fmt(media)], ['Conceito geral', conceito(media)], ['Respostas favoráveis', `${fmt(percFavoravel(filtrado))}%`], ['Respostas às questões', totalRespostas(filtrado).toLocaleString('pt-BR')]].map(([titulo, valor]) => <div key={titulo} className="border-l-4 bg-muted/40 p-4" style={{ borderColor: titulo.startsWith('Média') || titulo.startsWith('Conceito') ? corMedia(media) : undefined }}><p className="text-sm text-muted-foreground">{titulo}</p><p className="mt-2 text-xl font-bold" style={titulo.startsWith('Média') || titulo.startsWith('Conceito') ? { color: corMedia(media) } : undefined}>{valor}</p></div>)}
         </div>
         <div className="space-y-3 text-base leading-7">
-          <p>Em 2026, a experiência dos discentes alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
+          <p>Em 2026, a experiência dos {rotulo} alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
           {grupos.curso[0] && <p><strong>Destaque:</strong> {grupos.curso[0].nome} tem a maior média ({fmt(grupos.curso[0].media)}). {grupos.area[0]?.nome} lidera entre as áreas, com {fmt(grupos.area[0]?.media || 0)}.</p>}
           <p><strong>O ponto decisivo:</strong> {prioridades.length ? `${prioridades.length} recortes de área por curso e nível ficaram em Atende Parcialmente, Regular ou Muito Ruim. A média geral não deve ocultar esses pontos de atenção.` : 'nenhuma área por curso e nível ficou nos conceitos prioritários. O acompanhamento das questões continua importante para preservar os resultados.'}</p>
           {trienio && <p><strong>Evolução da média geral:</strong> {anos.map(a => { const g = filtrado.filter(r => r.semestre.trim().startsWith(a)); return `${a}: ${g.length ? `${fmt(mediaHierarquica(g))} (${conceito(mediaHierarquica(g))})` : 'sem dados'}`; }).join(' · ')}.</p>}
@@ -266,7 +268,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
         const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
         const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
         return m.eixos.length ? <section className="space-y-3 border-t pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xl font-bold">Resultado dos alunos avaliando a instituição – 2026</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xl font-bold">Resultado dos {isDoc ? 'professores' : 'alunos'} avaliando a instituição – 2026</h3>
           <Button variant="outline" size="sm" className="gap-1" onClick={exportarMatriz}><ImageDown className="h-4 w-4" />Exportar imagem</Button></div>
         <div ref={matrizRef} className="overflow-x-auto bg-background p-2"><table className="w-full border-collapse text-xs">
           <thead><tr className="bg-primary text-primary-foreground"><th className="border p-2">Eixo</th><th className="border p-2">Área</th>
@@ -328,7 +330,7 @@ const StorytellingDiscentesSection = ({ trienio = false }: { trienio?: boolean }
       </section>}
       {mostrar(7) && <section className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">Da escuta à ação</h3><ol className="list-decimal space-y-3 pl-5 leading-7"><li><strong>Priorizar:</strong> começar pelas áreas Muito Ruim e Regular, preservando o recorte por curso e nível.</li><li><strong>Investigar:</strong> usar as questões com menor média para validar causas com alunos e equipes, sem atribuir causalidade apenas ao indicador.</li><li><strong>Pactuar:</strong> registrar ação, responsáveis, prazo, meta e evidências de conclusão no menu Ações.</li><li><strong>Acompanhar:</strong> verificar as melhorias e comparar o indicador no próximo ciclo avaliativo.</li></ol><p className="border-l-4 border-primary pl-4 text-lg font-medium">O resultado não encerra a avaliação: transforma a percepção dos discentes em compromissos de melhoria por curso.</p></section>}
     </>}
-    {!trienio && !apresentando && <SugestoesDiscentes />}
+    {!trienio && !apresentando && <SugestoesDiscentes perfil={isDoc ? 'professor' : 'aluno'} />}
     {apresentando && <nav aria-label="Navegação da apresentação discente" className="fixed bottom-0 left-0 right-0 z-[101] flex flex-wrap items-center justify-center gap-3 rounded-md border bg-background p-3 shadow-sm"><Button variant="outline" size="icon" aria-label="Retroceder slide" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><ChevronLeft className="h-5 w-5" /></Button><span className="text-sm">{slide + 1} / {titulos.length}</span><span className="hidden text-sm font-medium sm:inline">{titulos[slide]}</span><Button variant="outline" size="icon" aria-label="Avançar slide" disabled={slide === titulos.length - 1} onClick={() => setSlide(s => s + 1)}><ChevronRight className="h-5 w-5" /></Button><Button variant="ghost" onClick={() => setApresentando(false)}>Sair</Button></nav>}
   </div>;
   return apresentando ? createPortal(conteudo, document.body) : conteudo;

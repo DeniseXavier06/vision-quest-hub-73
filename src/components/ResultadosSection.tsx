@@ -23,6 +23,7 @@ import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import DocentesSection from '@/components/DocentesSection';
+import StorytellingDiscentesSection from '@/components/StorytellingDiscentesSection';
 
 export interface ResultadoRow {
   semestre: string;
@@ -916,7 +917,7 @@ const ResultadosSection = () => {
       </div>
 
       {grupo === 'docentes' || grupo === 'discdoc' ? (
-        <DocentesSection key={grupo} perfil={grupo === 'docentes' ? 'docentes' : 'discentes'} />
+        <div className="space-y-8"><StorytellingDiscentesSection key={'st-' + grupo} publico={grupo === 'docentes' ? 'docentes' : 'discentes'} /><DocentesSection key={grupo} perfil={grupo === 'docentes' ? 'docentes' : 'discentes'} /></div>
       ) : (<>
 
       {/* Stats Cards */}

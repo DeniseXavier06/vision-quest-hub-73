@@ -43,6 +43,13 @@
       "when": 1795022862846,
       "tag": "0005_fast_staff_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795541532559,
+      "tag": "0006_resultados_publico_agregados",
+      "breakpoints": true
     }
   ]
 }
