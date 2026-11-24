@@ -34,7 +34,7 @@ export function criarPowerPointDiscentes(rows: ResultadoDiscente[], anos: string
   const media = mediaHierarquica(rows);
   const ultimo = anos[anos.length - 1];
   const prioridades = areasParaAcao(rows.filter(r => r.semestre.trim().startsWith(ultimo || '2026')));
-  textoSlide(`Discentes / ${anos.length > 1 ? 'Triênio 2024–2026' : '2026'}`, [
+  textoSlide(`Discentes / ${anos.length > 1 ? `Triênio ${anos[0]}–${anos[anos.length - 1]}` : anos[0]}`, [
     `Média geral: ${fmt(media)} · ${conceito(media)} · escala de 0 a 5`,
     `${fmt(percFavoravel(rows))}% de respostas favoráveis · ${totalRespostas(rows).toLocaleString('pt-BR')} respostas às questões`,
     `${resumirGrupos(rows, 'curso').length} cursos · ${prioridades.length} recortes de área prioritários em ${ultimo}`,

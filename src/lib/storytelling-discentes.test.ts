@@ -71,6 +71,19 @@ describe('tabela eixo × curso', () => {
   });
 });
 
+import { filtrarPorSemestres, semestresDisponiveis } from './storytelling-discentes';
+describe('filtro por semestre', () => {
+  it('mantém apenas as linhas dos semestres escolhidos', () => {
+    expect(filtrarPorSemestres([linha(), linha({ semestre: '2025.2' }), linha({ semestre: '2024.2' })], ['2026.2']).map(r => r.semestre)).toEqual(['2026.2']);
+  });
+  it('sem nenhum semestre escolhido mantém todas as linhas', () => {
+    expect(filtrarPorSemestres([linha(), linha({ semestre: '2025.2' })], []).map(r => r.semestre)).toEqual(['2026.2', '2025.2']);
+  });
+  it('lista os semestres disponíveis sem repetição e em ordem', () => {
+    expect(semestresDisponiveis([linha({ semestre: '2025.2' }), linha(), linha({ semestre: '2025.2' })])).toEqual(['2025.2', '2026.2']);
+  });
+});
+
 import { mediaQuestoes as mq } from './medidas';
 describe('linhas agregadas com peso', () => {
   it('reproduzem a média simples das linhas originais', () => {

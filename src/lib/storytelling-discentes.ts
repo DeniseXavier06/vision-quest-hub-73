@@ -95,6 +95,17 @@ export function cursosPorQuestao(prioridades: Prioridade[]) {
     .sort((a, b) => b.quantidade - a.quantidade || a.questao.localeCompare(b.questao));
 }
 
+/** Semestres presentes nas linhas, sem repetição e em ordem. */
+export const semestresDisponiveis = (rows: ResultadoDiscente[]) =>
+  [...new Set(rows.map(r => r.semestre.trim()).filter(Boolean))].sort();
+
+/** Linhas dos semestres escolhidos; seleção vazia mantém todas as linhas. */
+export function filtrarPorSemestres(rows: ResultadoDiscente[], semestres: string[]) {
+  if (!semestres.length) return rows;
+  const sel = new Set(semestres);
+  return rows.filter(r => sel.has(r.semestre.trim()));
+}
+
 /** Matriz eixo × área × curso no modelo de relatório institucional. */
 export function matrizEixoCurso(rows: ResultadoDiscente[]) {
   const linhas = comEixo(rows).filter(r => r.eixo);

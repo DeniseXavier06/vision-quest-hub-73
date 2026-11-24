@@ -1,21 +1,24 @@
 import { Fragment, useEffect, useMemo, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X, ImageDown } from 'lucide-react';
+import { AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, FileDown, GraduationCap, Loader2, Presentation, Download, X, ImageDown } from 'lucide-react';
 import { Legend, Bar, BarChart, CartesianGrid, Cell, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { SearchableSelect } from '@/components/ui/searchable-select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { corMedia, conceito, mediaHierarquica, percFavoravel, totalRespostas } from '@/lib/medidas';
-import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, type ResultadoDiscente } from '@/lib/storytelling-discentes';
+import { areasParaAcao, cursosPorQuestao, matrizEixoCurso, resumirGrupos, selecionarDiscentes, compararAnos, comEixo, recorteCurso, ANOS_TRIENIO, CONCEITOS_PRIORITARIOS, filtrarPorSemestres, semestresDisponiveis, type ResultadoDiscente } from '@/lib/storytelling-discentes';
 import { cn } from '@/lib/utils';
 import { ChartCustomizer, legendProps, useChartCustom } from '@/components/ChartCustomizer';
 import { SugestoesDiscentes } from '@/components/SugestoesDiscentes';
 import { toPng } from 'html-to-image';
 
 const TODOS = '__todos__';
+const ANO_ATUAL = ['2026'];
 const titulos = ['O que os discentes revelam?', 'Médias por curso', 'Médias por dimensão', 'Médias por eixo', 'Médias por professor', 'Médias por área', 'Prioridades para os planos de ação', 'Da escuta à ação'];
 const fmt = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const classesConceito: Record<string, string> = {
@@ -74,7 +77,7 @@ function GraficoComparativo({ id, dados, anos, cores, onClickBar }: { id: string
 }
 
 const CACHE = new Map<string, Promise<ResultadoDiscente[]>>();
-const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }: { trienio?: boolean; publico?: 'discentes' | 'docentes' }) => {
+const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', filtroSemestre = false }: { trienio?: boolean; publico?: 'discentes' | 'docentes'; filtroSemestre?: boolean }) => {
   const isDoc = publico === 'docentes';
   const rotulo = isDoc ? 'docentes' : 'discentes';
   const { toast } = useToast();
@@ -85,11 +88,12 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
     const el = matrizRef.current; if (!el) return;
     const tabela = el.firstElementChild as HTMLElement;
     const url = await toPng(tabela, { pixelRatio: 2, width: tabela.scrollWidth, height: tabela.scrollHeight, backgroundColor: getComputedStyle(document.body).backgroundColor, style: { margin: '0' } });
-    const a = document.createElement('a'); a.href = url; a.download = 'resultado-alunos-instituicao-2026.png'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = `resultado-alunos-instituicao-${escopo.replace(/\s+/g, '')}.png`; a.click();
   };
   const [cursoDrill, setCursoDrill] = useState<{ curso: string | null; dimensao: string | null }>({ curso: null, dimensao: null });
-  const anos = trienio ? ANOS_TRIENIO : ['2026'];
-  const ultimo = anos[anos.length - 1];
+  const anosBase = trienio ? ANOS_TRIENIO : ANO_ATUAL;
+  const anosCarregar = filtroSemestre ? ANOS_TRIENIO : anosBase;
+  const [semestresSel, setSemestresSel] = useState<string[]>([]);
   const [prioCurso, setPrioCurso] = useState(TODOS);
   const [prioDimensao, setPrioDimensao] = useState(TODOS);
   const [prioArea, setPrioArea] = useState(TODOS);
@@ -113,6 +117,18 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
   const [cores, setCores] = useState<Record<string, string>>({});
   const [drill, setDrill] = useState<{ eixo: string | null; dimensao: string | null }>({ eixo: null, dimensao: null });
 
+  const semestresOpcoes = useMemo(() => semestresDisponiveis(rows), [rows]);
+  // Sem escolha explícita, o bloco mostra os semestres do próprio escopo (2026 ou o triênio).
+  useEffect(() => {
+    if (!filtroSemestre || semestresSel.length || !semestresOpcoes.length) return;
+    const padrao = semestresOpcoes.filter(s => anosBase.some(a => s.startsWith(a)));
+    if (padrao.length) setSemestresSel(padrao);
+  }, [filtroSemestre, semestresOpcoes, anosBase, semestresSel.length]);
+  const semestresAtivos = semestresSel.length ? semestresSel : semestresOpcoes;
+  const anos = filtroSemestre ? [...new Set(semestresAtivos.map(s => s.slice(0, 4)))].sort() : anosBase;
+  const ultimo = anos[anos.length - 1] || '';
+  const escopo = filtroSemestre ? (semestresAtivos.join(' · ') || 'todos os semestres') : (trienio ? '2024–2026' : '2026');
+
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
     setCores(Object.fromEntries(['Excelente', 'Bom', 'Atende Parcialmente', 'Regular', 'Muito Ruim'].map((c, i) =>
@@ -125,10 +141,10 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
     const carregar = async () => {
       setLoading(true); setErro(false);
       try {
-        const chave = publico + ':' + anos.join(',');
+        const chave = publico + ':' + anosCarregar.join(',');
         if (!CACHE.has(chave)) CACHE.set(chave, (async () => {
           // Agregação no banco (mesma média simples via peso): ~16x menos linhas e uma única requisição.
-          const { data, error } = await supabase.rpc('resultados_publico_agregados', { anos, publico });
+          const { data, error } = await supabase.rpc('resultados_publico_agregados', { anos: anosCarregar, publico });
           if (error) throw error;
           return ((data as unknown as (string | number)[][]) || []).map(([semestre, nivel, curso, dimensao, area, textoQuestao, professor,
             excelente, bom, atendeParcialmente, regular, muitoRuim, naoSeAplica, total, somaMedia, n]) => ({
@@ -139,13 +155,13 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
         })().catch(e => { CACHE.delete(chave); throw e; }));
         const todas = await CACHE.get(chave)!;
         if (cancelado) return;
-        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anos, isDoc ? /professor|docente/i : undefined)));
+        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anosCarregar, isDoc ? /professor|docente/i : undefined)));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
     };
     carregar();
     return () => { cancelado = true; };
-  }, [tentativa, trienio, publico]);
+  }, [tentativa, trienio, publico, filtroSemestre]);
 
   useEffect(() => {
     if (!apresentando) return;
@@ -167,10 +183,10 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
     return () => { document.body.style.overflow = anterior; };
   }, [apresentando]);
 
-  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao]);
+  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao, semestresSel]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
-  const filtrado = useMemo(() => rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
-    (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), [rows, nivel, curso, dimensao, area]);
+  const filtrado = useMemo(() => filtrarPorSemestres(rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
+    (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), filtroSemestre ? semestresSel : []), [rows, nivel, curso, dimensao, area, filtroSemestre, semestresSel]);
   const grupos = useMemo(() => ({ curso: resumirGrupos(filtrado, 'curso'), dimensao: resumirGrupos(filtrado, 'dimensao'),
     area: resumirGrupos(filtrado, 'area'), professor: resumirGrupos(filtrado, 'professor'), eixo: resumirGrupos(filtrado, 'eixo') }), [filtrado]);
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
@@ -198,7 +214,11 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
   const selecionada = prioridadesVisiveis.find(p => JSON.stringify([p.nivel, p.curso, p.dimensao, p.area]) === detalhe);
   const media = mediaHierarquica(filtrado);
   const mostrar = (i: number) => !apresentando || slide === i;
-  const limpar = () => { setNivel(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setConceitoFiltro(TODOS); };
+  const limpar = () => { setNivel(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setConceitoFiltro(TODOS); setSemestresSel(semestresOpcoes.filter(s => anosBase.some(a => s.startsWith(a)))); };
+  const toggleSemestre = (s: string) => setSemestresSel(sel => {
+    const atual = sel.length ? sel : semestresOpcoes;
+    return (atual.includes(s) ? atual.filter(x => x !== s) : [...atual, s]).sort();
+  });
 
   const exportar = async () => {
     setExportando(true);
@@ -215,32 +235,54 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
     try {
       const { baixarPdfPlanoAcao } = await import('@/lib/storytelling-pdf');
       const recorte = [prioCurso, prioDimensao, prioArea].filter(v => v !== TODOS).join(' · ') || 'Todos os cursos';
-      baixarPdfPlanoAcao(prioridadesVisiveis, `Recorte: ${recorte} · Base: ${trienio ? ultimo : '2026'}`);
+      baixarPdfPlanoAcao(prioridadesVisiveis, `Recorte: ${recorte} · Base: ${escopo}`);
       toast({ title: 'PDF gerado', description: 'Prioridades por curso, área e questões para o plano de ação.' });
     } catch { toast({ title: 'Não foi possível gerar o PDF', description: 'Tente novamente.', variant: 'destructive' }); }
     finally { setExportandoPdf(false); }
   };
 
-  if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados {rotulo} de 2026…</div>;
-  if (erro) return <div role="alert" className="space-y-3 py-12 text-center"><p>Não foi possível carregar os resultados de 2026.</p><Button variant="outline" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button></div>;
+  if (loading) return <div role="status" className="flex items-center justify-center gap-3 py-20"><Loader2 className="h-5 w-5 animate-spin text-primary" />Carregando resultados {rotulo}…</div>;
+  if (erro) return <div role="alert" className="space-y-3 py-12 text-center"><p>Não foi possível carregar os resultados {rotulo}.</p><Button variant="outline" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button></div>;
 
   const conteudo = <div ref={containerRef} role={apresentando ? 'dialog' : undefined} aria-modal={apresentando ? true : undefined} aria-label={apresentando ? 'Apresentação dos resultados discentes' : undefined} className={cn('space-y-8', apresentando && 'fixed inset-0 z-[100] overflow-y-auto bg-background px-6 pt-6 pb-28 sm:px-12 sm:pt-10')}>
     <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />{isDoc ? 'Docentes' : 'Discentes'} / {trienio ? 'Triênio 2024–2026' : '2026'}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {Array.from(new Set(rows.map(r => r.semestre))).join(', ') || '2026'} · Escala de 0 a 5</p></div>
+      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />{isDoc ? 'Docentes' : 'Discentes'} / {trienio ? 'Triênio 2024–2026' : escopo}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {escopo} · Escala de 0 a 5</p></div>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={exportar} disabled={exportando || !filtrado.length}>{exportando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}Gerar PowerPoint</Button><Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button></div>
     </header>
-    {!apresentando && <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    {!apresentando && <div className={cn('grid gap-3 sm:grid-cols-2', filtroSemestre ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
+      {filtroSemestre && <label className="space-y-1 text-sm"><span className="font-medium">Semestre</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" className="w-full justify-between" aria-label="Filtrar por semestre">
+              {semestresSel.length === 0 ? 'Todos os semestres' : semestresSel.length === 1 ? semestresSel[0] : `${semestresSel.length} semestres`}
+              <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-60 p-3" align="start">
+            <div className="space-y-2">
+              {semestresOpcoes.map(s => <label key={s} className="flex items-center gap-2 text-sm">
+                <Checkbox checked={semestresAtivos.includes(s)} onCheckedChange={() => toggleSemestre(s)} />
+                {s}
+              </label>)}
+              <div className="flex gap-2 pt-1">
+                <Button variant="ghost" size="sm" onClick={() => setSemestresSel(semestresOpcoes)}>Todos</Button>
+                <Button variant="ghost" size="sm" onClick={() => setSemestresSel(semestresOpcoes.filter(s => anosBase.some(a => s.startsWith(a))))}>Padrão {trienio ? '2024–2026' : '2026'}</Button>
+              </div>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </label>}
       {(['nivel', 'curso', 'dimensao', 'area'] as const).map((campo, i) => <label key={campo} className="space-y-1 text-sm"><span className="font-medium">{['Nível', 'Curso', 'Dimensão', 'Área'][i]}</span><SearchableSelect value={[nivel, curso, dimensao, area][i]} onValueChange={[setNivel, setCurso, setDimensao, setArea][i]} options={[{ value: TODOS, label: ['Todos os níveis', 'Todos os cursos', 'Todas as dimensões', 'Todas as áreas'][i] }, ...opcoes(campo).map(v => ({ value: v, label: v }))]} /></label>)}
     </div>}
     {!apresentando && (nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
-    {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado {isDoc ? 'docente' : 'discente'} de 2026 encontrado para este recorte.</p> : <>
+    {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado {isDoc ? 'docente' : 'discente'} de {escopo} encontrado para este recorte.</p> : <>
       {mostrar(0) && <section className="space-y-6">
         <h3 className="text-xl font-bold">O que os {rotulo} revelam?</h3>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[['Média geral', fmt(media)], ['Conceito geral', conceito(media)], ['Respostas favoráveis', `${fmt(percFavoravel(filtrado))}%`], ['Respostas às questões', totalRespostas(filtrado).toLocaleString('pt-BR')]].map(([titulo, valor]) => <div key={titulo} className="border-l-4 bg-muted/40 p-4" style={{ borderColor: titulo.startsWith('Média') || titulo.startsWith('Conceito') ? corMedia(media) : undefined }}><p className="text-sm text-muted-foreground">{titulo}</p><p className="mt-2 text-xl font-bold" style={titulo.startsWith('Média') || titulo.startsWith('Conceito') ? { color: corMedia(media) } : undefined}>{valor}</p></div>)}
         </div>
         <div className="space-y-3 text-base leading-7">
-          <p>Em 2026, a experiência dos {rotulo} alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
+          <p>Em {escopo}, a experiência dos {rotulo} alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
           {grupos.curso[0] && <p><strong>Destaque:</strong> {grupos.curso[0].nome} tem a maior média ({fmt(grupos.curso[0].media)}). {grupos.area[0]?.nome} lidera entre as áreas, com {fmt(grupos.area[0]?.media || 0)}.</p>}
           <p><strong>O ponto decisivo:</strong> {prioridades.length ? `${prioridades.length} recortes de área por curso e nível ficaram em Atende Parcialmente, Regular ou Muito Ruim. A média geral não deve ocultar esses pontos de atenção.` : 'nenhuma área por curso e nível ficou nos conceitos prioritários. O acompanhamento das questões continua importante para preservar os resultados.'}</p>
           {trienio && <p><strong>Evolução da média geral:</strong> {anos.map(a => { const g = filtrado.filter(r => r.semestre.trim().startsWith(a)); return `${a}: ${g.length ? `${fmt(mediaHierarquica(g))} (${conceito(mediaHierarquica(g))})` : 'sem dados'}`; }).join(' · ')}.</p>}
@@ -263,7 +305,7 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes' }
         </div>
         <p className="text-sm text-muted-foreground">{drill.eixo ? 'Áreas do eixo selecionado. Use o caminho acima para voltar.' : 'Clique em um eixo para ver as áreas.'}</p>
         {trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-eixo`} dados={drillDados.comparativo} anos={anos} cores={coresAnos} onClickBar={drill.eixo ? undefined : drillClick} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-eixo`} dados={drillDados.resumo} cores={cores} onClickBar={drill.eixo ? undefined : drillClick} />}
-      </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de 2026 não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={grupos[campo]} cores={cores} />)}</section>)}
+      </div> : campo === 'professor' && !grupos.professor.length ? <p className="bg-muted/40 p-5 text-muted-foreground">Os resultados de {escopo} não identificam os professores individualmente. A percepção sobre o ensino está disponível na dimensão “Avaliando o Professor”; não há média individual por professor neste conjunto de dados.</p> : (trienio ? <GraficoComparativo id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={comparativos[campo]} anos={anos} cores={coresAnos} /> : <GraficoMedias id={`sd-${trienio ? 'tri' : '26'}-${campo}`} dados={grupos[campo]} cores={cores} />)}</section>)}
       {!trienio && !apresentando && (() => { const m = matrizEixoCurso(filtrado); const sig = (v: number | null) => v == null ? '–' : fmt(v);
         const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
         const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
