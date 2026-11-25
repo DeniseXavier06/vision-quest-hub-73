@@ -917,7 +917,17 @@ const ResultadosSection = () => {
       </div>
 
       {grupo === 'docentes' || grupo === 'discdoc' ? (
-        <div className="space-y-8"><StorytellingDiscentesSection key={'st-' + grupo} publico={grupo === 'docentes' ? 'docentes' : 'discentes'} filtroSemestre /><DocentesSection key={grupo} perfil={grupo === 'docentes' ? 'docentes' : 'discentes'} /></div>
+        <DocentesSection
+          key={grupo}
+          perfil={grupo === 'docentes' ? 'docentes' : 'discentes'}
+          complementos={(dados, semestres) => (
+            <StorytellingDiscentesSection
+              publico={grupo === 'docentes' ? 'docentes' : 'discentes'}
+              dadosCompartilhados={dados}
+              semestresCompartilhados={semestres}
+            />
+          )}
+        />
       ) : (<>
 
       {/* Stats Cards */}

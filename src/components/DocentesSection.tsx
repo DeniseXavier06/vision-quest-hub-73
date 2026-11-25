@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, CartesianGrid, Legend } from 'recharts';
 import { Loader2, GraduationCap, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   type LinhaResultado, mediaHierarquica, mediaQuestoes, percFavoravel, totalRespostas, conceito, corMedia,
 } from '@/lib/medidas';
+import type { ResultadoDiscente } from '@/lib/storytelling-discentes';
 
 interface LinhaDocente extends LinhaResultado {
   professor: string;
@@ -34,8 +35,11 @@ const CAMPO_GRUPO: Record<Grupo, keyof LinhaDocente> = {
   curso: 'curso', dimensao: 'dimensao', area: 'area', professor: 'professor', disciplina: 'disciplina',
 };
 
-interface Props { perfil?: 'docentes' | 'discentes' }
-const DocentesSection = ({ perfil = 'docentes' }: Props) => {
+interface Props {
+  perfil?: 'docentes' | 'discentes';
+  complementos?: (dados: ResultadoDiscente[], semestres: string[]) => ReactNode;
+}
+const DocentesSection = ({ perfil = 'docentes', complementos }: Props) => {
   const isDisc = perfil === 'discentes';
   const [rows, setRows] = useState<LinhaDocente[]>([]);
   const [loading, setLoading] = useState(true);
@@ -252,7 +256,7 @@ const DocentesSection = ({ perfil = 'docentes' }: Props) => {
         </CardContent>
       </Card>
 
-      {GRUPOS.filter((g) => !isDisc || (g.id !== 'professor' && g.id !== 'disciplina')).map((g) => renderGrafico(g.id, g.rotulo))}
+      {GRUPOS.filter((g) => (!isDisc || (g.id !== 'professor' && g.id !== 'disciplina')) && (!complementos || g.id !== 'curso')).map((g) => renderGrafico(g.id, g.rotulo))}
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-base">Questões — média e conceito</CardTitle></CardHeader>
@@ -283,6 +287,8 @@ const DocentesSection = ({ perfil = 'docentes' }: Props) => {
           </Table>
         </CardContent>
       </Card>
+
+      {complementos?.(filtrado, semestresAtivos)}
     </div>
   );
 };

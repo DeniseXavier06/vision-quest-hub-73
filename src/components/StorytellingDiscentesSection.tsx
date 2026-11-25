@@ -77,9 +77,12 @@ function GraficoComparativo({ id, dados, anos, cores, onClickBar }: { id: string
 }
 
 const CACHE = new Map<string, Promise<ResultadoDiscente[]>>();
-const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', filtroSemestre = false }: { trienio?: boolean; publico?: 'discentes' | 'docentes'; filtroSemestre?: boolean }) => {
+const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', filtroSemestre = false, dadosCompartilhados, semestresCompartilhados }: { trienio?: boolean; publico?: 'discentes' | 'docentes'; filtroSemestre?: boolean; dadosCompartilhados?: ResultadoDiscente[]; semestresCompartilhados?: string[] }) => {
   const isDoc = publico === 'docentes';
+  const integrado = dadosCompartilhados !== undefined;
   const rotulo = isDoc ? 'docentes' : 'discentes';
+  const slidesApresentacao = integrado ? [0, 1, 3, 6, 7] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const titulosApresentacao = slidesApresentacao.map(i => i === 0 && isDoc ? 'O que os docentes revelam?' : titulos[i]);
   const { toast } = useToast();
   const containerRef = useRef<HTMLDivElement>(null);
   const [exportando, setExportando] = useState(false);
@@ -101,8 +104,9 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
   const [exportandoPdf, setExportandoPdf] = useState(false);
   const [questaoImpacto, setQuestaoImpacto] = useState<string | null>(null);
   const [coresAnos, setCoresAnos] = useState<string[]>([]);
-  const [rows, setRows] = useState<ResultadoDiscente[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [rowsCarregadas, setRows] = useState<ResultadoDiscente[]>([]);
+  const rows = useMemo(() => comEixo(dadosCompartilhados ?? rowsCarregadas), [dadosCompartilhados, rowsCarregadas]);
+  const [loading, setLoading] = useState(!integrado);
   const [erro, setErro] = useState(false);
   const [tentativa, setTentativa] = useState(0);
   const [nivel, setNivel] = useState(TODOS);
@@ -120,14 +124,14 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
   const semestresOpcoes = useMemo(() => semestresDisponiveis(rows), [rows]);
   // Sem escolha explícita, o bloco mostra os semestres do próprio escopo (2026 ou o triênio).
   useEffect(() => {
-    if (!filtroSemestre || semestresSel.length || !semestresOpcoes.length) return;
+    if (integrado || !filtroSemestre || semestresSel.length || !semestresOpcoes.length) return;
     const padrao = semestresOpcoes.filter(s => anosBase.some(a => s.startsWith(a)));
     if (padrao.length) setSemestresSel(padrao);
   }, [filtroSemestre, semestresOpcoes, anosBase, semestresSel.length]);
-  const semestresAtivos = semestresSel.length ? semestresSel : semestresOpcoes;
-  const anos = filtroSemestre ? [...new Set(semestresAtivos.map(s => s.slice(0, 4)))].sort() : anosBase;
+  const semestresAtivos = integrado ? (semestresCompartilhados?.length ? semestresCompartilhados : semestresOpcoes) : (semestresSel.length ? semestresSel : semestresOpcoes);
+  const anos = filtroSemestre || integrado ? [...new Set(semestresAtivos.map(s => s.slice(0, 4)))].sort() : anosBase;
   const ultimo = anos[anos.length - 1] || '';
-  const escopo = filtroSemestre ? (semestresAtivos.join(' · ') || 'todos os semestres') : (trienio ? '2024–2026' : '2026');
+  const escopo = filtroSemestre || integrado ? (semestresAtivos.join(' · ') || 'todos os semestres') : (trienio ? '2024–2026' : '2026');
 
   useEffect(() => {
     const css = getComputedStyle(document.documentElement);
@@ -137,6 +141,11 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
   useEffect(() => { const css = getComputedStyle(document.documentElement); setCoresAnos(['--info', '--warning', '--primary'].map(v => `hsl(${css.getPropertyValue(v).trim()})`)); }, []);
 
   useEffect(() => {
+    if (integrado) {
+      setLoading(false);
+      setErro(false);
+      return;
+    }
     let cancelado = false;
     const carregar = async () => {
       setLoading(true); setErro(false);
@@ -155,19 +164,19 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
         })().catch(e => { CACHE.delete(chave); throw e; }));
         const todas = await CACHE.get(chave)!;
         if (cancelado) return;
-        if (!cancelado) setRows(comEixo(selecionarDiscentes(todas, anosCarregar, isDoc ? /professor|docente/i : undefined)));
+        if (!cancelado) setRows(selecionarDiscentes(todas, anosCarregar, isDoc ? /professor|docente/i : undefined));
       } catch { if (!cancelado) setErro(true); }
       finally { if (!cancelado) setLoading(false); }
     };
     carregar();
     return () => { cancelado = true; };
-  }, [tentativa, trienio, publico, filtroSemestre]);
+  }, [tentativa, trienio, publico, filtroSemestre, integrado]);
 
   useEffect(() => {
     if (!apresentando) return;
     const navegar = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement)?.closest('input,textarea,[role="combobox"]')) return;
-      if (e.key === 'ArrowRight') { e.preventDefault(); setSlide(s => Math.min(titulos.length - 1, s + 1)); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); setSlide(s => Math.min(titulosApresentacao.length - 1, s + 1)); }
       if (e.key === 'ArrowLeft') { e.preventDefault(); setSlide(s => Math.max(0, s - 1)); }
       if (e.key === 'Escape') setApresentando(false);
     };
@@ -183,10 +192,10 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
     return () => { document.body.style.overflow = anterior; };
   }, [apresentando]);
 
-  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao, semestresSel]);
+  useEffect(() => { setCursoDrill({ curso: null, dimensao: null }); setPagina(0); setDetalhe(null); setDrill({ eixo: null, dimensao: null }); }, [nivel, curso, dimensao, area, conceitoFiltro, prioCurso, prioDimensao, prioArea, prioQuestao, semestresSel, dadosCompartilhados]);
   const opcoes = (campo: 'nivel' | 'curso' | 'dimensao' | 'area') => [...new Set(rows.map(r => r[campo]).filter(Boolean))].sort();
-  const filtrado = useMemo(() => filtrarPorSemestres(rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
-    (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), filtroSemestre ? semestresSel : []), [rows, nivel, curso, dimensao, area, filtroSemestre, semestresSel]);
+  const filtrado = useMemo(() => integrado ? rows : filtrarPorSemestres(rows.filter(r => (nivel === TODOS || r.nivel === nivel) && (curso === TODOS || r.curso === curso) &&
+    (dimensao === TODOS || r.dimensao === dimensao) && (area === TODOS || r.area === area)), filtroSemestre ? semestresSel : []), [rows, nivel, curso, dimensao, area, filtroSemestre, semestresSel, integrado]);
   const grupos = useMemo(() => ({ curso: resumirGrupos(filtrado, 'curso'), dimensao: resumirGrupos(filtrado, 'dimensao'),
     area: resumirGrupos(filtrado, 'area'), professor: resumirGrupos(filtrado, 'professor'), eixo: resumirGrupos(filtrado, 'eixo') }), [filtrado]);
   const prioridades = useMemo(() => areasParaAcao(trienio ? filtrado.filter(r => r.semestre.trim().startsWith(ultimo)) : filtrado), [filtrado, trienio, ultimo]);
@@ -213,7 +222,7 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
   const questaoAberta = impacto.find(q => q.questao === questaoImpacto);
   const selecionada = prioridadesVisiveis.find(p => JSON.stringify([p.nivel, p.curso, p.dimensao, p.area]) === detalhe);
   const media = mediaHierarquica(filtrado);
-  const mostrar = (i: number) => !apresentando || slide === i;
+  const mostrar = (i: number) => !apresentando || slidesApresentacao[slide] === i;
   const limpar = () => { setNivel(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setConceitoFiltro(TODOS); setSemestresSel(semestresOpcoes.filter(s => anosBase.some(a => s.startsWith(a)))); };
   const toggleSemestre = (s: string) => setSemestresSel(sel => {
     const atual = sel.length ? sel : semestresOpcoes;
@@ -245,11 +254,11 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
   if (erro) return <div role="alert" className="space-y-3 py-12 text-center"><p>Não foi possível carregar os resultados {rotulo}.</p><Button variant="outline" onClick={() => setTentativa(t => t + 1)}>Tentar novamente</Button></div>;
 
   const conteudo = <div ref={containerRef} role={apresentando ? 'dialog' : undefined} aria-modal={apresentando ? true : undefined} aria-label={apresentando ? 'Apresentação dos resultados discentes' : undefined} className={cn('space-y-8', apresentando && 'fixed inset-0 z-[100] overflow-y-auto bg-background px-6 pt-6 pb-28 sm:px-12 sm:pt-10')}>
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />{isDoc ? 'Docentes' : 'Discentes'} / {trienio ? 'Triênio 2024–2026' : escopo}</h2><p className="mt-1 text-sm text-muted-foreground">Resultados da autoavaliação institucional · {escopo} · Escala de 0 a 5</p></div>
+    <header className="flex flex-wrap items-center justify-between gap-4 border-t pt-8">
+      <div><h2 className="flex items-center gap-2 text-2xl font-bold"><GraduationCap className="h-6 w-6 text-primary" />{integrado && !apresentando ? 'Análises e planos de ação' : <>{isDoc ? 'Docentes' : 'Discentes'} / {trienio ? 'Triênio 2024–2026' : escopo}</>}</h2><p className="mt-1 text-sm text-muted-foreground">{integrado && !apresentando ? `Expansões, prioridades e sugestões · ${escopo}` : `Resultados da autoavaliação institucional · ${escopo} · Escala de 0 a 5`}</p></div>
       <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={exportar} disabled={exportando || !filtrado.length}>{exportando ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}Gerar PowerPoint</Button><Button variant="outline" onClick={() => { setSlide(0); setApresentando(v => !v); }}>{apresentando ? <X className="mr-2 h-4 w-4" /> : <Presentation className="mr-2 h-4 w-4" />}{apresentando ? 'Sair da apresentação' : 'Apresentar'}</Button></div>
     </header>
-    {!apresentando && <div className={cn('grid gap-3 sm:grid-cols-2', filtroSemestre ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
+    {!integrado && !apresentando && <div className={cn('grid gap-3 sm:grid-cols-2', filtroSemestre ? 'xl:grid-cols-5' : 'xl:grid-cols-4')}>
       {filtroSemestre && <label className="space-y-1 text-sm"><span className="font-medium">Semestre</span>
         <Popover>
           <PopoverTrigger asChild>
@@ -274,13 +283,13 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
       </label>}
       {(['nivel', 'curso', 'dimensao', 'area'] as const).map((campo, i) => <label key={campo} className="space-y-1 text-sm"><span className="font-medium">{['Nível', 'Curso', 'Dimensão', 'Área'][i]}</span><SearchableSelect value={[nivel, curso, dimensao, area][i]} onValueChange={[setNivel, setCurso, setDimensao, setArea][i]} options={[{ value: TODOS, label: ['Todos os níveis', 'Todos os cursos', 'Todas as dimensões', 'Todas as áreas'][i] }, ...opcoes(campo).map(v => ({ value: v, label: v }))]} /></label>)}
     </div>}
-    {!apresentando && (nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
+    {!integrado && !apresentando && (nivel !== TODOS || curso !== TODOS || dimensao !== TODOS || area !== TODOS) && <Button variant="ghost" size="sm" onClick={limpar}>Limpar filtros</Button>}
     {!filtrado.length ? <p className="py-16 text-center text-muted-foreground">Nenhum resultado {isDoc ? 'docente' : 'discente'} de {escopo} encontrado para este recorte.</p> : <>
       {mostrar(0) && <section className="space-y-6">
         <h3 className="text-xl font-bold">O que os {rotulo} revelam?</h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {!integrado && <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[['Média geral', fmt(media)], ['Conceito geral', conceito(media)], ['Respostas favoráveis', `${fmt(percFavoravel(filtrado))}%`], ['Respostas às questões', totalRespostas(filtrado).toLocaleString('pt-BR')]].map(([titulo, valor]) => <div key={titulo} className="border-l-4 bg-muted/40 p-4" style={{ borderColor: titulo.startsWith('Média') || titulo.startsWith('Conceito') ? corMedia(media) : undefined }}><p className="text-sm text-muted-foreground">{titulo}</p><p className="mt-2 text-xl font-bold" style={titulo.startsWith('Média') || titulo.startsWith('Conceito') ? { color: corMedia(media) } : undefined}>{valor}</p></div>)}
-        </div>
+        </div>}
         <div className="space-y-3 text-base leading-7">
           <p>Em {escopo}, a experiência dos {rotulo} alcança média <strong>{fmt(media)}</strong>, com conceito <strong>{conceito(media)}</strong>. O resultado reúne {grupos.curso.length} cursos no recorte selecionado.</p>
           {grupos.curso[0] && <p><strong>Destaque:</strong> {grupos.curso[0].nome} tem a maior média ({fmt(grupos.curso[0].media)}). {grupos.area[0]?.nome} lidera entre as áreas, com {fmt(grupos.area[0]?.media || 0)}.</p>}
@@ -289,7 +298,7 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
           <p className="text-sm text-muted-foreground">Médias calculadas pelas medidas CPA compartilhadas: média das linhas das questões por área, seguida da média das áreas. Respostas não representam pessoas únicas; dados de participação não entram nestas médias.</p>
         </div>
       </section>}
-      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'curso' ? <div className={cn('space-y-4', cursoDrill.curso && 'border-l-4 border-primary bg-muted/30 p-4 sm:p-6')}>
+      {([['curso', 1, 'Médias por curso'], ['dimensao', 2, 'Médias por dimensão'], ['eixo', 3, 'Médias por eixo'], ['professor', 4, 'Médias por professor'], ['area', 5, 'Médias por área']] as const).filter(([campo]) => !integrado || campo === 'curso' || campo === 'eixo').map(([campo, indice, titulo]) => mostrar(indice) && <section key={campo} className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">{titulo}</h3>{campo === 'curso' ? <div className={cn('space-y-4', cursoDrill.curso && 'border-l-4 border-primary bg-muted/30 p-4 sm:p-6')}>
         <nav aria-label="Expansão das médias do curso" className="flex flex-wrap items-center gap-2">
           <Button variant={cursoDrill.curso ? 'outline' : 'secondary'} size="sm" onClick={() => setCursoDrill({ curso: null, dimensao: null })}>Cursos</Button>
           {cursoDrill.curso && <><ChevronRight className="h-4 w-4" /><Button variant={cursoDrill.dimensao ? 'outline' : 'secondary'} size="sm" className="h-auto whitespace-normal text-left" onClick={() => setCursoDrill(d => ({ ...d, dimensao: null }))}>{cursoDrill.curso}</Button></>}
@@ -310,7 +319,7 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
         const ab: Record<string, string> = { Excelente: 'E', Bom: 'B', 'Atende Parcialmente': 'AP', Regular: 'R', 'Muito Ruim': 'MR' };
         const cel = (v: number | null, extra = '') => <td className={cn('border px-2 py-1 text-center font-semibold', extra)} style={{ color: v == null ? undefined : corMedia(v) }}>{sig(v)}</td>;
         return m.eixos.length ? <section className="space-y-3 border-t pt-6">
-        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xl font-bold">Resultado dos {isDoc ? 'professores' : 'alunos'} avaliando a instituição – 2026</h3>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-xl font-bold">Resultado dos {isDoc ? 'professores' : 'alunos'} avaliando a instituição – {escopo}</h3>
           <Button variant="outline" size="sm" className="gap-1" onClick={exportarMatriz}><ImageDown className="h-4 w-4" />Exportar imagem</Button></div>
         <div ref={matrizRef} className="overflow-x-auto bg-background p-2"><table className="w-full border-collapse text-xs">
           <thead><tr className="bg-primary text-primary-foreground"><th className="border p-2">Eixo</th><th className="border p-2">Área</th>
@@ -373,7 +382,7 @@ const StorytellingDiscentesSection = ({ trienio = false, publico = 'discentes', 
       {mostrar(7) && <section className="space-y-4 border-t pt-6"><h3 className="text-xl font-bold">Da escuta à ação</h3><ol className="list-decimal space-y-3 pl-5 leading-7"><li><strong>Priorizar:</strong> começar pelas áreas Muito Ruim e Regular, preservando o recorte por curso e nível.</li><li><strong>Investigar:</strong> usar as questões com menor média para validar causas com alunos e equipes, sem atribuir causalidade apenas ao indicador.</li><li><strong>Pactuar:</strong> registrar ação, responsáveis, prazo, meta e evidências de conclusão no menu Ações.</li><li><strong>Acompanhar:</strong> verificar as melhorias e comparar o indicador no próximo ciclo avaliativo.</li></ol><p className="border-l-4 border-primary pl-4 text-lg font-medium">O resultado não encerra a avaliação: transforma a percepção dos discentes em compromissos de melhoria por curso.</p></section>}
     </>}
     {!trienio && !apresentando && <SugestoesDiscentes perfil={isDoc ? 'professor' : 'aluno'} />}
-    {apresentando && <nav aria-label="Navegação da apresentação discente" className="fixed bottom-0 left-0 right-0 z-[101] flex flex-wrap items-center justify-center gap-3 rounded-md border bg-background p-3 shadow-sm"><Button variant="outline" size="icon" aria-label="Retroceder slide" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><ChevronLeft className="h-5 w-5" /></Button><span className="text-sm">{slide + 1} / {titulos.length}</span><span className="hidden text-sm font-medium sm:inline">{titulos[slide]}</span><Button variant="outline" size="icon" aria-label="Avançar slide" disabled={slide === titulos.length - 1} onClick={() => setSlide(s => s + 1)}><ChevronRight className="h-5 w-5" /></Button><Button variant="ghost" onClick={() => setApresentando(false)}>Sair</Button></nav>}
+    {apresentando && <nav aria-label="Navegação da apresentação discente" className="fixed bottom-0 left-0 right-0 z-[101] flex flex-wrap items-center justify-center gap-3 rounded-md border bg-background p-3 shadow-sm"><Button variant="outline" size="icon" aria-label="Retroceder slide" disabled={slide === 0} onClick={() => setSlide(s => s - 1)}><ChevronLeft className="h-5 w-5" /></Button><span className="text-sm">{slide + 1} / {titulosApresentacao.length}</span><span className="hidden text-sm font-medium sm:inline">{titulosApresentacao[slide]}</span><Button variant="outline" size="icon" aria-label="Avançar slide" disabled={slide === titulosApresentacao.length - 1} onClick={() => setSlide(s => s + 1)}><ChevronRight className="h-5 w-5" /></Button><Button variant="ghost" onClick={() => setApresentando(false)}>Sair</Button></nav>}
   </div>;
   return apresentando ? createPortal(conteudo, document.body) : conteudo;
 };
