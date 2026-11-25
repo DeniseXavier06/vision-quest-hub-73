@@ -22,6 +22,8 @@ import { SortableTableHead } from '@/components/ui/sortable-table-head';
 import { useColumnOrder, type ColumnDef } from '@/hooks/use-column-order';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { SugestoesDiscentes } from '@/components/SugestoesDiscentes';
+import { conceito as conceitoCPA, mediaQuestoes, percFavoravel, totalRespostas } from '@/lib/medidas';
 import DocentesSection from '@/components/DocentesSection';
 import StorytellingDiscentesSection from '@/components/StorytellingDiscentesSection';
 
@@ -1186,6 +1188,7 @@ const ResultadosSection = () => {
       </>)}
 
       {/* === Colaboradores Section - only when nivel = Colaboradores === */}
+      {grupo === 'colaborador' && <SugestoesDiscentes perfil="colaborador" />}
       {grupo === 'colaborador' && colabData.length > 0 && (
         <>
           <div className="pt-4">
@@ -1196,6 +1199,11 @@ const ResultadosSection = () => {
             </h3>
             <p className="text-sm text-muted-foreground mt-1">Visão específica dos resultados do perfil Colaboradores</p>
           </div>
+          {(() => { const m = mediaQuestoes(colabData); const f = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const qs = new Map<string, typeof colabData>(); colabData.forEach(r => qs.set(r.textoQuestao, [...(qs.get(r.textoQuestao) || []), r]));
+            const prio = [...qs.values()].filter(rs => { const x = mediaQuestoes(rs); return x > 0 && x < 4.1; }).length;
+            return <div className="grid gap-4 md:grid-cols-4">{[{ l: 'Média geral', v: f(m), c: conceitoCPA(m) }, { l: '% favorável', v: `${f(percFavoravel(colabData))}%` }, { l: 'Respostas', v: totalRespostas(colabData).toLocaleString('pt-BR') }, { l: 'Questões prioritárias', v: String(prio) }].map(k =>
+              <Card key={k.l}><CardContent className="p-4"><p className="text-xs text-muted-foreground">{k.l}</p><p className="text-xl font-bold">{k.v}</p>{k.c && <Badge variant="outline">{k.c}</Badge>}</CardContent></Card>)}</div>; })()}
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card>

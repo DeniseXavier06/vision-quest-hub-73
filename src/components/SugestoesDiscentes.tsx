@@ -11,7 +11,7 @@ const COR: Record<Sentimento, string> = { positivo: 'border-success/40 text-succ
 type Sug = { id: string; nome_curso: string; nivel: string; dimensao: string; area: string; texto_questao: string; sugestao: string };
 const TODOS = '__todos__';
 
-export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'professor' }) {
+export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'professor' | 'colaborador' }) {
   const [rows, setRows] = useState<Sug[]>([]);
   const [loading, setLoading] = useState(true);
   const [curso, setCurso] = useState(TODOS);
@@ -34,7 +34,7 @@ export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'p
   const visiveis = useMemo(() => sent ? recorte.filter(r => classificarSentimento(r.sugestao) === sent) : recorte, [recorte, sent]);
 
   return <section className="space-y-4 border-t pt-6">
-    <h3 className="text-xl font-bold">Sugestões dos {perfil === 'professor' ? 'docentes' : 'discentes'} – 2026</h3>
+    <h3 className="text-xl font-bold">Sugestões dos {perfil === 'professor' ? 'docentes' : perfil === 'colaborador' ? 'colaboradores' : 'discentes'} – 2026</h3>
     <div className="grid gap-3 sm:grid-cols-3">
       <SearchableSelect value={curso} onValueChange={v => { setCurso(v); setDimensao(TODOS); setArea(TODOS); }} options={opts(rows.map(r => r.nome_curso))} placeholder="Curso" />
       <SearchableSelect value={dimensao} onValueChange={v => { setDimensao(v); setArea(TODOS); }} options={opts(porCurso.map(r => r.dimensao))} placeholder="Dimensão" />
