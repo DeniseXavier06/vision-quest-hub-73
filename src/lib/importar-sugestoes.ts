@@ -4,6 +4,12 @@ import { z } from 'zod';
 export const COLUNAS_SUGESTOES = ['NOME_CURSO', 'NIVEL', 'DIMENSAO', 'AREA', 'CODIGO_TURMA', 'CODIGO_PROVA', 'NOME_PROVA', 'CODIGO_QUESTAO', 'TEXTO_QUESTAO', 'DISCIPLINA_AVALIADA', 'PROFESSOR_AVALIADO', 'COORDENADOR_AVALIADO', 'SUGESTAO'] as const;
 export type LinhaSugestao = Record<Lowercase<typeof COLUNAS_SUGESTOES[number]>, string>;
 const textoSugestao = z.string().trim().min(1, 'Sugestão vazia');
+const normalizar = (s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().trim();
+
+/** Impede que comentários sejam enviados ao fluxo quantitativo e virem médias zeradas. */
+export function ehPlanilhaSugestoes(nomeArquivo: string, colunas: string[]) {
+  return normalizar(nomeArquivo).includes('SUGEST') || colunas.some(c => normalizar(c) === 'SUGESTAO');
+}
 
 export function converterSugestoes(rows: Record<string, unknown>[], mapping: Record<string, string>): LinhaSugestao[] {
   return rows.map(row => {

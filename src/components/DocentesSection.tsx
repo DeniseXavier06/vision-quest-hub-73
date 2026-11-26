@@ -37,7 +37,7 @@ const CAMPO_GRUPO: Record<Grupo, keyof LinhaDocente> = {
 
 interface Props {
   perfil?: 'docentes' | 'discentes';
-  complementos?: (dados: ResultadoDiscente[], semestres: string[]) => ReactNode;
+  complementos?: (dados: ResultadoDiscente[], semestres: string[], semestresSugestoes: string[]) => ReactNode;
 }
 const DocentesSection = ({ perfil = 'docentes', complementos }: Props) => {
   const isDisc = perfil === 'discentes';
@@ -288,7 +288,7 @@ const DocentesSection = ({ perfil = 'docentes', complementos }: Props) => {
         </CardContent>
       </Card>
 
-      {complementos?.(filtrado, semestresAtivos)}
+      {complementos?.(filtrado, semestresAtivos, semestresSel.length ? semestresSel : ['2024.2', '2025.2', '2026.2'])}
     </div>
   );
 };

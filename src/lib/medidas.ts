@@ -47,7 +47,8 @@ export function mediaQuestoes(rows: LinhaResultado[]): number {
   let soma = 0, n = 0;
   rows.forEach((r) => {
     const m = Number(r.media), p = r.peso ?? 1;
-    if (isNaN(m)) return;
+    // A escala CPA começa em 1; zero representa linha sem avaliação e não entra na média.
+    if (isNaN(m) || m <= 0) return;
     soma += m * p; n += p;
   });
   return n ? round2(soma / n) : 0;

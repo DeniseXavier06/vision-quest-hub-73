@@ -50,6 +50,13 @@
       "when": 1795541532559,
       "tag": "0006_resultados_publico_agregados",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1795713870494,
+      "tag": "0007_excluir_linhas_sem_avaliacao_das_medias",
+      "breakpoints": true
     }
   ]
 }

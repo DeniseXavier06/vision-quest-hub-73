@@ -8,40 +8,73 @@ import { classificarSentimento, resumoSentimentos, type Sentimento } from '@/lib
 const ROT: Record<Sentimento, string> = { positivo: 'Positivo', negativo: 'Negativo', neutro: 'Neutro' };
 const COR: Record<Sentimento, string> = { positivo: 'border-success/40 text-success', negativo: 'border-destructive/40 text-destructive', neutro: 'border-border text-muted-foreground' };
 
-type Sug = { id: string; nome_curso: string; nivel: string; dimensao: string; area: string; texto_questao: string; sugestao: string };
+type Sug = { id: string; semestre: string; nome_curso: string; nivel: string; dimensao: string; area: string; texto_questao: string; sugestao: string };
+type SugConsulta = Omit<Sug, 'semestre'> & { ambientes_avaliacao: { semestres_letivos: { nome: string } | null } | null };
 const TODOS = '__todos__';
 
-export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'professor' | 'colaborador' }) {
+interface Props {
+  perfil?: 'aluno' | 'professor' | 'colaborador';
+  /** Semestres compartilhados com os filtros da tela; vazio ou omitido mostra todos. */
+  semestres?: string[];
+}
+
+export function SugestoesDiscentes({ perfil = 'aluno', semestres }: Props) {
   const [rows, setRows] = useState<Sug[]>([]);
   const [loading, setLoading] = useState(true);
+  const [semestre, setSemestre] = useState(TODOS);
   const [curso, setCurso] = useState(TODOS);
   const [dimensao, setDimensao] = useState(TODOS);
   const [area, setArea] = useState(TODOS);
   const [limite, setLimite] = useState(30);
   const [sent, setSent] = useState<Sentimento | null>(null);
+  const chaveSemestres = (semestres ?? []).join('|');
 
   useEffect(() => {
+    let ativo = true;
+    setLoading(true);
     supabase.from('sugestoes').select('id,nome_curso,nivel,dimensao,area,texto_questao,sugestao,ambientes_avaliacao!inner(semestres_letivos!inner(nome))')
-      .eq('perfil', perfil).ilike('ambientes_avaliacao.semestres_letivos.nome', '%2026%').limit(5000)
-      .then(({ data }) => { const vistos = new Set<string>(); setRows(((data ?? []) as unknown as Sug[]).filter(r => { const k = [r.nome_curso, r.nivel, r.dimensao, r.area, r.texto_questao, r.sugestao.trim()].join('|'); if (vistos.has(k)) return false; vistos.add(k); return true; })); setLoading(false); });
+      .eq('perfil', perfil).limit(5000)
+      .then(({ data, error }) => {
+        if (!ativo) return;
+        if (error) { setRows([]); setLoading(false); return; }
+        const vistos = new Set<string>();
+        const sugestoes = ((data ?? []) as unknown as SugConsulta[]).map(r => ({ ...r, semestre: r.ambientes_avaliacao?.semestres_letivos?.nome ?? '' }))
+          .filter(r => {
+            const k = [r.semestre, r.nome_curso, r.nivel, r.dimensao, r.area, r.texto_questao, r.sugestao.trim()].join('|');
+            if (vistos.has(k)) return false;
+            vistos.add(k);
+            return true;
+          });
+        setRows(sugestoes);
+        setLoading(false);
+      });
+    return () => { ativo = false; };
   }, [perfil]);
 
+  useEffect(() => {
+    setSemestre(TODOS); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); setSent(null); setLimite(30);
+  }, [chaveSemestres]);
+
+  const rowsEscopo = useMemo(() => semestres?.length ? rows.filter(r => semestres.includes(r.semestre)) : rows, [rows, semestres]);
+  const rowsSemestre = semestre === TODOS ? rowsEscopo : rowsEscopo.filter(r => r.semestre === semestre);
   const opts = (vals: string[]) => [{ value: TODOS, label: 'Todos' }, ...[...new Set(vals.filter(Boolean))].sort().map(v => ({ value: v, label: v }))];
-  const porCurso = rows.filter(r => curso === TODOS || r.nome_curso === curso);
+  const porCurso = rowsSemestre.filter(r => curso === TODOS || r.nome_curso === curso);
   const porDim = porCurso.filter(r => dimensao === TODOS || r.dimensao === dimensao);
   const recorte = useMemo(() => porDim.filter(r => area === TODOS || r.area === area), [porDim, area]);
   const resumo = useMemo(() => resumoSentimentos(recorte.map(r => r.sugestao)), [recorte]);
   const visiveis = useMemo(() => sent ? recorte.filter(r => classificarSentimento(r.sugestao) === sent) : recorte, [recorte, sent]);
+  const rotuloSemestres = semestre !== TODOS ? semestre : semestres?.length ? semestres.join(' · ') : 'todos os semestres';
 
   return <section className="space-y-4 border-t pt-6">
-    <h3 className="text-xl font-bold">Sugestões dos {perfil === 'professor' ? 'docentes' : perfil === 'colaborador' ? 'colaboradores' : 'discentes'} – 2026</h3>
-    <div className="grid gap-3 sm:grid-cols-3">
-      <SearchableSelect value={curso} onValueChange={v => { setCurso(v); setDimensao(TODOS); setArea(TODOS); }} options={opts(rows.map(r => r.nome_curso))} placeholder="Curso" />
+    <h3 className="text-xl font-bold">Sugestões dos {perfil === 'professor' ? 'docentes' : perfil === 'colaborador' ? 'colaboradores' : 'discentes'} – {rotuloSemestres}</h3>
+    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <SearchableSelect value={semestre} onValueChange={v => { setSemestre(v); setCurso(TODOS); setDimensao(TODOS); setArea(TODOS); }} options={opts(rowsEscopo.map(r => r.semestre))} placeholder="Semestre" />
+      <SearchableSelect value={curso} onValueChange={v => { setCurso(v); setDimensao(TODOS); setArea(TODOS); }} options={opts(rowsSemestre.map(r => r.nome_curso))} placeholder="Curso" />
       <SearchableSelect value={dimensao} onValueChange={v => { setDimensao(v); setArea(TODOS); }} options={opts(porCurso.map(r => r.dimensao))} placeholder="Dimensão" />
       <SearchableSelect value={area} onValueChange={setArea} options={opts(porDim.map(r => r.area))} placeholder="Área" />
     </div>
     {loading ? <p className="text-sm text-muted-foreground">Carregando sugestões…</p>
-      : recorte.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma sugestão importada para este recorte.</p>
+      : recorte.length === 0 ? <p className="text-sm text-muted-foreground">Nenhuma sugestão importada para este recorte. Envie o arquivo em Importações → Importar Sugestões.</p>
       : <>
         <div className="space-y-2 rounded-md border p-4">
           <p className="font-semibold">Análise de sentimentos</p>
@@ -52,7 +85,7 @@ export function SugestoesDiscentes({ perfil = 'aluno' }: { perfil?: 'aluno' | 'p
         <p className="text-sm text-muted-foreground">{visiveis.length} sugestões</p>
         <ul className="space-y-3">{visiveis.slice(0, limite).map(s => <li key={s.id} className="rounded-md border border-l-4 border-l-primary p-4">
           <div className="flex items-start justify-between gap-3"><p className="leading-6">“{s.sugestao}”</p>{(() => { const k = classificarSentimento(s.sugestao); return <Badge variant="outline" className={COR[k]}>{ROT[k]}</Badge>; })()}</div>
-          <p className="mt-2 text-xs text-muted-foreground">{[s.nome_curso, s.nivel, s.dimensao, s.area].filter(Boolean).join(' · ')}{s.texto_questao && ` — ${s.texto_questao}`}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{[s.semestre, s.nome_curso, s.nivel, s.dimensao, s.area].filter(Boolean).join(' · ')}{s.texto_questao && ` — ${s.texto_questao}`}</p>
         </li>)}</ul>
         {visiveis.length > limite && <Button variant="outline" onClick={() => setLimite(l => l + 30)}>Mostrar mais</Button>}
       </>}

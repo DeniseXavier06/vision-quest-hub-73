@@ -93,4 +93,8 @@ describe('linhas agregadas com peso', () => {
     expect(mq(agregadas)).toBe(mq(originais));
     expect(mq(agregadas)).toBe(3.5);
   });
+  it('não reduz a média com linhas sem avaliação', () => {
+    const base = { semestre: '2026.2', nivel: 'Colaboradores', curso: 'Gerência', dimensao: 'Autoavaliação', area: 'Gestão', textoQuestao: 'Q', excelente: 0, bom: 0, atendeParcialmente: 0, regular: 0, muitoRuim: 0, naoSeAplica: 0, total: 0 };
+    expect(mq([{ ...base, media: 4 }, { ...base, media: 0 }])).toBe(4);
+  });
 });

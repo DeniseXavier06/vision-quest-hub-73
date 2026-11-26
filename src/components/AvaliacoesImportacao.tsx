@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ehPlanilhaSugestoes } from '@/lib/importar-sugestoes';
 
 const PERFIS = [
   { value: 'Alunos', label: 'Aluno' }, { value: 'Professores', label: 'Professor' },
@@ -43,7 +44,12 @@ export default function AvaliacoesImportacao({ onImported }: { onImported?: () =
     const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
     const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], { defval: '' });
     if (!json.length) { toast.error('Arquivo vazio'); return; }
-    setFile(f); setRows(json); setColumns(Object.keys(json[0]));
+    const headers = Object.keys(json[0]);
+    if (ehPlanilhaSugestoes(f.name, headers)) {
+      toast.error('Este arquivo contém sugestões. Feche esta janela e use “Importar Sugestões” para preservar os textos.');
+      return;
+    }
+    setFile(f); setRows(json); setColumns(headers);
   };
 
   const linhas = useMemo(() => {

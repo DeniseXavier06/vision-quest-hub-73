@@ -368,6 +368,8 @@ const ResultadosSection = () => {
   // Escopo por submenu (nível): Discentes/Docentes, Colaborador, Coordenador
   const scopedData = useMemo(() => {
     return data.filter((r) => {
+      // Linhas sem avaliação (inclusive sugestões importadas no fluxo errado) não formam médias.
+      if (r.media <= 0 && r.total <= 0) return false;
       const t = (r.tipoAvaliacao || '').toLowerCase();
       const n = (r.nivel || '').toLowerCase();
       const isColab = t.includes('colabora') || n.includes('colabora');
@@ -680,7 +682,7 @@ const ResultadosSection = () => {
   }, []);
 
   // === Colaboradores-specific charts ===
-  const colabData = useMemo(() => scopedData, [scopedData]);
+  const colabData = useMemo(() => filtered, [filtered]);
 
   const colabMediaDimensao = useMemo(() => {
     const map = new Map<string, { sum: number; count: number }>();
@@ -922,11 +924,12 @@ const ResultadosSection = () => {
         <DocentesSection
           key={grupo}
           perfil={grupo === 'docentes' ? 'docentes' : 'discentes'}
-          complementos={(dados, semestres) => (
+          complementos={(dados, semestres, semestresSugestoes) => (
             <StorytellingDiscentesSection
               publico={grupo === 'docentes' ? 'docentes' : 'discentes'}
               dadosCompartilhados={dados}
               semestresCompartilhados={semestres}
+              semestresSugestoes={semestresSugestoes}
             />
           )}
         />
@@ -1188,7 +1191,6 @@ const ResultadosSection = () => {
       </>)}
 
       {/* === Colaboradores Section - only when nivel = Colaboradores === */}
-      {grupo === 'colaborador' && <SugestoesDiscentes perfil="colaborador" />}
       {grupo === 'colaborador' && colabData.length > 0 && (
         <>
           <div className="pt-4">
@@ -1311,6 +1313,8 @@ const ResultadosSection = () => {
           </Card>
         </>
       )}
+
+      {grupo === 'colaborador' && <SugestoesDiscentes perfil="colaborador" semestres={filterSemestre === 'all' ? undefined : [filterSemestre]} />}
 
       {/* Data Table removed */}
 

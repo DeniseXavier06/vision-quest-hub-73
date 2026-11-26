@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COLUNAS_SUGESTOES, converterSugestoes } from './importar-sugestoes';
+import { COLUNAS_SUGESTOES, converterSugestoes, ehPlanilhaSugestoes } from './importar-sugestoes';
 
 describe('Importação de sugestões', () => {
   it('preserva as 13 colunas, inclusive os códigos e textos de avaliação', () => {
@@ -18,5 +18,12 @@ describe('Importação de sugestões', () => {
   });
   it('usa o mapeamento selecionado sem misturar colunas', () => {
     expect(converterSugestoes([{ Comentario: 'Melhorar o laboratório', Curso: 'Farmácia' }], { SUGESTAO: 'Comentario', NOME_CURSO: 'Curso' })[0]).toMatchObject({ nome_curso: 'Farmácia', sugestao: 'Melhorar o laboratório' });
+  });
+  it('identifica arquivo de sugestões pelo nome, mesmo com acento', () => {
+    expect(ehPlanilhaSugestoes('SUGESTÕES PROFESSORES 2026.2.xlsx', [])).toBe(true);
+  });
+  it('identifica arquivo de sugestões pela coluna e não bloqueia avaliações', () => {
+    expect(ehPlanilhaSugestoes('dados.xlsx', ['TEXTO_QUESTAO', 'SUGESTAO'])).toBe(true);
+    expect(ehPlanilhaSugestoes('RESULTADO FINAL.xlsx', ['TEXTO_QUESTAO', 'MEDIA'])).toBe(false);
   });
 });

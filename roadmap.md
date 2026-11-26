@@ -15,3 +15,7 @@
 - [x] Personalizar gráficos: tamanho da fonte dos rótulos
 - [x] Exportar imagem: "Resultado dos alunos avaliando a instituição – 2026"
 - [x] Análise de sentimentos nas Sugestões dos discentes – 2026
+- [x] Corrigir médias de colaboradores por semestre e posicionar sugestões ao final
+- [x] Fazer sugestões de docentes e colaboradores respeitarem os semestres selecionados
+- [x] Impedir importação de sugestões como avaliações quantitativas
+- [ ] Importar os textos antigos de docentes e colaboradores (aguardando as planilhas originais)

@@ -53,7 +53,7 @@ const StorytellingColaboradoresSection = () => {
 
   useEffect(() => {
     supabase.from('resultados').select('semestre,nivel,curso,dimensao,area,texto_questao,excelente,bom,atende_parcialmente,regular,muito_ruim,nao_se_aplica,total,media')
-      .like('semestre', '2026%').or('nivel.ilike.%colabora%,tipo_avaliacao.ilike.%colabora%').limit(5000)
+      .like('semestre', '2026%').or('nivel.ilike.%colabora%,tipo_avaliacao.ilike.%colabora%').gt('media', 0).limit(5000)
       .then(({ data }) => {
         setRows((data || []).map(r => ({ semestre: r.semestre, nivel: r.nivel, curso: r.curso, dimensao: r.dimensao, area: r.area, textoQuestao: r.texto_questao,
           excelente: r.excelente, bom: r.bom, atendeParcialmente: r.atende_parcialmente, regular: r.regular, muitoRuim: r.muito_ruim, naoSeAplica: r.nao_se_aplica, total: r.total, media: Number(r.media) })));
